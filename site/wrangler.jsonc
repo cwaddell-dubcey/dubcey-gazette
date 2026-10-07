@@ -1,0 +1,12 @@
+{
+  "name": "dubcey-site",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "run_worker_first": ["/api/*", "/auth/*", "/act/*"]
+  },
+  "routes": [{ "pattern": "dubcey.party", "custom_domain": true }]
+}
