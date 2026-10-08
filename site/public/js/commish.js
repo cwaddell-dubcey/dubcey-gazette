@@ -1,6 +1,6 @@
 (function(){
   var D = DC, $ = D.$, esc = D.esc, arr = D.arr;
-  var S = { tab:(location.hash || '#dispatch').slice(1), C:null, w:'', T:null, cal:null, law:null };
+  var S = { tab:(location.hash || '#dispatch').slice(1), C:null, w:'', T:null, cal:null, law:null, pop:null };
   var AW = ['Team of the Week', 'Biggest Bust', 'Luckiest Win'];
   function toast(m, bad){ var t = $('toast'); t.textContent = m; t.className = 'toast mono' + (bad ? ' bad' : ''); t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function(){ t.hidden = true; }, 4200); }
   function done(r, what){ if(r && r.ok) toast(r.demo ? 'SAVED IN THIS BROWSER (PREVIEW)' : what + ' SAVED'); else toast((r && r.error) || 'COULDN\u2019T SAVE', true); return r && r.ok; }
@@ -12,7 +12,7 @@
   });
   function draw(){
     [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ dispatch:dispatch, teams:teams, calendar:calendar, bylaws:bylaws, lineups:lineups }[S.tab] || dispatch)();
+    ({ dispatch:dispatch, teams:teams, calendar:calendar, bylaws:bylaws, lineups:lineups, popups:popups }[S.tab] || dispatch)();
   }
 
   /* ---------- the Dispatch ---------- */
@@ -73,6 +73,32 @@
     $('cb').innerHTML = '<article class="card" style="max-width:900px;margin-bottom:44px"><div class="bar mono"><span>BY-LAWS</span><span>SHOWS ON THE RULES PAGE</span></div><div class="ef pad"><div class="mono hint3">START A LINE WITH ## FOR A HEADING, - FOR A BULLET. BLANK LINE = NEW PARAGRAPH.</div><textarea id="law" rows="22" placeholder="## Keepers&#10;- Each team keeps up to 3 players&#10;&#10;## Dues&#10;$100, paid before the draft">' + esc(S.law.text || '') + '</textarea><div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="lsave">SAVE BY-LAWS</button></div></div></article>';
   }
 
+  /* ---------- timed home-page popups, on a weekly calendar (Eastern) ---------- */
+  function popups(){
+    if(!S.pop){ D.popups().then(function(p){ S.pop = JSON.parse(JSON.stringify(p)); popups(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
+    var P = S.pop, now = D.etNow();
+    function blocks(p, i){
+      var a = D.weekMin(p.sd, p.st), b = D.weekMin(p.ed, p.et), segs = a <= b ? [[a, b]] : [[a, 7 * 1440], [0, b]], out = '';
+      segs.forEach(function(s){ for(var d = Math.floor(s[0] / 1440); d * 1440 < s[1] && d < 7; d++){ var x0 = Math.max(s[0], d * 1440) - d * 1440, x1 = Math.min(s[1], (d + 1) * 1440) - d * 1440; if(x1 <= x0) continue;
+        out += '<div class="pb k' + (p.kind === 'waivers' ? 'W' : 'N') + (p.on === false ? ' off' : '') + '" style="grid-column:' + (d + 2) + ';top:' + (x0 / 14.4) + '%;height:' + ((x1 - x0) / 14.4) + '%" title="' + esc(p.title) + '"><b>' + esc(p.title) + '</b></div>'; } });
+      return out;
+    }
+    var hrs = ''; for(var t = 0; t < 24; t += 3) hrs += '<span style="top:' + (t / .24) + '%">' + (t === 0 ? '12a' : t < 12 ? t + 'a' : t === 12 ? '12p' : (t - 12) + 'p') + '</span>';
+    var cal = '<div class="pcal"><div class="pcd mono"><span></span>' + D.DAYS.map(function(d){ return '<span>' + d.toUpperCase() + '</span>'; }).join('') + '</div><div class="pcg"><div class="pch mono">' + hrs + '</div>' + D.DAYS.map(function(d, i){ return '<div class="pcc" style="grid-column:' + (i + 2) + '"></div>'; }).join('') +
+      P.map(blocks).join('') + '<div class="pnow" style="grid-column:' + (Math.floor(now / 1440) + 2) + ';top:' + ((now % 1440) / 14.4) + '%"></div></div></div>';
+    function dsel(n, v){ return '<select name="' + n + '">' + D.DAYS.map(function(d){ return '<option' + (d === v ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select>'; }
+    var list = P.map(function(p, i){
+      return '<div class="ed prow" data-i="' + i + '"><div class="edh mono"><span>' + (p.kind === 'waivers' ? 'WAIVER REPORT' : 'MESSAGE') + (D.inWindow(p) && p.on !== false ? ' \u00b7 <em>SHOWING NOW</em>' : '') + '</span><span class="eb"><a class="mono" href="' + D.href('', 'popup=' + encodeURIComponent(p.id)) + '" target="_blank">PREVIEW</a>' + (p.kind === 'waivers' ? '' : '<button type="button" data-pdel="' + i + '">REMOVE</button>') + '</span></div>' +
+        '<div class="ef pgrid"><label class="mono">NAME<input name="title" value="' + esc(p.title) + '"></label><label class="mono">FROM' + dsel('sd', p.sd) + '<input type="time" name="st" value="' + esc(p.st) + '"></label><label class="mono">UNTIL' + dsel('ed', p.ed) + '<input type="time" name="et" value="' + esc(p.et) + '"></label><label class="mono onl"><input type="checkbox" name="on"' + (p.on === false ? '' : ' checked') + '> ON</label></div>' +
+        (p.kind === 'waivers' ? '' : '<div class="ef two2"><label class="mono">KICKER<input name="kick" value="' + esc(p.kick || '') + '" placeholder="FROM THE COMMISH"></label><label class="mono">BUTTON LINK (OPTIONAL)<input name="link" value="' + esc(p.link || '') + '" placeholder="/scores"></label></div><label class="mono">MESSAGE<textarea name="body" rows="3">' + esc(p.body || '') + '</textarea></label>') + '</div>';
+    }).join('');
+    $('cb').innerHTML = '<article class="card" style="margin-bottom:24px"><div class="bar mono"><span>THIS WEEK\u2019S POPUPS</span><span>EASTERN TIME \u00b7 REPEATS EVERY WEEK</span></div>' + cal + '</article>' +
+      '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>POPUPS</span><span>ONE SHOWS AT A TIME \u00b7 FIRST IN THE LIST WINS</span></div>' + list + '<div class="ef pad" style="display:flex;justify-content:space-between"><button class="btn ghost2" type="button" id="padd">+ ADD MESSAGE POPUP</button><button class="btn" type="button" id="psave">SAVE POPUPS</button></div></article>';
+  }
+  function readPop(){
+    return [].map.call(document.querySelectorAll('.prow'), function(el){ var p = JSON.parse(JSON.stringify(S.pop[+el.getAttribute('data-i')])); ['title', 'sd', 'st', 'ed', 'et', 'kick', 'link', 'body'].forEach(function(n){ var x = el.querySelector('[name=' + n + ']'); if(x) p[n] = x.value; }); p.on = el.querySelector('[name=on]').checked; return p; });
+  }
+
   /* ---------- lineups for any team ---------- */
   function lineups(){
     $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>SET ANY TEAM\u2019S LINEUP</span><span>SENT TO MFL AS COMMISSIONER</span></div><div class="lgrid2">' + D.IDS.map(function(id){ return '<a href="' + D.href('myteam', 'f=' + id) + '"><img src="' + D.helm(id) + '" alt=""><b>' + esc(D.NAME[id]) + '</b><span class="mono">SET LINEUP \u2192</span></a>'; }).join('') + '</div></article>';
@@ -95,9 +121,13 @@
     if(t.id === 'cadd'){ S.cal = readCal().concat([{ date:'', time:'', title:'', kind:'LEAGUE' }]); calendar(); return; }
     var cd = t.closest('[data-cdel]'); if(cd){ var L2 = readCal(); L2.splice(+cd.getAttribute('data-cdel'), 1); S.cal = L2; calendar(); return; }
     if(t.id === 'csave'){ var L3 = readCal().filter(function(x){ return x.date && x.title; }); t.disabled = true; D.save('calendar', L3).then(function(r){ t.disabled = false; if(done(r, 'CALENDAR')) S.cal = L3.length ? L3 : null; }); return; }
+    if(t.id === 'padd'){ S.pop = readPop().concat([{ id:'n' + Date.now().toString(36), kind:'note', title:'New message', on:true, sd:'Sun', st:'12:00', ed:'Sun', et:'13:00', kick:'', body:'' }]); popups(); return; }
+    var pd = t.closest('[data-pdel]'); if(pd){ var L4 = readPop(); L4.splice(+pd.getAttribute('data-pdel'), 1); S.pop = L4; popups(); return; }
+    if(t.id === 'psave'){ var L5 = readPop(); t.disabled = true; D.save('popups', L5).then(function(r){ t.disabled = false; if(done(r, 'POPUPS')){ S.pop = L5; popups(); } }); return; }
     if(t.id === 'lsave'){ var b = { text:$('law').value, updated:Date.now() }; t.disabled = true; D.save('bylaws', b).then(function(r){ t.disabled = false; if(done(r, 'BY-LAWS')) S.law = b; }); }
   });
   document.addEventListener('change', function(e){
+    if(e.target.closest('.prow') && S.tab === 'popups'){ S.pop = readPop(); var y = window.scrollY; popups(); window.scrollTo(0, y); return; }
     var inp = e.target; if(inp.type !== 'file' || !inp.files[0]) return;
     var row = inp.closest('.trow'), id = row.getAttribute('data-id'), img = row.querySelector('img');
     shrink(inp.files[0]).then(function(b){ return D.saveImg(id, b); }).then(function(r){

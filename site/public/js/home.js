@@ -3,7 +3,24 @@
   var AWID = { "Team of the Week":"0004", "Biggest Bust":"0012", "Luckiest Win":"0005" };
   var REC = {}, LIVE = null;
   D.shell('');
-  if(D.waiverWindow()) D.waiverReport().then(function(m){ if(m.rows.length) $('wvh').innerHTML = D.waiverMini(m); }).catch(function(){});
+  // timed popups from the weekly calendar (Commish → Popups). One at a time; closing keeps it closed until its next window.
+  function pop(key, html){
+    try{ if(localStorage.getItem(key) && !/[?&]popup=/.test(location.search) && !/[?&]waivers=1/.test(location.search)) return; }catch(e){}
+    var v = document.createElement('div'); v.className = 'veil wvpop';
+    v.innerHTML = '<div class="wvsheet" role="dialog" aria-modal="true"><button type="button" class="wvx" data-x aria-label="Close">\u00d7</button>' + html + '</div>';
+    document.body.appendChild(v);
+    function close(){ try{ localStorage.setItem(key, '1'); }catch(e){} v.remove(); }
+    v.addEventListener('click', function(e){ if(e.target === v || e.target.closest('[data-x]')) close(); });
+    document.addEventListener('keydown', function k(e){ if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', k); } });
+  }
+  D.popups().then(function(P){
+    var force = (/[?&]popup=([^&]+)/.exec(location.search) || [])[1] || (/[?&]waivers=1/.test(location.search) ? 'waivers' : '');
+    var act = P.filter(function(p){ return p.on !== false && (force ? p.id === force : D.inWindow(p)); })[0];
+    if(!act) return;
+    var stamp = new Date().toISOString().slice(0, 10);
+    if(act.kind === 'waivers') D.waiverReport().then(function(m){ if(m.rows.length) pop('dcPop:waivers:' + (m.run || m.label), D.waiverMini(m)); }).catch(function(){});
+    else pop('dcPop:' + act.id + ':' + stamp, '<article class="card wvhome note2"><div class="bar mono"><span>' + esc(act.kick || 'FROM THE COMMISH') + '</span>' + (act.link ? '<a href="' + esc(act.link) + '">' + esc(act.linkText || 'GO') + ' \u2192</a>' : '') + '</div><div class="nt2"><h2>' + esc(act.title) + '</h2>' + (act.body ? '<p>' + esc(act.body).replace(/\n/g, '<br>') + '</p>' : '') + '</div></article>');
+  });
 
   function shelf(order){
     $('helms').innerHTML = order.map(function(id, i){
@@ -73,7 +90,7 @@
     });
     var ids = []; rows.forEach(function(r){ ids = ids.concat(r.add, r.drop); });
     return D.players(ids).then(function(){
-      function nm(l){ return l.map(function(id){ return esc(D.pinfo(id)[0]); }).join(', '); }
+      function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>'; }).join(', '); }
       $('wire').innerHTML = rows.map(function(r){
         var when = new Date(num(r.t.timestamp) * 1000).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
         var line = r.trade ? '<b>' + esc(D.SHORT[r.f]) + '</b> traded with <b>' + esc(D.SHORT[r.trade] || '') + '</b>'

@@ -39,3 +39,4 @@ MFL Dashboard · All My Leagues · Set Up a League · Find a League · Refer a F
 
 ## Open notes
 - **Week 14 = Play-In week** (free-for-all, no W/L, doesn't count toward records, happens right before the playoffs). Commish will explain the full format later — then: scoring/advancement rules on Schedule → Playoffs, and a Play-In view on Scores for Week 14.
+- **Playoff format** isn't simply "top 6": removed from Standings; Schedule → Playoffs needs the real rules. Discuss with commish along with the Week 14 Play-In.

@@ -21,7 +21,7 @@ function session(req) {
 const cookie = (v, age) => `dc_s=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o || o === u.origin; };
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
-const CONTENT = { column:1, teams:1, calendar:1, bylaws:1 };
+const CONTENT = { column:1, teams:1, calendar:1, bylaws:1, popups:1 };
 const txt = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
 // MFL's per-player weekly box ("detailed") page → short stat line, e.g. "245 PASS YDS · 2 PASS TD"
@@ -104,12 +104,61 @@ async function espnWeek(ctx, w) {
   return out;
 }
 
+// Player card: find the player on ESPN (by name + NFL team) and bundle bio, news, game log and career stats
+const EW = 'https://site.web.api.espn.com/apis/common/v3/sports/football/nfl';
+const ESPN_TEAM = { GBP:'GB', KCC:'KC', NEP:'NE', NOS:'NO', SFO:'SF', TBB:'TB', LVR:'LV', JAC:'JAX', WAS:'WSH' };
+async function espnId(ctx, name, team) {
+  const key = new Request('https://espnid.dubcey/' + encodeURIComponent(nkey(name) + '|' + team));
+  const hit = await caches.default.match(key); if (hit) return hit.text();
+  const want = nkey(name), tm = ESPN_TEAM[team] || team; let id = '';
+  try {
+    const s = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(name)}&type=player&sport=football&league=nfl&limit=10`, { headers: UA }).then(x => x.json());
+    const items = (s.items || s.results || []).filter(x => !x.type || x.type === 'player');
+    const pick = items.find(x => nkey(x.displayName) === want && (!tm || JSON.stringify(x).indexOf('"' + tm + '"') > -1)) || items.find(x => nkey(x.displayName) === want) || null;
+    if (pick) id = String(pick.id || ((/a:(\d+)/.exec(pick.uid || '') || [])[1]) || '');
+  } catch (e) {}
+  if (!id) try {
+    const s = await fetch(`https://site.api.espn.com/apis/search/v2?query=${encodeURIComponent(name)}&limit=10&type=player`, { headers: UA }).then(x => x.json());
+    for (const g of s.results || []) for (const c of g.contents || []) { if (nkey(c.displayName) === want && /l:28/.test(c.uid || '')) { id = (/a:(\d+)/.exec(c.uid) || [])[1] || ''; break; } }
+  } catch (e) {}
+  if (id) ctx.waitUntil(caches.default.put(key, new Response(id, { headers: { 'Cache-Control': 'public, max-age=2592000' } })));
+  return id;
+}
+async function playerCard(ctx, name, team) {
+  const id = await espnId(ctx, name, team); if (!id) return { espn: '' };
+  const get = (u, ttl) => cachedJSON(ctx, u, ttl).catch(() => null);
+  const [a, ov, gl, st] = await Promise.all([get(`${EW}/athletes/${id}`, 21600), get(`${EW}/athletes/${id}/overview`, 900), get(`${EW}/athletes/${id}/gamelog?season=${Y}`, 900), get(`${EW}/athletes/${id}/stats`, 86400)]);
+  const A = (a && a.athlete) || {};
+  const bio = { photo: A.headshot && A.headshot.href || '', jersey: A.jersey || '', height: A.displayHeight || '', weight: A.displayWeight || '', age: A.age || '', born: A.displayDOB || '', college: A.college && A.college.name || '', exp: A.displayExperience || '', draft: A.displayDraft || '', status: A.status && A.status.name || '', inj: ((A.injuries || [])[0] || {}).status || '' };
+  const news = ((ov && ov.news) || []).slice(0, 6).map(n => ({ hl: n.headline || '', body: n.description || '', when: n.published || n.lastModified || '', href: n.links && n.links.web && n.links.web.href || '' }));
+  // game log: one row per game, stats in ESPN's column order
+  let log = null;
+  if (gl && gl.seasonTypes) {
+    const ev = gl.events || {}, rows = [];
+    gl.seasonTypes.filter(t => /regular|post/i.test(t.displayName || '')).forEach(t => (t.categories || []).forEach(c => (c.events || []).forEach(e => {
+      const m = ev[e.eventId] || {}; rows.push({ wk: m.week || '', opp: (m.atVs || '') + ' ' + ((m.opponent && m.opponent.abbreviation) || ''), res: (m.gameResult || '') + ' ' + (m.score || ''), s: e.stats || [] });
+    })));
+    rows.sort((x, y) => (+x.wk || 0) - (+y.wk || 0));
+    log = { labels: gl.labels || [], names: gl.displayNames || gl.names || [], rows };
+  }
+  // career: each stat category → seasons
+  const career = ((st && st.categories) || []).filter(c => /passing|rushing|receiving|scoring|kicking/i.test(c.name || '')).slice(0, 3).map(c => ({ name: c.displayName || c.name, labels: c.labels || [], rows: (c.statistics || []).map(s => ({ yr: s.season && (s.season.displayName || s.season.year) || '', tm: (s.teamSlug || s.teamAbbreviation || '').toUpperCase(), s: s.stats || [] })) }));
+  return { espn: id, bio, news, log, career };
+}
+
 // MFL's processed-waivers page (league members only) → plain rows, using the commissioner's saved login
-async function waivers(env, s, run) {
+async function waivers(env, s, run, fk) {
   const tok = (env.DC && await env.DC.get('svc')) || (s && s.t);
   if (!tok) return { error: 'sign in' };
-  const r = await fetch(`${HOST}/${Y}/processed_waivers?L=${L}${run ? '&RUN=' + encodeURIComponent(run) : ''}`, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + tok } });
+  // the run picker is a form on MFL's page: replay it with the chosen run (fk = "action|selectName|hidden=..&..")
+  let url = `${HOST}/${Y}/processed_waivers?L=${L}`;
+  if (run && fk) { const [act, nm, hid] = fk.split('|'); const q = new URLSearchParams(hid || ''); q.set('L', L); q.set(nm, run); url = new URL(act || 'processed_waivers', `${HOST}/${Y}/`).href.split('?')[0] + '?' + q.toString(); }
+  const r = await fetch(url, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + tok } });
   const h = await r.text();
+  const fm = /<form([^>]*)>([\s\S]*?)<\/form>/gi; let form = '';
+  for (const m of h.matchAll(fm)) { if (!/<select/i.test(m[2])) continue; const act = (/action="([^"]*)"/i.exec(m[1]) || [])[1] || ''; const nm = (/<select[^>]*name="([^"]+)"/i.exec(m[2]) || [])[1] || '';
+    const hid = [...m[2].matchAll(/<input[^>]*type="hidden"[^>]*>/gi)].map(x => { const n = (/name="([^"]+)"/i.exec(x[0]) || [])[1], v = (/value="([^"]*)"/i.exec(x[0]) || [])[1] || ''; return n ? encodeURIComponent(n) + '=' + encodeURIComponent(v) : ''; }).filter(Boolean).join('&');
+    if (nm) { form = act.replace(/&amp;/g, '&') + '|' + nm + '|' + hid; break; } }
   const runs = [], sel = /<select[^>]*>([\s\S]*?)<\/select>/i.exec(h);
   if (sel) for (const m of sel[1].matchAll(/<option[^>]*value="([^"]*)"([^>]*)>([\s\S]*?)<\/option>/gi)) runs.push({ v: m[1], t: txt(m[3]), on: /selected/i.test(m[2]) });
   const tables = [...h.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)].map(m => m[1]).filter(t => /original\s+waiver\s+request/i.test(t) && !/<table/i.test(t));
@@ -122,9 +171,9 @@ async function waivers(env, s, run) {
       const fid = (/(?:FRANCHISE_ID|FRANCHISE|F)=(\d{4})/.exec(c[0]) || [])[1] || '';
       rows.push({ f: fid, fn: txt(c[0]), cells: c.map(txt) });
     });
-    return { heads, rows, runs };
+    return { heads, rows, runs, form };
   }
-  return { heads: [], rows: [], runs };
+  return { heads: [], rows: [], runs, form };
 }
 
 export default {
@@ -192,6 +241,11 @@ export default {
       const v = env.DC && await env.DC.get('c:' + key);
       return new Response(v || 'null', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
+    if (p === '/data/player') {
+      const nm = (u.searchParams.get('name') || '').slice(0, 80), tm = (u.searchParams.get('team') || '').replace(/[^A-Z]/gi, '').toUpperCase();
+      if (!nm) return json({});
+      try { return json(await playerCard(ctx, nm, tm)); } catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
     if (p === '/data/espn') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
       if (!wk) return json({});
@@ -210,9 +264,9 @@ export default {
       return json({ signedIn: !!s, nflSchedule: r1.slice(0, 1500), detailed: r2 ? r2.slice(0, 200) + ' … ' + statLine(r2) : '' });
     }
     if (p === '/data/waivers') {
-      const key = new Request(u.origin + '/data/waivers?run=' + (u.searchParams.get('run') || ''));
+      const key = new Request(u.origin + '/data/waivers-v2?run=' + (u.searchParams.get('run') || ''));
       let res = await caches.default.match(key);
-      if (!res) { const d = await waivers(env, session(req), u.searchParams.get('run') || ''); res = json(d, d.error ? 401 : 200, d.error ? {} : { 'Cache-Control': 'public, max-age=600' }); if (!d.error) ctx.waitUntil(caches.default.put(key, res.clone())); }
+      if (!res) { const d = await waivers(env, session(req), u.searchParams.get('run') || '', u.searchParams.get('fk') || ''); res = json(d, d.error ? 401 : 200, d.error ? {} : { 'Cache-Control': 'public, max-age=600' }); if (!d.error) ctx.waitUntil(caches.default.put(key, res.clone())); }
       return res;
     }
 

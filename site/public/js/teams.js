@@ -39,7 +39,7 @@
     return x.groups.map(function(g){
       return '<div class="gh"><span class="pos ' + esc(g.pos) + '">' + esc(g.pos || 'OTH') + '</span><span class="gn">' + esc(PFULL[g.pos] || g.pos || 'Other') + '</span><span class="gs mono">' + g.items.length + ' · ' + money(g.sal) + '</span></div>' +
         g.items.map(function(p){
-          return '<div class="lr' + (compact ? ' c' : '') + '"><div class="pn"><span class="nm">' + esc(p.n) + '</span><span class="tmk mono">' + esc(p.tm) + '</span>' + (p.inj ? '<span class="ij mono">' + esc(p.inj) + '</span>' : '') + (p.tag ? '<span class="tg mono">' + p.tag + '</span>' : '') + '</div>' +
+          return '<div class="lr' + (compact ? ' c' : '') + '"><div class="pn">' + D.face(p.id, p.pos, p.tm) + '<span class="nm">' + esc(p.n) + '</span><span class="tmk mono">' + D.tlogo(p.tm) + esc(p.tm) + '</span>' + (p.inj ? '<span class="ij mono">' + esc(p.inj) + '</span>' : '') + (p.tag ? '<span class="tg mono">' + p.tag + '</span>' : '') + '</div>' +
             '<span class="pt mono">' + (p.pts || '\u2013') + '</span>' + (compact ? '' : '<span class="by mono">' + esc(p.bye || '\u2013') + '</span>') + '<span class="sl">' + money(p.sal) + '</span></div>';
         }).join('');
     }).join('');
@@ -52,7 +52,7 @@
       return '<button type="button" class="' + c + '" data-f="' + id + '" title="' + esc(D.NAME[id]) + '">' + (cmp && c ? '<i class="mono">' + (c === 'on' ? 'A' : 'B') + '</i>' : '') + '<img src="' + helm(id) + '" alt="' + esc(D.NAME[id]) + '"><span class="pl"><em class="mono">' + esc(D.SHORT[id]) + '</em></span></button>';
     }).join('');
     var pnl = '<div class="shf"><img src="' + helm(f) + '" alt="">' + (rec ? '<span class="plate">' + esc(rec) + '</span>' : '') + '</div>' +
-      '<div class="inf"><div><div class="kk mono">SEASON ' + D.Y + '</div><div class="tn">' + esc(D.NAME[f]) + '</div>' + (d.O[f] ? '<div class="ow mono">' + esc(d.O[f]) + '</div>' : '') + '</div>' +
+      '<div class="inf"><div><div class="kk mono">SEASON ' + D.Y + '</div><div class="tn">' + esc(D.NAME[f]) + '</div>' + (d.O[f] ? '<div class="ow mono">' + esc(d.O[f]) + '</div>' : '') + D.divTag(f, D.div(f) ? D.div(f).name + ' Division' : '') + '</div>' +
       (d.cap ? '<div><div class="ct mono"><span>CAP USED</span><b>' + money(x.tot) + ' / ' + money(d.cap) + '</b></div><div class="mt"><i style="width:' + x.pct + '%"></i></div><span class="rm mono">' + x.room + ' ROOM</span></div>' : '') +
       '<div class="cnt" style="grid-template-columns:repeat(' + Math.max(1, x.groups.length) + ',1fr)">' + x.groups.map(function(g){ return '<div><b>' + g.items.length + '</b><span class="mono">' + esc(g.pos || 'OTH') + '</span></div>'; }).join('') + '</div>' +
       '<div class="tl mono">' + x.pl.length + ' PLAYERS ON ROSTER</div></div>';

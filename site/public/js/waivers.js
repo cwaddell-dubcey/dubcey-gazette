@@ -37,22 +37,19 @@
     });
     var claims = rows.filter(function(x){ return x.won; }).sort(function(a, b){ return (b.amt || 0) - (a.amt || 0); });
     var denied = rows.filter(function(x){ return !x.won; });
+    if(d.form) FK = d.form;
     var runs = d.runs || [], cur = runs.filter(function(r){ return r.on; })[0] || runs[0];
     return { rows:rows, claims:claims, denied:denied, spent:claims.reduce(function(a, x){ return a + (x.amt || 0); }, 0), top:claims[0], runs:runs, run:cur ? cur.v : '', label:cur ? cur.t.replace(/(\d+:\d+):\d+/, '$1') : '' };
   }
+  var FK = '';
   D.waiverReport = function(run){
-    var u = D.LOCAL ? 'demo/waivers.json' : '/data/waivers' + (run ? '?run=' + encodeURIComponent(run) : '');
+    var u = D.LOCAL ? 'demo/waivers.json' : '/data/waivers' + (run ? '?run=' + encodeURIComponent(run) + '&fk=' + encodeURIComponent(FK) : '');
     return fetch(u, { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(parse);
   };
   // Wednesday 6 PM ET through Thursday night: the report leads the home page
-  D.waiverWindow = function(){
-    if(/[?&]waivers=1/.test(location.search)) return true;
-    var p = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', weekday:'short', hour:'numeric', hour12:false }).formatToParts(new Date());
-    var wd = (p.filter(function(x){ return x.type === 'weekday'; })[0] || {}).value, hr = +((p.filter(function(x){ return x.type === 'hour'; })[0] || {}).value);
-    return (wd === 'Wed' && hr >= 18) || wd === 'Thu';
-  };
+  D.waiverWindow = function(){ return /[?&]waivers=1/.test(location.search) || D.inWindow(D.POPUPS[0]); };
   function card(x){
-    return '<div class="wc2' + (x.won ? '' : ' no') + '"><img src="' + D.helm(x.f) + '" alt=""><div><b>' + esc(x.add ? x.add.nm : 'No add') + '</b><span class="mono">' + esc(x.add ? x.add.meta : '') + (x.drop ? ' \u00b7 DROP ' + esc(x.drop.nm) : '') + '</span>' +
+    return '<div class="wc2' + (x.won ? '' : ' no') + '"><span class="wcf2"><img class="wh" src="' + D.helm(x.f) + '" alt=""></span><div><b>' + esc(x.add ? x.add.nm : 'No add') + '</b><span class="mono">' + esc(x.add ? x.add.meta : '') + (x.drop ? ' \u00b7 DROP ' + esc(x.drop.nm) : '') + '</span>' +
       (x.note ? '<i>' + esc(x.note) + '</i>' : '') + '</div><em class="' + (x.won ? '' : 'dn') + '">' + (x.amt != null ? money(x.amt) : '\u2014') + '</em></div>';
   }
   D.waiverStats = function(m){

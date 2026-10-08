@@ -9,7 +9,8 @@
     var lg = (r[2] && r[2].league) || {}, cut = num(lg.playoffTeams) || 6;
     var T = F.map(function(f, i){
       var w = num(f.h2hw), l = num(f.h2hl), t = num(f.h2ht), g = w + l + t;
-      return { id:f.id, rk:i + 1, w:w, l:l, t:t, g:g, pct:g ? (w + t / 2) / g : 0, pf:num(f.pf), pa:num(f.pa), strk:f.strk || '', eff:f.eff ? num(f.eff) : null, faab:f.bbidbalance || '' };
+      var dv = String(f.divwlt || '').split('-');
+      return { id:f.id, rk:i + 1, dw:num(dv[0]), dl:num(dv[1]), w:w, l:l, t:t, g:g, pct:g ? (w + t / 2) / g : 0, pf:num(f.pf), pa:num(f.pa), strk:f.strk || '', eff:f.eff ? num(f.eff) : null, faab:f.bbidbalance || '' };
     });
     var played = Math.max.apply(null, T.map(function(x){ return x.g; })) || 0;
     $('k').textContent = 'THE STANDINGS · AFTER WEEK ' + played;
@@ -25,18 +26,34 @@
 
     // table
     var hasEff = T.some(function(x){ return x.eff != null; }), hasFaab = T.some(function(x){ return x.faab; });
-    var cols = '<span>#</span><span>TEAM</span><span>W-L</span><span>PCT</span><span>PF</span><span>PA</span><span>DIFF</span><span>STRK</span>' + (hasEff ? '<span>EFF</span>' : '') + (hasFaab ? '<span>FAAB</span>' : '') + '<span>PWR</span>';
-    var gt = '28px minmax(0,1fr) 62px 54px 78px 78px 70px 52px' + (hasEff ? ' 54px' : '') + (hasFaab ? ' 74px' : '') + ' 48px';
+    var cols = '<span>#</span><span>TEAM</span><span>W-L</span><span>PCT</span><span>PF</span><span>PA</span><span>DIFF</span><span>STRK</span>' + (hasEff ? '<span>EFF</span>' : '') + (hasFaab ? '<span>FAAB</span>' : '');
+    var gt = '28px minmax(0,1fr) 62px 54px 78px 78px 70px 52px' + (hasEff ? ' 54px' : '') + (hasFaab ? ' 74px' : '');
     $('tbl').style.setProperty('--gt', gt);
-    $('tbl').innerHTML = '<div class="bar mono"><span>REGULAR SEASON</span><span>TOP ' + cut + ' MAKE THE PLAYOFFS</span></div><div class="sr hd mono">' + cols + '</div>' + T.map(function(x){
+    function row(x, inDiv){
       var d = x.pf - x.pa, mv = x.rk - x.prk;
-      return '<a class="sr' + (x.rk === cut ? ' cut' : '') + (x.id === ME ? ' me' : '') + '" data-id="' + x.id + '" href="' + D.href('teams', 'f=' + x.id) + '">' +
-        '<span class="rk">' + x.rk + '</span><span class="tn2"><img src="' + helm(x.id) + '" alt=""><b>' + esc(D.NAME[x.id]) + '</b></span>' +
+      return '<a class="sr' + '' + (x.id === ME ? ' me' : '') + '" data-id="' + x.id + '" href="' + D.href('teams', 'f=' + x.id) + '">' +
+        '<span class="rk">' + x.rk + '</span><span class="tn2"><img src="' + helm(x.id) + '" alt=""><span class="nm4"><b>' + esc(D.NAME[x.id]) + '</b>' + (inDiv !== undefined ? '<span class="tg4">' + (inDiv ? '<i class="dlead mono">DIV LEADER</i>' : '') + ((x.dw || x.dl) ? '<i class="dvr mono">' + x.dw + '-' + x.dl + ' DIV</i>' : '') + '</span>' : '') + '</span></span>' +
         '<span class="wl">' + x.w + '-' + x.l + (x.t ? '-' + x.t : '') + '</span><span>' + x.pct.toFixed(3).replace(/^0/, '') + '</span><span>' + D.pts(x.pf) + '</span><span>' + D.pts(x.pa) + '</span>' +
         '<span class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d >= 0 ? '+' : '\u2212') + D.pts(Math.abs(d)) + '</span><span class="' + (/^W/.test(x.strk) ? 'up' : /^L/.test(x.strk) ? 'dn' : '') + '">' + esc(x.strk || '\u2013') + '</span>' +
         (hasEff ? '<span>' + (x.eff != null ? x.eff.toFixed(1) + '%' : '\u2013') + '</span>' : '') + (hasFaab ? '<span>' + esc(String(x.faab).replace('.00', '')) + '</span>' : '') +
-        '<span class="pw">' + x.prk + (mv > 0 ? '<i class="up">\u25b2</i>' : mv < 0 ? '<i class="dn">\u25bc</i>' : '') + '</span></a>';
-    }).join('') + '<div class="note mono">PWR = 45% RECORD · 40% POINTS FOR · 15% LINEUP EFFICIENCY. ARROWS SHOW HOW IT DIFFERS FROM THE STANDINGS.</div>';
+        '</a>';
+    }
+    var view = 'div';
+    function table(){
+      var note = '';
+      var tg = '<div class="seg mono vtog"><button type="button" data-v="div" class="' + (view === 'div' ? 'on' : '') + '">DIVISIONS</button><button type="button" data-v="all" class="' + (view === 'all' ? 'on' : '') + '">OVERALL</button></div>';
+      if(view === 'all'){
+        $('tbl').innerHTML = '<div class="bar mono"><span>REGULAR SEASON</span>' + tg + '<span></span></div><div class="sr hd mono">' + cols + '</div>' + T.map(function(x){ return row(x); }).join('') + note;
+      } else {
+        $('tbl').innerHTML = '<div class="bar mono"><span>REGULAR SEASON</span>' + tg + '<span></span></div>' + D.DIVS.map(function(d){
+          var L = T.filter(function(x){ return d.ids.indexOf(x.id) > -1; });
+          var lead = L[0]; return D.divBanner(d, lead ? '<span class="mono">LEADER</span><img src="' + helm(lead.id) + '" alt=""><b>' + esc(D.SHORT[lead.id]) + '</b><i class="mono">' + lead.w + '-' + lead.l + '</i>' : '') + '<div class="sr hd mono">' + cols + '</div>' + L.map(function(x, i){ return row(x, i === 0); }).join('');
+        }).join('') + note;
+      }
+      [].forEach.call(document.querySelectorAll('#tbl [data-id="' + ME + '"]'), function(el){ el.classList.add('me'); });
+    }
+    table();
+    $('tbl').addEventListener('click', function(e){ var b = e.target.closest('[data-v]'); if(b){ view = b.getAttribute('data-v'); table(); } });
 
     // power rankings
     $('pow').innerHTML = '<div class="bar mono"><span>POWER RANKINGS</span><span>WHO\u2019S ACTUALLY GOOD</span></div>' + P.map(function(x){

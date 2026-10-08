@@ -11,6 +11,30 @@
   D.CUSTOM = {};
   D.helm = function(id){ return D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp'); };
   D.COMMISH = ['0001'];
+  // divisions: full banner for section headers, badge crop for inline tags
+  D.DIVS = [
+    { k:'malort', name:'Mal\u00f6rt', crest:'img/div-malort-crest.webp', ids:['0009','0012','0011','0010'] },
+    { k:'rumple', name:'RumpleMinze', crest:'img/div-rumple-crest.webp', ids:['0002','0004','0003','0001'] },
+    { k:'soup', name:'Soup City', crest:'img/div-soup-crest.svg', ids:['0005','0008','0006','0007'] }
+  ];
+  // home-page popups on a weekly clock (Eastern). kind 'waivers' = the Waiver Report; 'note' = commish-written message
+  D.DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  D.POPUPS = [{ id:'waivers', kind:'waivers', title:'The Waiver Report', on:true, sd:'Wed', st:'20:05', ed:'Thu', et:'11:00' }];
+  D.popups = function(){ return D.content('popups').then(function(p){ return p && p.length ? p : D.POPUPS; }); };
+  D.etNow = function(){
+    var p = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', weekday:'short', hour:'numeric', minute:'numeric', hour12:false }).formatToParts(new Date());
+    function g(t){ return (p.filter(function(x){ return x.type === t; })[0] || {}).value; }
+    return D.DAYS.indexOf(g('weekday')) * 1440 + (+g('hour') % 24) * 60 + (+g('minute'));
+  };
+  D.weekMin = function(d, t){ var hm = String(t || '0:0').split(':'); return D.DAYS.indexOf(d) * 1440 + (+hm[0]) * 60 + (+hm[1] || 0); };
+  D.inWindow = function(p, now){ var a = D.weekMin(p.sd, p.st), b = D.weekMin(p.ed, p.et); now = now == null ? D.etNow() : now; return a <= b ? now >= a && now < b : now >= a || now < b; };
+  D.div = function(id){ for(var i = 0; i < D.DIVS.length; i++) if(D.DIVS[i].ids.indexOf(id) > -1) return D.DIVS[i]; return null; };
+  // division header: crest + name (divisions with a crest), otherwise the old banner image
+  D.divBanner = function(d, extra){
+    if(!d.crest) return '<div class="divhd ' + d.k + '"><img src="img/div-' + d.k + '.webp" alt="' + D.esc(d.name) + ' Division"></div>';
+    return '<div class="dvb ' + d.k + '"><img class="dvc" src="' + d.crest + '" alt=""><div class="dvt"><span class="dvn">' + D.esc(d.name) + '</span></div>' + (extra ? '<div class="dvx">' + extra + '</div>' : '') + '</div>';
+  };
+  D.divTag = function(id, txt){ var d = D.div(id); return d ? '<span class="dtag ' + d.k + '"><img src="' + (d.crest || 'img/div-' + d.k + '-badge.webp') + '" alt="">' + D.esc(txt || d.name) + '</span>' : ''; };
   D.esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); };
   D.arr = function(x){ return x == null ? [] : (Array.isArray(x) ? x : [x]); };
   D.num = function(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; };
@@ -68,6 +92,9 @@
   var NFLX = { GBP:'gb', KCC:'kc', NEP:'ne', NOS:'no', SFO:'sf', TBB:'tb', LVR:'lv', JAC:'jax', WAS:'wsh', LAR:'lar', LAC:'lac', OAK:'lv', SDC:'lac', STL:'lar' };
   D.nflLogo = function(t){ t = String(t || '').toUpperCase(); if(!t || t === 'FA') return 'h/logo.webp'; return 'https://a.espncdn.com/i/teamlogos/nfl/500/' + (NFLX[t] || t.toLowerCase()) + '.png'; };
   D.photo = function(id, team, pos){ return /^(Def|DEF|TMDEF|ST)$/.test(pos || '') ? D.nflLogo(team) : 'https://www.mflscripts.com/playerImages_80x107/mfl_' + id + '.png'; };
+  D.face = function(id, pos, team, big){ var lg = D.nflLogo(team); return '<span class="face' + (big ? ' big' : '') + '"' + (big ? '' : ' data-card="' + D.esc(id) + '"') + '><img src="' + D.photo(id, team, pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + lg + '\';this.className=\'lg\'"></span>'; };
+  D.tlogo = function(team){ return team && team !== 'FA' ? '<img class="nl" src="' + D.nflLogo(team) + '" alt="' + D.esc(team) + '" title="' + D.esc(team) + '">' : ''; };
+  D.OURPOS = { QB:1, RB:1, WR:1, TE:1 };
   // weekly stat lines for players ("245 PASS YDS · 2 PASS TD"), cached briefly in memory
   var SX = {}, WK = {};
   var ESPNX = { GBP:'GB', KCC:'KC', NEP:'NE', NOS:'NO', SFO:'SF', TBB:'TB', LVR:'LV', JAC:'JAX', WAS:'WSH' };
@@ -141,7 +168,7 @@
   var NAV = [['scores', 'SCORES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['rules', 'RULES']];
   D.shell = function(active){
     var top = D.$('top');
-    top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><img src="' + D.helm('x') + '" alt=""><span class="wm"><b>Dubcey</b><i class="mono">Chronicle \u00b7 Est. 2001</i></span></a>' +
+    top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
       '<nav class="nav mono">' + NAV.map(function(n){ return '<a class="' + (n[0] === active ? 'on' : '') + (n[2] ? ' soon' : '') + '" href="' + D.href(n[0]) + '">' + n[1] + '</a>'; }).join('') + '</nav>' +
       '<div class="who" id="who"></div></div>';
     return Promise.all([D.me(), D.teamsReady]).then(function(x){
@@ -157,4 +184,15 @@
       return me || {};
     });
   };
+
+  // any element with data-card="MFL player id" opens the player card (loaded on first use)
+  var PC = null;
+  document.addEventListener('click', function(e){
+    var c = e.target.closest && e.target.closest('[data-card]'); if(!c || c.closest('#pcard')) return;
+    e.preventDefault(); e.stopPropagation();
+    var id = c.getAttribute('data-card');
+    if(D.openCard) return D.openCard(id);
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js'; s.onload = res; document.head.appendChild(s); }); }
+    PC.then(function(){ D.openCard(id); });
+  }, true);
 })();
