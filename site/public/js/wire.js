@@ -1,6 +1,6 @@
 (function(){
   var D = DC, $ = D.$, esc = D.esc, arr = D.arr, num = D.num, helm = D.helm;
-  var S = { f:'ALL', team:'', rows:[] };
+  var S = { f:location.hash === '#report' ? 'REPORT' : 'ALL', team:'', rows:[], wm:null, run:'' };
   D.shell('wire');
   var KIND = { BBID_WAIVER:'WAIVER', WAIVER:'WAIVER', FREE_AGENT:'FREE AGENT', TRADE:'TRADE' };
 
@@ -16,8 +16,15 @@
   }).then(function(){ draw(); side(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WIRE IS QUIET RIGHT NOW.</div>'; });
 
   function nm(l){ return l.map(function(id){ return esc(D.pinfo(id)[0]); }).join(', '); }
+  function report(){
+    if(!S.wm){ $('feed').innerHTML = '<div class="ld mono">LOADING THE WAIVER REPORT\u2026</div>'; D.waiverReport(S.run).then(function(m){ S.wm = m; if(S.f === 'REPORT') report(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WAIVER REPORT ISN\u2019T AVAILABLE RIGHT NOW.</div>'; }); return; }
+    var m = S.wm;
+    $('feed').innerHTML = '<div class="bar mono"><span>THE WAIVER REPORT' + (S.team ? ' \u00b7 ' + esc(D.SHORT[S.team]).toUpperCase() : '') + '</span>' + (m.runs.length > 1 ? '<select id="wrun" class="mono">' + m.runs.map(function(x){ return '<option value="' + esc(x.v) + '"' + (x.v === m.run ? ' selected' : '') + '>' + esc(x.t.replace(/(\d+:\d+):\d+/, '$1')) + '</option>'; }).join('') + '</select>' : '<span>' + esc(m.label) + '</span>') + '</div>' + D.waiverFull(m, S.team);
+  }
   function draw(){
     [].forEach.call(document.querySelectorAll('[data-k]'), function(b){ b.classList.toggle('on', b.getAttribute('data-k') === S.f); });
+    if(S.f === 'REPORT'){ history.replaceState(null, '', '#report'); return report(); }
+    if(location.hash === '#report') history.replaceState(null, '', location.pathname + location.search);
     var R = S.rows.filter(function(r){ return (S.f === 'ALL' || r.k === S.f) && (!S.team || r.f === S.team || r.f2 === S.team); });
     var day = '', h = '';
     R.forEach(function(r){
@@ -39,6 +46,7 @@
       return '<button type="button" class="bt' + (S.team === id ? ' on' : '') + '" data-team="' + id + '"><img src="' + helm(id) + '" alt=""><b>' + esc(D.SHORT[id]) + '</b><span class="mono">' + (act[id] || 0) + ' · $' + (spent[id] || 0) + '</span></button>';
     }).join('');
   }
+  document.addEventListener('change', function(e){ if(e.target.id === 'wrun'){ S.run = e.target.value; S.wm = null; report(); } });
   document.addEventListener('click', function(e){
     var k = e.target.closest('[data-k]'); if(k){ S.f = k.getAttribute('data-k'); draw(); return; }
     var t = e.target.closest('[data-team]'); if(t){ var id = t.getAttribute('data-team'); S.team = S.team === id ? '' : id; draw(); side(); }

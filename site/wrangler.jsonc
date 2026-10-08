@@ -6,7 +6,13 @@
     "directory": "public",
     "binding": "ASSETS",
     "html_handling": "drop-trailing-slash",
-    "run_worker_first": ["/api/*", "/auth/*", "/act/*"]
+    "run_worker_first": ["/api/*", "/auth/*", "/act/*", "/content/*", "/data/*"]
   },
+  // commissioner's MFL franchise number (comma-separate to add a co-commish)
+  "vars": { "COMMISH": "0001" },
+  // storage for the Dispatch, team names, helmets, calendar and by-laws.
+  // Create it once: Cloudflare → Storage & Databases → KV → Create "dubcey", then paste its ID below.
+  // then remove the two slashes at the start of the next line:
+  // "kv_namespaces": [{ "binding": "DC", "id": "PASTE_KV_ID_HERE" }],
   "routes": [{ "pattern": "dubcey.party", "custom_domain": true }]
 }

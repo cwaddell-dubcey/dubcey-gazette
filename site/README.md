@@ -15,13 +15,21 @@ site/
     players.html      Players — free agents, search, player cards, waiver claims
     wire.html         The Wire — every transaction, filters, biggest bids, by team
     dispatch.html     The Dispatch — every week's column
-    league.html       League — settings, message board
+    history.html      History — champions, trophy case, head-to-head + game log, records, standings
+    schedule.html     Schedule — every week, team paths, playoff picture/bracket, league calendar
+    rules.html        Rules — by-laws (written in Commish), settings, scoring from MFL
+    commish.html      Commish (commissioner only) — publish the Dispatch, team names + helmets, calendar, by-laws, any team's lineup
     css/app.css       all styling
     js/core.js        shared: teams, helmets, data, sign-in, header
     js/home.js, js/scores.js
     h/                trimmed helmets (~45 KB each)
     demo/             sample data for local preview only
 ```
+
+## Storage for the Commish desk (do once, before uploading)
+1. Cloudflare → **Storage & Databases → KV → Create** a namespace named `dubcey`.
+2. Copy its **ID** and paste it into `wrangler.jsonc` where it says `PASTE_KV_ID_HERE`.
+3. `COMMISH` in `wrangler.jsonc` is your MFL franchise number (0001). Add a co-commish later with `"0001,0004"`.
 
 ## Deploy (once)
 1. Upload this `site/` folder into the `dubcey-gazette` repo.
@@ -39,5 +47,4 @@ These send changes to MFL and can't be tested until the site is live. Try each o
 - Save a lineup (My Team → Lineup)
 - Send, accept and decline a trade (My Team → Trades)
 - Submit a waiver claim (Players → Add)
-- Post on the message board (League)
 If MFL rejects one, the site shows MFL's error message — send it to me and I'll adjust the format.

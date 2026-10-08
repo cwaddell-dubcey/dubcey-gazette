@@ -16,10 +16,24 @@
     }).then(function(ps){
       arr(ps && ps.playerScores && ps.playerScores.playerScore).forEach(function(s){ S.pts[s.id] = num(s.score); });
       S.rows = ids.map(function(id){ var i = D.pinfo(id); return { id:id, n:i[0], pos:i[1], tm:i[2], own:S.own[id] || '', p:S.pts[id] || 0 }; });
-      list();
+      list(); trend();
     });
   }).catch(function(){ $('plist').innerHTML = '<div class="ld mono">PLAYERS AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
 
+  function trend(){
+    Promise.all([D.api('topAdds').catch(function(){ return null; }), D.api('topDrops').catch(function(){ return null; })]).then(function(r){
+      var A = D.arr(r[0] && r[0].topAdds && r[0].topAdds.player).slice(0, 10), Dr = D.arr(r[1] && r[1].topDrops && r[1].topDrops.player).slice(0, 10);
+      if(!A.length && !Dr.length) return;
+      return D.players(A.concat(Dr).map(function(x){ return x.id; })).then(function(){
+        function rows(L, add){ return L.map(function(x){ var i = D.pinfo(x.id), own = S.own[x.id];
+          return '<div class="tr2"><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span><button type="button" class="pnb" data-card="' + esc(x.id) + '"><b>' + esc(i[0]) + '</b><i class="mono">' + esc(i[2]) + '</i></button><span class="pc2 mono ' + (add ? 'up' : 'dn') + '">' + (add ? '+' : '\u2212') + esc(String(x.percent || '').replace(/^[-+]/, '')) + '%</span>' +
+            (own ? '<img src="' + helm(own) + '" alt="" title="' + esc(D.NAME[own]) + '">' : '<button class="btn sm" type="button" data-add="' + esc(x.id) + '">ADD</button>') + '</div>'; }).join(''); }
+        $('tadd').innerHTML = '<div class="bar mono"><span>HOT ACROSS MFL</span><span>MOST ADDED</span></div>' + (rows(A, 1) || '<div class="ld mono">NO DATA</div>');
+        $('tdrop').innerHTML = '<div class="bar mono"><span>COLD ACROSS MFL</span><span>MOST DROPPED</span></div>' + (rows(Dr, 0) || '<div class="ld mono">NO DATA</div>');
+        $('trend').hidden = false;
+      });
+    });
+  }
   function list(){
     var q = S.q.toLowerCase();
     var R = S.rows.filter(function(r){ return (!S.fa || !r.own) && (S.pos === 'ALL' || r.pos === S.pos) && (!q || r.n.toLowerCase().indexOf(q) > -1 || r.tm.toLowerCase() === q); })

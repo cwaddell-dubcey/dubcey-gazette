@@ -3,6 +3,7 @@
   var AWID = { "Team of the Week":"0004", "Biggest Bust":"0012", "Luckiest Win":"0005" };
   var REC = {}, LIVE = null;
   D.shell('');
+  if(D.waiverWindow()) D.waiverReport().then(function(m){ if(m.rows.length) $('wvh').innerHTML = D.waiverMini(m); }).catch(function(){});
 
   function shelf(order){
     $('helms').innerHTML = order.map(function(id, i){
@@ -55,8 +56,8 @@
     var aw = W.awards || {}, ak = Object.keys(aw);
     if(ak.length){
       $('awards').innerHTML = '<div class="bar mono"><span>WEEK ' + esc(w) + ' AWARDS</span></div>' + ak.map(function(k){
-        var id = AWID[k];
-        return '<div class="aw">' + (id ? '<img src="' + helm(id) + '" alt="">' : '<span></span>') + '<b class="mono">' + esc(k) + '</b><span>' + esc(aw[k]) + '</span></div>';
+        var A = D.award(aw[k]), id = A.id || AWID[k];
+        return '<div class="aw">' + (id ? '<img src="' + helm(id) + '" alt="">' : '<span></span>') + '<b class="mono">' + esc(k) + '</b><span>' + esc(A.text) + '</span></div>';
       }).join('');
       $('awards').hidden = false;
     }

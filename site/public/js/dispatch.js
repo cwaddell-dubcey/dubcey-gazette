@@ -28,6 +28,6 @@
     $('takes').innerHTML = ids.map(function(id){ return '<div class="tk open"><div class="th"><img src="' + helm(id) + '" alt=""><b>' + esc(D.NAME[id] || id) + '</b><span class="plate"></span></div><p>' + esc(T[id]) + '</p></div>'; }).join('');
     var aw = W.awards || {}, ak = Object.keys(aw);
     $('awards').hidden = !ak.length;
-    $('awards').innerHTML = '<div class="bar mono"><span>WEEK ' + esc(w) + ' AWARDS</span></div>' + ak.map(function(k){ var id = AWID[k]; return '<div class="aw">' + (id ? '<img src="' + helm(id) + '" alt="">' : '<span></span>') + '<b class="mono">' + esc(k) + '</b><span>' + esc(aw[k]) + '</span></div>'; }).join('');
+    $('awards').innerHTML = '<div class="bar mono"><span>WEEK ' + esc(w) + ' AWARDS</span></div>' + ak.map(function(k){ var A = D.award(aw[k]), id = A.id || AWID[k]; return '<div class="aw">' + (id ? '<img src="' + helm(id) + '" alt="">' : '<span></span>') + '<b class="mono">' + esc(k) + '</b><span>' + esc(A.text) + '</span></div>'; }).join('');
   }
 })();

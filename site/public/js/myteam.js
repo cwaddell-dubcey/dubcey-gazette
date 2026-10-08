@@ -8,6 +8,8 @@
 
   D.shell('myteam').then(function(me){
     S.me = me.franchise || '';
+    var f = new URLSearchParams(location.search).get('f');
+    if(me.commish && f && D.NAME[f] && f !== S.me){ S.me = f; S.as = 1; S.tab = 'lineup'; }
     if(!S.me){
       $('tabs').hidden = true;
       $('mtb').innerHTML = '<div class="gate card"><img src="img/hocking-hills-2026.webp" alt=""><div><div class="kick mono">OWNERS ONLY</div><h2>Sign in to run your team</h2><p>Set your lineup, answer trade offers and check your waiver claims. Use your MyFantasyLeague login.</p><button class="btn" type="button" id="gateIn">SIGN IN</button></div></div>';
@@ -16,6 +18,7 @@
     }
     $('k').textContent = 'MY TEAM · ' + D.NAME[S.me].toUpperCase();
     $('h').textContent = D.SHORT[S.me];
+    if(S.as){ $('k').textContent = 'COMMISSIONER \u00b7 SETTING LINEUP FOR ' + D.NAME[S.me].toUpperCase(); $('tabs').innerHTML = '<a href="' + D.href('commish') + '#lineups">\u2190 BACK TO COMMISH</a>'; }
     tabs(); boot();
   });
 
@@ -121,7 +124,7 @@
     if(e.target.id === 'save'){
       var b = e.target; b.disabled = true; b.textContent = 'SAVING\u2026';
       var st = Object.keys(S.start).filter(function(id){ return S.start[id]; });
-      D.act('lineup', { W:S.week, STARTERS:st.join(',') }).then(function(r){
+      D.act('lineup', S.as ? { W:S.week, STARTERS:st.join(','), FRANCHISE_ID:S.me } : { W:S.week, STARTERS:st.join(',') }).then(function(r){
         if(r && r.ok){ S.dirty = false; toast(r.demo ? 'PREVIEW ONLY \u2014 LINEUP NOT SENT' : 'LINEUP SAVED'); lineup(); }
         else { toast((r && r.error) || 'MFL DIDN\u2019T ACCEPT THAT LINEUP', true); b.disabled = false; b.textContent = 'SAVE LINEUP'; }
       }).catch(function(){ toast('COULDN\u2019T REACH MFL', true); b.disabled = false; b.textContent = 'SAVE LINEUP'; });

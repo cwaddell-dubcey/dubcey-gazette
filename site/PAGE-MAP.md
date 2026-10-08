@@ -36,3 +36,6 @@ MFL Dashboard · All My Leagues · Set Up a League · Find a League · Refer a F
 6. **Players** + player cards
 7. **League** and **History**
 8. Later: logins → lineups, waiver bids, trades on-site
+
+## Open notes
+- **Week 14 = Play-In week** (free-for-all, no W/L, doesn't count toward records, happens right before the playoffs). Commish will explain the full format later — then: scoring/advancement rules on Schedule → Playoffs, and a Play-In view on Scores for Week 14.
