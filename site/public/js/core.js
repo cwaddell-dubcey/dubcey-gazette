@@ -62,9 +62,9 @@
     var v = document.createElement('div'); v.className = 'veil';
     v.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Sign in"><div class="bar mono"><span>OWNER SIGN-IN</span><button type="button" aria-label="Close" data-x>\u00d7</button></div>' +
       '<img class="hero" src="img/hocking-hills-2026.webp" alt="Dubcey Fantasy Football \u00b7 Hocking Hills 2026">' +
-      '<form><h2>Owners only</h2><p>Sign in with your MyFantasyLeague username and password to set lineups, bid on waivers and make trades right here.</p>' +
+      '<form><h2>Owners only</h2><p>Sign in with the email and password you use for MyFantasyLeague to set lineups, bid on waivers and make trades right here.</p>' +
       '<div class="err" hidden></div>' +
-      '<label class="mono">MFL username<input name="username" autocomplete="username" required></label>' +
+      '<label class="mono">MFL email or username<input name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="you@example.com" required></label>' +
       '<label class="mono">Password<input name="password" type="password" autocomplete="current-password" required></label>' +
       '<button class="btn" type="submit">SIGN IN</button>' +
       '<div class="fine mono">Your password goes straight to MFL to sign you in. This site never stores it.</div></form></div>';
