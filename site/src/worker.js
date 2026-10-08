@@ -42,16 +42,16 @@ function statLine(h) {
   }
   return out.slice(0, 4).join(' · ');
 }
-async function stats(env, ctx, w, ids, live) {
-  const tok = env.DC && await env.DC.get('svc'), out = {}, todo = ids.slice(0, 60);
+async function stats(env, ctx, w, ids, live, s) {
+  const tok = (env.DC && await env.DC.get('svc')) || (s && s.t), out = {}, todo = ids.slice(0, 60);
   async function one(id) {
     const key = new Request(`https://stats.dubcey/${Y}/${w}/${id}`);
     const hit = await caches.default.match(key); if (hit) { out[id] = await hit.text(); return; }
     try {
       const r = await fetch(`${HOST}/${Y}/detailed?L=${L}&W=${w}&P=${id}&YEAR=${Y}`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
       if (!r.ok) return;
-      const s = statLine(await r.text()); out[id] = s;
-      ctx.waitUntil(caches.default.put(key, new Response(s, { headers: { 'Cache-Control': 'public, max-age=' + (live ? 60 : 86400) } })));
+      const st = statLine(await r.text()); out[id] = st;
+      if (st || !live) ctx.waitUntil(caches.default.put(key, new Response(st, { headers: { 'Cache-Control': 'public, max-age=' + (live ? 60 : 86400) } })));
     } catch (e) {}
   }
   for (let i = 0; i < todo.length; i += 6) await Promise.all(todo.slice(i, i + 6).map(one));
@@ -149,7 +149,14 @@ export default {
     if (p === '/data/stats') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, ''), ids = (u.searchParams.get('P') || '').split(',').filter(x => /^\d+$/.test(x));
       if (!wk || !ids.length) return json({});
-      return json(await stats(env, ctx, wk, ids, u.searchParams.get('live') === '1'));
+      return json(await stats(env, ctx, wk, ids, u.searchParams.get('live') === '1', session(req)));
+    }
+    if (p === '/data/peek') {
+      const s = session(req), id = (u.searchParams.get('P') || '').replace(/\D/g, ''), wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
+      const tok = (env.DC && await env.DC.get('svc')) || (s && s.t);
+      const r1 = await fetch(`${API}/${Y}/export?TYPE=nflSchedule&W=${wk}&JSON=1`, { headers: UA }).then(x => x.text()).catch(e => 'ERR ' + e);
+      const r2 = id ? await fetch(`${HOST}/${Y}/detailed?L=${L}&W=${wk}&P=${id}&YEAR=${Y}`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA }).then(async x => x.status + ' ' + (await x.text())).catch(e => 'ERR ' + e) : '';
+      return json({ signedIn: !!s, nflSchedule: r1.slice(0, 1500), detailed: r2 ? r2.slice(0, 200) + ' … ' + statLine(r2) : '' });
     }
     if (p === '/data/waivers') {
       const key = new Request(u.origin + '/data/waivers?run=' + (u.searchParams.get('run') || ''));
@@ -166,7 +173,9 @@ export default {
       const q = new URLSearchParams(u.search);
       ['TYPE', 'L', 'JSON', 'APIKEY'].forEach(k => q.delete(k));
       const extra = q.toString();
-      const target = `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
+      // NFL-wide data lives on MFL's API host and must not carry the league id
+      const NFLWIDE = { nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
+      const target = NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
       if (PRIV[type]) {
         const r = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + s.t } });
         return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
