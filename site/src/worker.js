@@ -30,11 +30,22 @@ export default {
       if (!sameOrigin(req, u)) return json({ ok: false }, 403);
       const b = await req.json().catch(() => ({}));
       if (!b.username || !b.password) return json({ ok: false, error: 'Enter your MFL username and password.' }, 400);
-      const r = await fetch(`${API}/${Y}/login?USERNAME=${encodeURIComponent(b.username)}&PASSWORD=${encodeURIComponent(b.password)}&XML=1`, { headers: UA });
-      const t = await r.text();
-      const m = /cookie_value="([^"]+)"/.exec(t);
-      if (!m) return json({ ok: false, error: 'MFL didn\u2019t accept that username and password.' }, 401);
-      const tok = m[1];
+      const qs = `USERNAME=${encodeURIComponent(b.username.trim())}&PASSWORD=${encodeURIComponent(b.password)}&XML=1`;
+      let tok = '', why = '';
+      for (const base of [API, HOST]) {
+        for (const method of ['POST', 'GET']) {
+          try {
+            const r = await fetch(method === 'GET' ? `${base}/${Y}/login?${qs}` : `${base}/${Y}/login`, method === 'GET' ? { headers: UA, redirect: 'manual' } : { method, headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: qs, redirect: 'manual' });
+            const t = await r.text();
+            const sc = r.headers.get('Set-Cookie') || '';
+            const m = /cookie_value="([^"]+)"/i.exec(t) || /MFL_USER_ID="([^"]+)"/i.exec(t) || /MFL_USER_ID=([^;,\s]+)/.exec(sc);
+            if (m) { tok = m[1]; break; }
+            why = (/<error[^>]*>([\s\S]*?)<\/error>/i.exec(t) || [])[1] || t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160) || ('HTTP ' + r.status);
+          } catch (e) { why = String(e && e.message || e); }
+        }
+        if (tok) break;
+      }
+      if (!tok) return json({ ok: false, error: 'MFL said: ' + (why || 'no response') }, 401);
       let fid = '';
       try {
         const ml = await fetch(`${API}/${Y}/export?TYPE=myleagues&YEAR=${Y}&JSON=1`, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + tok } }).then(x => x.json());
