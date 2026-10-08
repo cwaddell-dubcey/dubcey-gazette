@@ -58,6 +58,52 @@ async function stats(env, ctx, w, ids, live, s) {
   return out;
 }
 
+// Box-score stat lines from ESPN's public NFL feed, one call per week → { "lamar jackson|BAL": "274 PASS YDS · 3 PASS TD" }
+const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+async function cachedJSON(ctx, url, ttl) {
+  const key = new Request(url), hit = await caches.default.match(key);
+  if (hit) return hit.json();
+  const r = await fetch(url, { headers: UA }); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const t = await r.text();
+  ctx.waitUntil(caches.default.put(key, new Response(t, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=' + ttl } })));
+  return JSON.parse(t);
+}
+function nkey(n) { return String(n || '').toLowerCase().replace(/[.'’]/g, '').replace(/\s+(jr|sr|ii|iii|iv|v)$/, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
+async function espnWeek(ctx, w) {
+  const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2&week=${w}`, 60);
+  const out = {};
+  await Promise.all((sb.events || []).map(async ev => {
+    const st = ev.competitions && ev.competitions[0] && ev.competitions[0].status && ev.competitions[0].status.type || {};
+    if (st.state === 'pre') return;
+    let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 45); } catch (e) { return; }
+    const P = {};
+    ((s.boxscore && s.boxscore.players) || []).forEach(tm => {
+      const ab = tm.team && tm.team.abbreviation;
+      (tm.statistics || []).forEach(cat => {
+        const L = (cat.labels || []).map(x => String(x).toUpperCase());
+        (cat.athletes || []).forEach(a => {
+          const nm = a.athlete && a.athlete.displayName; if (!nm) return;
+          const k = nkey(nm) + '|' + ab, o = P[k] = P[k] || {}, v = lab => { const i = L.indexOf(lab); return i > -1 ? a.stats[i] : ''; };
+          if (cat.name === 'passing') { o.py = v('YDS'); o.pt = v('TD'); o.int = v('INT'); }
+          if (cat.name === 'rushing') { o.ry = v('YDS'); o.rt = v('TD'); }
+          if (cat.name === 'receiving') { o.rec = v('REC'); o.cy = v('YDS'); o.ct = v('TD'); }
+          if (cat.name === 'fumbles') { o.fl = v('LOST'); }
+          if (cat.name === 'kicking') { o.fg = v('FG'); o.xp = v('XP'); }
+        });
+      });
+    });
+    Object.keys(P).forEach(k => {
+      const o = P[k], n = x => +String(x || '0').split('/')[0] || 0, s2 = [];
+      if (n(o.py)) s2.push(o.py + ' PASS YDS'); if (n(o.pt)) s2.push(o.pt + ' PASS TD'); if (n(o.int)) s2.push(o.int + ' INT');
+      if (n(o.ry)) s2.push(o.ry + ' RUSH YDS'); if (n(o.rt)) s2.push(o.rt + ' RUSH TD');
+      if (n(o.rec)) s2.push(o.rec + ' REC'); if (n(o.cy)) s2.push(o.cy + ' REC YDS'); if (n(o.ct)) s2.push(o.ct + ' REC TD');
+      if (o.fg) s2.push('FG ' + o.fg); if (o.xp && !o.fg) s2.push('XP ' + o.xp); if (n(o.fl)) s2.push(o.fl + ' FUM');
+      out[k] = s2.slice(0, 4).join(' · ') || 'NO STATS';
+    });
+  }));
+  return out;
+}
+
 // MFL's processed-waivers page (league members only) → plain rows, using the commissioner's saved login
 async function waivers(env, s, run) {
   const tok = (env.DC && await env.DC.get('svc')) || (s && s.t);
@@ -145,6 +191,11 @@ export default {
       }
       const v = env.DC && await env.DC.get('c:' + key);
       return new Response(v || 'null', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
+    if (p === '/data/espn') {
+      const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
+      if (!wk) return json({});
+      try { return json(await espnWeek(ctx, wk)); } catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
     if (p === '/data/stats') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, ''), ids = (u.searchParams.get('P') || '').split(',').filter(x => /^\d+$/.test(x));
