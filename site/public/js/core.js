@@ -69,14 +69,24 @@
   D.nflLogo = function(t){ t = String(t || '').toUpperCase(); if(!t || t === 'FA') return 'h/logo.webp'; return 'https://a.espncdn.com/i/teamlogos/nfl/500/' + (NFLX[t] || t.toLowerCase()) + '.png'; };
   D.photo = function(id, team, pos){ return /^(Def|DEF|TMDEF|ST)$/.test(pos || '') ? D.nflLogo(team) : 'https://www.mflscripts.com/playerImages_80x107/mfl_' + id + '.png'; };
   // weekly stat lines for players ("245 PASS YDS · 2 PASS TD"), cached briefly in memory
-  var SX = {};
+  var SX = {}, WK = {};
+  var ESPNX = { GBP:'GB', KCC:'KC', NEP:'NE', NOS:'NO', SFO:'SF', TBB:'TB', LVR:'LV', JAC:'JAX', WAS:'WSH' };
+  function nkey(n){ return String(n || '').toLowerCase().replace(/[.'\u2019]/g, '').replace(/\s+(jr|sr|ii|iii|iv|v)$/, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
   D.stats = function(w, ids, live){
-    var now = Date.now(), need = ids.filter(function(id){ var c = SX[w + ':' + id]; return !c || (live && now - c.t > 55000); });
-    if(!need.length) return Promise.resolve(SX);
-    var p = D.LOCAL ? fetch('demo/stats.json').then(function(r){ return r.json(); }) : fetch('/data/stats?W=' + w + '&P=' + need.join(',') + (live ? '&live=1' : '')).then(function(r){ return r.json(); });
-    return p.then(function(o){ need.forEach(function(id){ SX[w + ':' + id] = { t:now, s:(o && o[id]) || '' }; }); return SX; }).catch(function(){ return SX; });
+    if(D.LOCAL){ if(SX.demo) return Promise.resolve(); return fetch('demo/stats.json').then(function(r){ return r.json(); }).then(function(o){ SX.demo = o; }).catch(function(){}); }
+    var c = WK[w], now = Date.now();
+    if(c && (!live || now - c.t < 55000)) return c.p;
+    var p = fetch('/data/espn?W=' + w).then(function(r){ return r.json(); }).then(function(o){ WK[w].o = o || {}; }).catch(function(){ WK[w].o = WK[w].o || {}; });
+    WK[w] = { t:now, p:p, o:(c && c.o) || null };
+    return p;
   };
-  D.statOf = function(w, id){ var c = SX[w + ':' + id]; return c ? c.s : ''; };
+  D.statOf = function(w, id){
+    if(D.LOCAL) return (SX.demo && SX.demo[id]) || '';
+    var c = WK[w]; if(!c || !c.o) return '';
+    var i = D.pinfo(id), nm = nkey(i[0]), tm = String(i[2] || '').toUpperCase(), s = c.o[nm + '|' + (ESPNX[tm] || tm)];
+    if(s == null){ for(var k in c.o){ if(k.split('|')[0] === nm){ s = c.o[k]; break; } } }
+    return s && s !== 'NO STATS' ? s : '';
+  };
   D.pinfo = function(id){ return (PI && PI[id]) || ['Player ' + id, '', '']; };
 
   D.records = function(){
