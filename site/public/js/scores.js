@@ -43,7 +43,7 @@
     }).catch(function(){ S.nfl = S.nfl || {}; });
   }
   function game(t){
-    if(!S.nfl) return '';
+    if(!S.nfl || !Object.keys(S.nfl).length) return '';
     var g = S.nfl[t]; if(!g) return t ? '<span class="gi">BYE</span>' : '';
     var vs = (g.home ? 'vs ' : '@ ') + '<img class="nl" src="' + D.nflLogo(g.opp) + '" alt="">' + esc(g.opp), now = Date.now(), sc = g.my != null && g.my !== '' ? num(g.my) + '\u2013' + num(g.their) : '';
     if(g.kick > now && !num(g.my) && !num(g.their)) return '<span class="gi">' + vs + ' \u00b7 ' + esc(new Date(g.kick).toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase()) + '</span>';
@@ -55,7 +55,7 @@
   function wantStats(m){
     var live = isLive(), ids = [];
     m.forEach(function(f){ f.pl.forEach(function(p){ if(p.st || S.benchOpen) ids.push(p.id); }); });
-    var started = ids.filter(function(id){ var g = S.nfl && S.nfl[D.pinfo(id)[2]]; return !g || !S.nfl || g.kick <= Date.now() || S.w < S.cur; });
+    var started = ids.filter(function(id){ var g = S.nfl && S.nfl[D.pinfo(id)[2]]; return !g || g.kick <= Date.now() || S.w < S.cur; });
     if(!started.length) return;
     D.stats(S.w, started, live).then(function(){
       [].forEach.call(document.querySelectorAll('.pr[data-p]'), function(el){ var s = D.statOf(S.w, el.getAttribute('data-p')), x = el.querySelector('.sx'); if(x){ var t = s || x.getAttribute('data-ph'); if(x.textContent !== t){ x.textContent = t; x.classList.toggle('none', !s); } } });
@@ -93,7 +93,7 @@
     var top = starters ? list.reduce(function(m, p){ return p.s > m ? p.s : m; }, 0) : -1;
     return { sum:list.reduce(function(a, p){ return a + p.s; }, 0), html:list.map(function(p){
       var lv = S.w === S.cur && p.sec > 0 && p.sec < 3600;
-      var sx = D.statOf(S.w, p.id), g = S.nfl && S.nfl[p.tm], ph = !g ? (S.nfl && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
+      var sx = D.statOf(S.w, p.id), known = S.nfl && Object.keys(S.nfl).length, g = known && S.nfl[p.tm], ph = !g ? (known && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
       return '<div class="pr' + (top > 0 && p.s === top ? ' top' : '') + (lv ? ' on' : '') + '" data-p="' + esc(p.id) + '"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span>' +
         '<span class="hs"><img src="' + D.photo(p.id, p.tm, p.pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + D.nflLogo(p.tm) + '\';this.className=\'lg\'"></span>' +
         '<div style="min-width:0"><div class="n">' + esc(p.n) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
