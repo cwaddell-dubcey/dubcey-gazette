@@ -27,8 +27,7 @@ site/
 ```
 
 ## Storage for the Commish desk (do once, before uploading)
-1. Cloudflare → **Storage & Databases → KV → Create** a namespace named `dubcey`.
-2. Copy its **ID** and paste it into `wrangler.jsonc` where it says `PASTE_KV_ID_HERE`.
+Already done: the `dubcey` KV namespace ID is set in `wrangler.jsonc`.
 3. `COMMISH` in `wrangler.jsonc` is your MFL franchise number (0001). Add a co-commish later with `"0001,0004"`.
 
 ## Deploy (once)

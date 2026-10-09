@@ -13,6 +13,6 @@
   // storage for the Dispatch, team names, helmets, calendar and by-laws.
   // Create it once: Cloudflare → Storage & Databases → KV → Create "dubcey", then paste its ID below.
   // then remove the two slashes at the start of the next line:
-  // "kv_namespaces": [{ "binding": "DC", "id": "PASTE_KV_ID_HERE" }],
+  // "kv_namespaces": [{ "binding": "DC", "id": "7a954825f712428fbcb0c6e05cfae1da" }],
   "routes": [{ "pattern": "dubcey.party", "custom_domain": true }]
 }
