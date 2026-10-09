@@ -261,9 +261,9 @@ export default {
       let res = await cache.match(key);
       if (!res) {
         const m = await fetch(target, { headers: UA });
-        res = new Response(m.body, m);
-        res.headers.set('Cache-Control', 'public, max-age=' + PUB[type]);
-        if (m.ok) ctx.waitUntil(cache.put(key, res.clone()));
+        const txt = await m.text(), bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt);
+        res = new Response(txt, { status: m.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': bad ? 'no-store' : 'public, max-age=' + PUB[type] } });
+        if (!bad) ctx.waitUntil(cache.put(key, res.clone()));
       }
       return res;
     }
