@@ -15,7 +15,7 @@
     return D.players(ids);
   }).then(function(){ draw(); side(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WIRE IS QUIET RIGHT NOW.</div>'; });
 
-  function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>'; }).join(', '); }
+  function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>' + D.ij(id); }).join(', '); }
   function report(){
     if(!S.wm){ $('feed').innerHTML = '<div class="ld mono">LOADING THE WAIVER REPORT\u2026</div>'; D.waiverReport(S.run).then(function(m){ S.wm = m; if(S.f === 'REPORT') report(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WAIVER REPORT ISN\u2019T AVAILABLE RIGHT NOW.</div>'; }); return; }
     var m = S.wm;

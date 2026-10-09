@@ -12,9 +12,9 @@
     S.fas = fa;
     var ids = fa.concat(Object.keys(S.own));
     return D.players(ids).then(function(){
-      return D.api('playerScores', 'W=YTD&PLAYERS=' + ids.join(',')).catch(function(){ return null; });
+      return D.scores('YTD', ids);
     }).then(function(ps){
-      arr(ps && ps.playerScores && ps.playerScores.playerScore).forEach(function(s){ S.pts[s.id] = num(s.score); });
+      S.pts = ps || {};
       S.rows = ids.map(function(id){ var i = D.pinfo(id); return { id:id, n:i[0], pos:i[1], tm:i[2], own:S.own[id] || '', p:S.pts[id] || 0 }; }).filter(function(r){ return D.OURPOS[r.pos] || r.own; });
       list(); trend();
     });
@@ -26,7 +26,7 @@
       if(!A.length && !Dr.length) return;
       return D.players(A.concat(Dr).map(function(x){ return x.id; })).then(function(){
         function rows(L, add){ return L.filter(function(x){ return D.OURPOS[D.pinfo(x.id)[1]]; }).slice(0, 10).map(function(x){ var i = D.pinfo(x.id), own = S.own[x.id];
-          return '<div class="tr2"><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(x.id, i[1], i[2]) + '<button type="button" class="pnb" data-card="' + esc(x.id) + '"><b>' + esc(i[0]) + '</b><i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></button><span class="pc2 mono ' + (add ? 'up' : 'dn') + '">' + (add ? '+' : '\u2212') + esc(String(x.percent || '').replace(/^[-+]/, '')) + '%</span>' +
+          return '<div class="tr2"><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(x.id, i[1], i[2]) + '<button type="button" class="pnb" data-card="' + esc(x.id) + '"><b>' + esc(i[0]) + D.ij(x.id) + '</b><i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></button><span class="pc2 mono ' + (add ? 'up' : 'dn') + '">' + (add ? '+' : '\u2212') + esc(String(x.percent || '').replace(/^[-+]/, '')) + '%</span>' +
             (own ? '<img src="' + helm(own) + '" alt="" title="' + esc(D.NAME[own]) + '">' : '<button class="btn sm" type="button" data-add="' + esc(x.id) + '">ADD</button>') + '</div>'; }).join(''); }
         $('tadd').innerHTML = '<div class="bar mono"><span>HOT ACROSS MFL</span><span>MOST ADDED</span></div>' + (rows(A, 1) || '<div class="ld mono">NO DATA</div>');
         $('tdrop').innerHTML = '<div class="bar mono"><span>COLD ACROSS MFL</span><span>MOST DROPPED</span></div>' + (rows(Dr, 0) || '<div class="ld mono">NO DATA</div>');
@@ -42,8 +42,7 @@
     [].forEach.call(document.querySelectorAll('[data-fa]'), function(b){ b.classList.toggle('on', (b.getAttribute('data-fa') === '1') === S.fa); });
     $('cnt').textContent = R.length + (R.length === 120 ? '+' : '') + ' PLAYERS';
     $('plist').innerHTML = '<div class="plr hd mono"><span>POS</span><span>PLAYER</span><span>OWNER</span><span>SEASON PTS</span><span></span></div>' + (R.map(function(r){
-      var ij = S.inj[r.id];
-      return '<div class="plr"><span class="pos ' + esc(r.pos) + '">' + esc(r.pos || '\u2013') + '</span>' + D.face(r.id, r.pos, r.tm) + '<button type="button" class="pnb" data-card="' + esc(r.id) + '"><b>' + esc(r.n) + '</b><i class="mono">' + D.tlogo(r.tm) + esc(r.tm) + (ij ? ' · <em>' + ij + '</em>' : '') + '</i></button>' +
+      return '<div class="plr"><span class="pos ' + esc(r.pos) + '">' + esc(r.pos || '\u2013') + '</span>' + D.face(r.id, r.pos, r.tm) + '<button type="button" class="pnb" data-card="' + esc(r.id) + '"><b>' + esc(r.n) + D.ij(r.id) + '</b><i class="mono">' + D.tlogo(r.tm) + esc(r.tm) + '</i></button>' +
         (r.own ? '<a class="ow2" href="' + D.href('teams', 'f=' + r.own) + '" title="' + esc(D.NAME[r.own]) + '"><img src="' + helm(r.own) + '" alt=""><span class="mono">' + esc(D.SHORT[r.own]) + '</span></a>' : '<span class="fa mono">FREE AGENT</span>') +
         '<span class="pp">' + D.pts(r.p) + '</span>' +
         (r.own ? '<span></span>' : '<button class="btn sm" type="button" data-add="' + esc(r.id) + '">ADD</button>') + '</div>';

@@ -28,7 +28,7 @@
   function team(f){
     var d = S.d, pl = (d.R[f] || []).map(function(p){
       var i = D.pinfo(p.id), st = String(p.status || '');
-      return { id:p.id, n:i[0], pos:i[1], tm:i[2], sal:num(p.salary), yr:p.contractYear, inj:d.INJ[p.id] || '', tag:/INJURED/.test(st) ? 'IR' : /TAXI/.test(st) ? 'TAXI' : '', pts:d.PTS[p.id] != null ? D.pts(d.PTS[p.id]) : '', bye:d.BYE[i[2]] || '' };
+      return { id:p.id, n:i[0], pos:i[1], tm:i[2], sal:num(p.salary), yr:p.contractYear, inj:(D.INJ[p.id] && D.INJ[p.id].k) || d.INJ[p.id] || '', tag:/INJURED/.test(st) ? 'IR' : /TAXI/.test(st) ? 'TAXI' : '', pts:d.PTS[p.id] != null ? D.pts(d.PTS[p.id]) : '', bye:d.BYE[i[2]] || '' };
     }).sort(function(a, b){ return ((PO[a.pos] || 9) - (PO[b.pos] || 9)) || (b.sal - a.sal); });
     var tot = pl.reduce(function(a, p){ return a + p.sal; }, 0), g = [], cur = null;
     pl.forEach(function(p){ if(!cur || cur.pos !== p.pos){ cur = { pos:p.pos, items:[], sal:0 }; g.push(cur); } cur.items.push(p); cur.sal += p.sal; });

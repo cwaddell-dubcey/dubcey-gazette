@@ -90,7 +90,7 @@
     });
     var ids = []; rows.forEach(function(r){ ids = ids.concat(r.add, r.drop); });
     return D.players(ids).then(function(){
-      function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>'; }).join(', '); }
+      function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>' + D.ij(id); }).join(', '); }
       $('wire').innerHTML = rows.map(function(r){
         var when = new Date(num(r.t.timestamp) * 1000).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
         var line = r.trade ? '<b>' + esc(D.SHORT[r.f]) + '</b> traded with <b>' + esc(D.SHORT[r.trade] || '') + '</b>'

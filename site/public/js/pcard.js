@@ -58,20 +58,19 @@
       arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ if(p.id === id){ d.own = f.id; d.sal = p.salary; d.rst = p.status; } }); });
       var L = r[2] && r[2].liveScoring; d.week = num(L && L.week);
       arr(L && L.matchup).forEach(function(m){ arr(m.franchise).forEach(function(f){ arr((f.players && f.players.player) || f.player).forEach(function(p){ if(p.id === id){ d.wk = num(p.score); d.sec = num(p.gameSecondsRemaining); } }); }); });
-      arr(r[3] && r[3].injuries && r[3].injuries.injury).forEach(function(x){ if(x.id === id) d.inj = IW[String(x.status || '').toLowerCase()] || x.status; });
+      arr(r[3] && r[3].injuries && r[3].injuries.injury).forEach(function(x){ if(x.id === id) d.inj = D.injCode(x.status); });
       arr(r[5] && r[5].nflSchedule && r[5].nflSchedule.matchup).forEach(function(m){ var t = arr(m.team); t.forEach(function(x, k){ if(x.id === d.team){ d.opp = (x.isHome === '1' ? 'vs ' : '@ ') + t[1 - k].id; d.kick = num(m.kickoff) * 1000; } }); });
       draw();
-      return Promise.all([D.api('playerScores', 'W=YTD&PLAYERS=' + id).catch(no), D.api('playerScores', 'W=AVG&PLAYERS=' + id).catch(no), d.week ? D.api('projectedScores', 'W=' + d.week + '&PLAYERS=' + id).catch(no) : null, d.week ? D.stats(d.week, [id], d.sec > 0 && d.sec < 3600) : null]).then(function(s){
+      return Promise.all([D.scores('YTD', [id]), D.scores('AVG', [id]), d.week ? D.api('projectedScores', 'W=' + d.week + '&PLAYERS=' + id).catch(no) : null, d.week ? D.stats(d.week, [id], d.sec > 0 && d.sec < 3600) : null]).then(function(s){
         if(S.id !== id) return;
         function sc(j, k){ var x = arr(j && j[k] && j[k].playerScore)[0]; return x && x.score !== '' ? num(x.score) : null; }
-        d.ytd = sc(s[0], 'playerScores'); d.avg = sc(s[1], 'playerScores'); d.proj = sc(s[2], 'projectedScores'); d.sx = d.week ? D.statOf(d.week, id) : '';
+        d.ytd = s[0][id] != null ? s[0][id] : null; d.avg = s[1][id] != null ? s[1][id] : null; d.proj = sc(s[2], 'projectedScores'); d.sx = d.week ? D.statOf(d.week, id) : '';
         top();
       });
     });
     page('page', id).then(function(doc){
       if(S.id !== id) return;
       var d = S.d, im = doc.querySelector('td.player_photo img');
-      if(im && im.getAttribute('src')) d.photo = im.getAttribute('src');
       d.bio = kv(cap(doc, /biography/i)); d.status = kv(cap(doc, /player status/i));
       d.log = grid(doc.getElementById('player_stats_table'), /^opp (avg|rank)|^status$/i);
       d.career = grid(doc.querySelector('table.biohistory'));
@@ -100,7 +99,7 @@
   function draw(){ top(); body(); }
   function top(){
     var d = S.d, v = el().querySelector('.pcs2');
-    var photo = d.photo || (d.pos ? D.photo(d.id, d.team, d.pos) : '');
+    var photo = d.pos ? D.photo(d.id, d.team, d.pos) : '';
     var rs = /INJURED/.test(d.rst || '') ? 'IR' : /TAXI/.test(d.rst || '') ? 'TAXI' : '';
     var own = d.own ? '<a class="pco" href="' + D.href('teams', 'f=' + d.own) + '"><img src="' + D.helm(d.own) + '" alt=""><span>' + esc(D.NAME[d.own]) + (rs ? ' \u00b7 ' + rs : '') + (d.sal ? ' \u00b7 $' + esc(d.sal) : '') + '</span></a>' : d.load ? '' : '<span class="pco fa mono">FREE AGENT</span>';
     function box(x, l, hi){ return '<div' + (hi ? ' class="hi"' : '') + '><b>' + (x == null ? '\u2013' : D.pts(Math.round(x * 100) / 100)) + '</b><span class="mono">' + l + '</span></div>'; }

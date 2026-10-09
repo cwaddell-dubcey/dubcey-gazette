@@ -62,7 +62,12 @@
   }).catch(function(){ return {}; });
 
   // league data via the site's own connection (local preview reads sample files)
-  D.api = function(t, q){ return D.teamsReady.then(function(){ return api(t, q); }); };
+  // injury designations (Q / D / OUT / IR / SUS…), loaded once and shown next to every player name via D.ij(id)
+  D.INJ = {};
+  D.injCode = function(s){ s = String(s || '').toLowerCase().trim(); if(!s) return ''; if(/^q/.test(s)) return 'Q'; if(/^doubt/.test(s)) return 'D'; if(/^out/.test(s)) return 'OUT'; if(/^(ir|injured)/.test(s)) return 'IR'; if(/^susp/.test(s)) return 'SUS'; if(/^pup/.test(s)) return 'PUP'; if(/^prob/.test(s)) return 'P'; if(/^(nfi|non)/.test(s)) return 'NFI'; return s.toUpperCase().slice(0, 4); };
+  D.injReady = api('injuries').then(function(j){ D.arr(j && j.injuries && j.injuries.injury).forEach(function(i){ var k = D.injCode(i.status); if(k) D.INJ[i.id] = { k:k, full:i.status || '', det:i.details || '' }; }); }).catch(function(){});
+  D.ij = function(id){ var x = D.INJ[id]; return x ? '<span class="ij mono" title="' + D.esc(x.full + (x.det ? ' \u2014 ' + x.det : '')) + '">' + x.k + '</span>' : ''; };
+  D.api = function(t, q){ return Promise.all([D.teamsReady, D.injReady]).then(function(){ return api(t, q); }); };
   function api(t, q){
     if(D.LOCAL) return fetch('demo/' + t + '.json').then(function(r){ if(!r.ok) throw 0; return r.json(); });
     return fetch('/api/' + t + (q ? '?' + q : ''), { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); });
@@ -113,6 +118,10 @@
     var i = D.pinfo(id), nm = nkey(i[0]), tm = String(i[2] || '').toUpperCase(), s = c.o[nm + '|' + (ESPNX[tm] || tm)];
     if(s == null){ for(var k in c.o){ if(k.split('|')[0] === nm){ s = c.o[k]; break; } } }
     return s && s !== 'NO STATS' ? s : '';
+  };
+  D.scores = function(w, ids){
+    var jobs = []; for(var i = 0; i < ids.length; i += 100) jobs.push(D.api('playerScores', 'W=' + w + '&YEAR=' + D.Y + '&PLAYERS=' + ids.slice(i, i + 100).join(',')).catch(function(){ return null; }));
+    return Promise.all(jobs).then(function(rs){ var o = {}; rs.forEach(function(j){ D.arr(j && j.playerScores && j.playerScores.playerScore).forEach(function(s){ if(s.score !== '' && s.score != null) o[s.id] = D.num(s.score); }); }); return o; });
   };
   D.pinfo = function(id){ return (PI && PI[id]) || ['Player ' + id, '', '']; };
 

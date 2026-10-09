@@ -56,7 +56,7 @@
   }
   function prow(id, starter){
     var i = D.pinfo(id), lk = S.lock[id];
-    return '<button type="button" class="lu' + (lk ? ' lk' : '') + '" data-p="' + esc(id) + '"' + (lk ? ' disabled' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(id, i[1], i[2]) + '<span class="nm2">' + esc(i[0]) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + (lk ? ' · LOCKED' : '') + '</i></span><span class="mv mono">' + (lk ? '\ud83d\udd12' : starter ? 'BENCH \u2193' : 'START \u2191') + '</span></button>';
+    return '<button type="button" class="lu' + (lk ? ' lk' : '') + '" data-p="' + esc(id) + '"' + (lk ? ' disabled' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(id, i[1], i[2]) + '<span class="nm2">' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + (lk ? ' · LOCKED' : '') + '</i></span><span class="mv mono">' + (lk ? '\ud83d\udd12' : starter ? 'BENCH \u2193' : 'START \u2191') + '</span></button>';
   }
   function lineup(){
     var ids = Object.keys(S.start).sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); });
@@ -80,7 +80,7 @@
         var mine = t.offeringteam === S.me, other = mine ? t.offeredto : t.offeringteam;
         var give = String(t.will_give_up || '').split(',').filter(Boolean), get = String(t.will_receive || '').split(',').filter(Boolean);
         var you = mine ? give : get, them = mine ? get : give;
-        function li(l){ return l.map(function(id){ var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></li>'; }).join(''); }
+        function li(l){ return l.map(function(id){ var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></li>'; }).join(''); }
         return '<div class="tro"><div class="trh"><img src="' + helm(other) + '" alt=""><div><b>' + esc(D.NAME[other]) + '</b><span class="mono">' + (mine ? 'YOU OFFERED' : 'OFFERED TO YOU') + '</span></div></div>' +
           '<div class="trs"><div><span class="mono">YOU GIVE</span><ul>' + li(you) + '</ul></div><div><span class="mono">YOU GET</span><ul>' + li(them) + '</ul></div></div>' +
           (t.comments ? '<p class="cm">\u201c' + esc(t.comments) + '\u201d</p>' : '') +
@@ -94,7 +94,7 @@
     var h = '<div class="bar mono"><span>PROPOSE A TRADE</span><span>' + (t.to ? 'WITH ' + esc(D.SHORT[t.to]).toUpperCase() : 'PICK A TEAM') + '</span></div><div class="pick2">' +
       others.map(function(id){ return '<button type="button" class="' + (id === t.to ? 'on' : '') + '" data-to="' + id + '" title="' + esc(D.NAME[id]) + '"><img src="' + helm(id) + '" alt=""></button>'; }).join('') + '</div>';
     if(t.to){
-      function list(f, side){ return (S.R[f] || []).slice().sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); }).map(function(id){ var i = D.pinfo(id), on = t[side][id]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-side="' + side + '" value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></label>'; }).join(''); }
+      function list(f, side){ return (S.R[f] || []).slice().sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); }).map(function(id){ var i = D.pinfo(id), on = t[side][id]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-side="' + side + '" value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></label>'; }).join(''); }
       var ng = Object.keys(t.give).length, nr = Object.keys(t.get).length;
       h += '<div class="trs2"><div><div class="sub mono">YOU GIVE · ' + ng + '</div>' + list(S.me, 'give') + '</div><div><div class="sub mono">YOU GET · ' + nr + '</div>' + list(t.to, 'get') + '</div></div>' +
         '<div class="tsend"><input id="tcm" placeholder="Add a note (optional)" maxlength="200"><button class="btn" type="button" id="tsend"' + (ng && nr ? '' : ' disabled') + '>SEND OFFER</button></div>';
@@ -111,7 +111,7 @@
       return D.players(ids.filter(Boolean)).then(function(){
         $('pw').innerHTML = '<div class="bar mono"><span>MY WAIVER CLAIMS</span><span>' + W.length + ' PENDING</span></div>' + (W.map(function(w){
           var a = D.pinfo(w.player), d = w.drop ? D.pinfo(w.drop) : null;
-          return '<div class="wc"><span class="pos ' + esc(a[1]) + '">' + esc(a[1]) + '</span>' + D.face(w.player, a[1], a[2]) + '<div><b>' + esc(a[0]) + '</b><span class="mono">' + D.tlogo(a[2]) + esc(a[2]) + (d ? ' · DROP ' + esc(d[0]) : '') + '</span></div>' + (w.amount ? '<em>$' + esc(w.amount) + '</em>' : '') + '</div>';
+          return '<div class="wc"><span class="pos ' + esc(a[1]) + '">' + esc(a[1]) + '</span>' + D.face(w.player, a[1], a[2]) + '<div><b>' + esc(a[0]) + D.ij(w.player) + '</b><span class="mono">' + D.tlogo(a[2]) + esc(a[2]) + (d ? ' · DROP ' + esc(d[0]) : '') + '</span></div>' + (w.amount ? '<em>$' + esc(w.amount) + '</em>' : '') + '</div>';
         }).join('') || '<div class="ld mono">NO CLAIMS IN</div>') + '<div class="wcf"><a class="btn" href="' + D.href('players') + '">FIND PLAYERS \u2192</a></div>';
       });
     }).catch(function(){ $('pw').innerHTML = '<div class="bar mono"><span>MY WAIVER CLAIMS</span></div><div class="ld mono">COULDN\u2019T LOAD CLAIMS</div><div class="wcf"><a class="btn" href="' + D.href('players') + '">FIND PLAYERS \u2192</a></div>'; });
