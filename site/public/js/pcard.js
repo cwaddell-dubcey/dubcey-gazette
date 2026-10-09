@@ -51,14 +51,14 @@
   D.openCard = function(id){
     S.id = id; S.tab = 'news'; S.d = { id:id, load:1 };
     el(); document.documentElement.classList.add('nos'); draw();
-    Promise.all([D.me(), D.api('rosters').catch(no), D.api('liveScoring').catch(no), D.api('injuries').catch(no), D.players([id]), D.api('nflSchedule').catch(no)]).then(function(r){
+    Promise.all([D.me(), D.api('rosters').catch(no), D.api('liveScoring').catch(no), D.api('injuries', 'r=2').catch(no), D.players([id]), D.api('nflSchedule').catch(no)]).then(function(r){
       if(S.id !== id) return;
       var me = r[0] || {}, d = S.d, i = D.pinfo(id);
       d.name = i[0]; d.pos = i[1]; d.team = i[2]; d.me = me.franchise || ''; d.load = 0;
       arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ if(p.id === id){ d.own = f.id; d.sal = p.salary; d.rst = p.status; } }); });
       var L = r[2] && r[2].liveScoring; d.week = num(L && L.week);
       arr(L && L.matchup).forEach(function(m){ arr(m.franchise).forEach(function(f){ arr((f.players && f.players.player) || f.player).forEach(function(p){ if(p.id === id){ d.wk = num(p.score); d.sec = num(p.gameSecondsRemaining); } }); }); });
-      arr(r[3] && r[3].injuries && r[3].injuries.injury).forEach(function(x){ if(x.id === id) d.inj = D.injCode(x.status); });
+      arr(r[3] && r[3].injuries && r[3].injuries.injury).forEach(function(x){ if(x.id === id) d.inj = D.injCode(x.status); }); if(!d.inj && D.INJ[id]) d.inj = D.INJ[id].k;
       arr(r[5] && r[5].nflSchedule && r[5].nflSchedule.matchup).forEach(function(m){ var t = arr(m.team); t.forEach(function(x, k){ if(x.id === d.team){ d.opp = (x.isHome === '1' ? 'vs ' : '@ ') + t[1 - k].id; d.kick = num(m.kickoff) * 1000; } }); });
       draw();
       return Promise.all([D.scores('YTD', [id]), D.scores('AVG', [id]), d.week ? D.api('projectedScores', 'W=' + d.week + '&PLAYERS=' + id).catch(no) : null, d.week ? D.stats(d.week, [id], d.sec > 0 && d.sec < 3600) : null]).then(function(s){

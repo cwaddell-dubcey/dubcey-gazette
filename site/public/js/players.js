@@ -4,7 +4,7 @@
   var S = { me:'', q:'', pos:'ALL', fa:true, rows:[], own:{}, pts:{}, inj:{}, faab:'' };
   D.shell('players').then(function(me){ S.me = me.franchise || ''; if(S.rows.length) list(); });
 
-  Promise.all([D.api('freeAgents').catch(function(){ return null; }), D.api('rosters'), D.api('injuries').catch(function(){ return null; }), D.api('leagueStandings').catch(function(){ return null; })]).then(function(r){
+  Promise.all([D.api('freeAgents').catch(function(){ return null; }), D.api('rosters'), D.api('injuries', 'r=2').catch(function(){ return null; }), D.api('leagueStandings').catch(function(){ return null; })]).then(function(r){
     var fa = arr(r[0] && r[0].freeAgents && r[0].freeAgents.leagueUnit && r[0].freeAgents.leagueUnit.player).map(function(p){ return p.id; });
     arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ S.own[p.id] = f.id; }); });
     arr(r[2] && r[2].injuries && r[2].injuries.injury).forEach(function(i){ S.inj[i.id] = IW[String(i.status || '').toLowerCase()] || ''; });

@@ -10,7 +10,7 @@
   D.shell('teams').then(function(me){ S.me = me.franchise || ''; if(!S.sel){ S.sel = S.me || D.IDS[0]; if(S.d) draw(); } });
 
   function no(){ return null; }
-  Promise.all([D.api('rosters'), D.api('league').catch(no), D.api('injuries').catch(no), D.api('nflByeWeeks').catch(no), D.records()]).then(function(r){
+  Promise.all([D.api('rosters'), D.api('league').catch(no), D.api('injuries', 'r=2').catch(no), D.api('nflByeWeeks').catch(no), D.records()]).then(function(r){
     var R = {}; arr(r[0] && r[0].rosters && r[0].rosters.franchise).forEach(function(f){ R[f.id] = arr(f.player); });
     var O = {};
     if(r[1] && r[1].league){ arr(r[1].league.franchises && r[1].league.franchises.franchise).forEach(function(f){ O[f.id] = f.owner_name || ''; }); }
