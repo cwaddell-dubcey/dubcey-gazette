@@ -251,7 +251,7 @@ export default {
       ['TYPE', 'L', 'JSON', 'APIKEY'].forEach(k => q.delete(k));
       const extra = q.toString();
       // NFL-wide data lives on MFL's API host and must not carry the league id
-      const NFLWIDE = { nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
+      const NFLWIDE = { injuries:1, nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
       const target = NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
       if (PRIV[type]) {
         const r = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + s.t } });
