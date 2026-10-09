@@ -27,7 +27,6 @@
       ['Teams', '12'],
       L.starters && ['Starting lineup', (L.starters.count ? L.starters.count + ' starters · ' : '') + st],
       L.rosterSize && ['Roster size', L.rosterSize],
-      num(L.salaryCapAmount) && ['Salary cap', '$' + num(L.salaryCapAmount)],
       L.playoffTeams && ['Playoffs', 'Top ' + L.playoffTeams + (L.lastRegularSeasonWeek ? ' after Week ' + L.lastRegularSeasonWeek : '')],
       L.bbidMinimum != null && ['Minimum waiver bid', '$' + num(L.bbidMinimum)],
       L.endWeek && ['Season ends', 'Week ' + L.endWeek]

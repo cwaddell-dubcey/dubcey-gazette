@@ -80,23 +80,79 @@
     });
   }
 
-  /* ---------- calendar ---------- */
+  /* ---------- calendar: month grid (phones get a day-by-day list) ---------- */
+  var TZ = 'America/New_York';
+  function ymd(t){ var p = {}; new Intl.DateTimeFormat('en-US', { timeZone:TZ, year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(new Date(t)).forEach(function(x){ p[x.type] = x.value; }); return p.year + '-' + p.month + '-' + p.day; }
+  function hm(t){ return new Date(t).toLocaleTimeString('en-US', { timeZone:TZ, hour:'numeric', minute:'2-digit' }).replace(' AM', ' a.m.').replace(' PM', ' p.m.').replace(':00 ', ' '); }
+  function tone(s){ s = String(s || ''); return /no add|no trade|trade deadline/i.test(s) ? 'r' : /process|bid|waiver run|fcfs/i.test(s) && !/put all/i.test(s) ? 'g' : /unlock/i.test(s) ? 'y' : /put all|free agents on waivers/i.test(s) ? 'k' : /injur/i.test(s) ? 'r' : /draft|auction|keeper/i.test(s) ? 'b' : 'k'; }
+  function short(t, end){ t = String(t || '');
+    if(/no add/i.test(t)) return end ? 'ADD/DROPS OPEN' : 'ADD/DROPS LOCK';
+    if(/no trade/i.test(t)) return end ? 'TRADES REOPEN' : 'TRADES CLOSE';
+    if(/process|blind bid|waiver run/i.test(t)) return 'WAIVERS RUN';
+    if(/unlock/i.test(t)) return 'PLAYERS UNLOCK';
+    if(/put all free agents/i.test(t)) return 'FREE AGENTS \u2192 WAIVERS';
+    return t.toUpperCase(); }
+  function tm(t){ return new Date(t).toLocaleTimeString('en-US', { timeZone:TZ, hour:'numeric', minute:'2-digit' }).replace(':00', '').replace(' AM', 'A').replace(' PM', 'P'); }
   function calendar(){
+    if(S.cal){ return drawCal(); }
     $('sb2').innerHTML = '<div class="ld mono">LOADING THE CALENDAR\u2026</div>';
-    Promise.all([D.api('calendar').catch(no), D.content('calendar')]).then(function(r){
-      var E = arr(r[0] && r[0].calendar && r[0].calendar.event).map(function(e){ var t = num(e.start_time) * 1000; return { t:t, end:num(e.end_time) * 1000, title:e.title || String(e.type || '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); }), kind:kind(e.title || e.type) }; }).filter(function(e){ return e.t; });
-      arr(r[1]).forEach(function(e){ var t = Date.parse(e.date + 'T' + (e.time || '12:00') + ':00'); if(t) E.push({ t:t, title:e.title, kind:e.kind || kind(e.title), mine:1 }); });
-      E.sort(function(a, b){ return a.t - b.t; });
-      var now = Date.now(), up = E.filter(function(e){ return (e.end || e.t) >= now - 36e5; }), past = E.filter(function(e){ return (e.end || e.t) < now - 36e5; }).slice(-6).reverse();
-      var dl = E.filter(function(e){ return e.kind === 'TRADE' && e.t >= now; })[0], wv = E.filter(function(e){ return e.kind === 'WAIVERS' && e.t >= now; })[0];
-      function row(e){ var d = new Date(e.t); return '<div class="ev' + (e.t < now ? ' past' : '') + '"><div class="dt"><b>' + d.getDate() + '</b><span class="mono">' + d.toLocaleDateString(undefined, { month:'short' }).toUpperCase() + '</span></div><div><b>' + esc(e.title) + '</b><span class="mono">' + d.toLocaleDateString(undefined, { weekday:'long' }).toUpperCase() + ' \u00b7 ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }) + '</span></div><span class="tag mono k' + e.kind.charAt(0) + '">' + e.kind + '</span></div>'; }
-      $('sb2').innerHTML = '<div class="calhd">' +
-        '<div class="box cd"><span class="mono">NEXT WAIVER RUN</span><b>' + (wv ? new Date(wv.t).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }) : '\u2013') + '</b><i class="mono">' + (wv ? new Date(wv.t).toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }) : 'NOT SCHEDULED') + '</i></div>' +
-        '<div class="box cd"><span class="mono">TRADE DEADLINE</span><b>' + (dl ? new Date(dl.t).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }) : '\u2013') + '</b><i class="mono">' + (dl ? Math.ceil((dl.t - now) / 864e5) + ' DAYS LEFT' : 'NOT SET') + '</i></div></div>' +
-        '<div class="duo" style="margin-top:20px"><article class="card"><div class="bar mono"><span>COMING UP</span><span>' + up.length + ' EVENTS</span></div>' + (up.map(row).join('') || '<div class="ld mono">NOTHING ON THE CALENDAR</div>') + '</article>' +
-        '<article class="card"><div class="bar mono"><span>RECENTLY</span></div>' + (past.map(row).join('') || '<div class="ld mono">NOTHING YET</div>') + '</article></div>';
+    var nflReq = D.LOCAL ? fetch('demo/nflScheduleAll.json').then(function(r){ return r.json(); }) : D.api('nflSchedule', 'W=ALL');
+    Promise.all([D.api('calendar').catch(no), D.content('calendar').catch(no), nflReq.catch(no)]).then(function(r){
+      var DAY = {}, add = function(k, it){ (DAY[k] = DAY[k] || { ev:[] }).ev.push(it); };
+      arr(r[0] && r[0].calendar && r[0].calendar.event).forEach(function(e){
+        var s = num(e.start_time) * 1000, en = num(e.end_time) * 1000, t = e.title || String(e.type || '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        if(!s) return;
+        var range = en && en - s > 6e4;
+        add(ymd(s), { t:s, lbl:short(t), tm:tm(s), full:t + (range ? ' starts' : '') + ' at ' + hm(s), tone:tone(t), raw:t });
+        if(range && en - s < 30 * 864e5) add(ymd(en), { t:en, lbl:short(t, 1), tm:tm(en), full:t + ' ends at ' + hm(en), tone:/no add|no trade/i.test(t) ? 'g2' : tone(t), raw:t });
+      });
+      arr(r[1]).forEach(function(e){ var t = Date.parse(e.date + 'T' + (e.time || '12:00') + ':00'); if(t) add(e.date, { t:t, lbl:String(e.title).toUpperCase(), tm:e.time ? tm(t) : '', full:e.title, tone:tone(e.title), raw:e.title }); });
+      var N = r[2] && (r[2].fullNflSchedule ? arr(r[2].fullNflSchedule.nflSchedule) : r[2].nflSchedule ? [r[2].nflSchedule] : []);
+      arr(N).forEach(function(w){
+        var c = {}, first = Infinity;
+        arr(w.matchup).forEach(function(m){ var t = num(m.kickoff) * 1000; if(!t) return; var k = ymd(t); c[k] = (c[k] || 0) + 1; if(t < first) first = t; });
+        Object.keys(c).forEach(function(k){ (DAY[k] = DAY[k] || { ev:[] }).nfl = { w:w.week, n:c[k] }; });
+        if(first < Infinity){ // Friday injury report, the day after the week's first game
+          var f = new Date(first); for(var i = 0; i < 4; i++){ var k2 = ymd(f.getTime() + i * 864e5); if(new Date(k2 + 'T12:00:00Z').getUTCDay() === 5){ (DAY[k2] = DAY[k2] || { ev:[] }).inj = 1; break; } }
+        }
+      });
+      Object.keys(DAY).forEach(function(k){ DAY[k].ev.sort(function(a, b){ return a.t - b.t; }); });
+      var now = ymd(Date.now()), all = [];
+      Object.keys(DAY).forEach(function(k){ DAY[k].ev.forEach(function(e){ all.push(e); }); });
+      all.sort(function(a, b){ return a.t - b.t; });
+      S.cal = { DAY:DAY, today:now, m:now.slice(0, 7), nextW:all.filter(function(e){ return e.tone === 'g' && e.t > Date.now(); })[0], dl:all.filter(function(e){ return /no trade|trade deadline/i.test(e.raw) && e.t > Date.now(); })[0] };
+      drawCal();
     });
   }
+  function drawCal(){
+    var C = S.cal, y = +C.m.slice(0, 4), mo = +C.m.slice(5, 7), first = new Date(Date.UTC(y, mo - 1, 1)), days = new Date(Date.UTC(y, mo, 0)).getUTCDate(), lead = first.getUTCDay();
+    var title = first.toLocaleDateString('en-US', { month:'long', year:'numeric', timeZone:'UTC' });
+    function key(d){ return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+    function items(D2){
+      var h = '';
+      if(D2.nfl) h += '<li class="nf mono" title="' + D2.nfl.n + ' NFL game' + (D2.nfl.n === 1 ? '' : 's') + '"><b>WK ' + esc(D2.nfl.w) + '</b><span>' + D2.nfl.n + ' GAME' + (D2.nfl.n === 1 ? '' : 'S') + '</span></li>';
+      if(D2.inj) h += '<li class="ir mono"><b>INJURY REPORT</b></li>';
+      D2.ev.forEach(function(e){ h += '<li class="' + e.tone + ' mono" title="' + esc(e.full) + ' (ET)"><b>' + esc(e.lbl) + '</b>' + (e.tm ? '<span>' + esc(e.tm) + '</span>' : '') + '</li>'; });
+      return h;
+    }
+    var cells = '', list = '';
+    for(var i = 0; i < lead; i++) cells += '<div class="cgc x"></div>';
+    for(var d = 1; d <= days; d++){
+      var k = key(d), D2 = C.DAY[k] || { ev:[] }, it = items(D2), cls = k === C.today ? ' td' : k < C.today ? ' ps' : '';
+      cells += '<div class="cgc' + cls + '"><b class="dn2">' + d + '</b>' + (it ? '<ul>' + it + '</ul>' : '') + '</div>';
+      if(it) list += '<div class="cgl' + cls + '"><div class="cgd"><b>' + d + '</b><span class="mono">' + new Date(Date.UTC(y, mo - 1, d)).toLocaleDateString('en-US', { weekday:'short', timeZone:'UTC' }).toUpperCase() + '</span></div><ul>' + it + '</ul></div>';
+    }
+    var tail = (7 - (lead + days) % 7) % 7; for(var t = 0; t < tail; t++) cells += '<div class="cgc x"></div>';
+    function when(e){ return e ? new Date(e.t).toLocaleDateString('en-US', { timeZone:TZ, weekday:'short', month:'short', day:'numeric' }) : '\u2013'; }
+    $('sb2').innerHTML = '<div class="calhd">' +
+      '<div class="box cd"><span class="mono">NEXT WAIVER RUN</span><b>' + when(C.nextW) + '</b><i class="mono">' + (C.nextW ? hm(C.nextW.t).toUpperCase() + ' ET' : 'NOT SCHEDULED') + '</i></div>' +
+      '<div class="box cd"><span class="mono">TRADE DEADLINE</span><b>' + when(C.dl) + '</b><i class="mono">' + (C.dl ? Math.max(0, Math.ceil((C.dl.t - Date.now()) / 864e5)) + ' DAYS LEFT' : 'NOT SET') + '</i></div></div>' +
+      '<article class="card cg"><div class="cgh"><button type="button" data-cm="-1" aria-label="Previous month">\u2039</button><h2>' + esc(title) + '</h2><button type="button" data-cm="1" aria-label="Next month">\u203a</button></div>' +
+      '<div class="cgk mono"><span><i class="r"></i>LOCKS</span><span><i class="g"></i>WAIVERS &amp; REOPENS</span><span><i class="y"></i>UNLOCKS</span><span><i class="k"></i>OTHER</span><em>ALL TIMES EASTERN</em></div>' +
+      '<div class="cgw mono"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div><div class="cgg">' + cells + '</div>' +
+      '<div class="cgm">' + (list || '<div class="ld mono">NOTHING THIS MONTH</div>') + '</div></article>';
+  }
+  document.addEventListener('click', function(e){ var b = e.target.closest('[data-cm]'); if(!b || !S.cal) return; var y = +S.cal.m.slice(0, 4), m = +S.cal.m.slice(5, 7) + +b.getAttribute('data-cm'); if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } S.cal.m = y + '-' + String(m).padStart(2, '0'); drawCal(); });
   function kind(s){ s = String(s || ''); return /trade/i.test(s) ? 'TRADE' : /waiver|bbid|fcfs/i.test(s) ? 'WAIVERS' : /draft|auction|keeper/i.test(s) ? 'DRAFT' : 'LEAGUE'; }
   function no(){ return null; }
 

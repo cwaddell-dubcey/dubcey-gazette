@@ -104,46 +104,17 @@ async function espnWeek(ctx, w) {
   return out;
 }
 
-// Player card: find the player on ESPN (by name + NFL team) and bundle bio, news, game log and career stats
-const EW = 'https://site.web.api.espn.com/apis/common/v3/sports/football/nfl';
-const ESPN_TEAM = { GBP:'GB', KCC:'KC', NEP:'NE', NOS:'NO', SFO:'SF', TBB:'TB', LVR:'LV', JAC:'JAX', WAS:'WSH' };
-async function espnId(ctx, name, team) {
-  const key = new Request('https://espnid.dubcey/' + encodeURIComponent(nkey(name) + '|' + team));
+// Player card: MFL's own player page, news and projections, fetched server-side with a member login (MFL blocks browsers from other sites)
+const MFLP = { page: id => `player?L=${L}&P=${id}`, news: id => `news_articles?L=${L}&PLAYERS=${id}&DAYS=30`, proj: id => `player?L=${L}&P=${id}&YEAR=${Y}&DISPLAY_TYPE=projections&PROJSRC=mfl` };
+async function mflPage(env, ctx, s, kind, id) {
+  const key = new Request(`https://mflp.dubcey/${kind}/${id}`);
   const hit = await caches.default.match(key); if (hit) return hit.text();
-  const want = nkey(name), tm = ESPN_TEAM[team] || team; let id = '';
-  try {
-    const s = await fetch(`https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(name)}&type=player&sport=football&league=nfl&limit=10`, { headers: UA }).then(x => x.json());
-    const items = (s.items || s.results || []).filter(x => !x.type || x.type === 'player');
-    const pick = items.find(x => nkey(x.displayName) === want && (!tm || JSON.stringify(x).indexOf('"' + tm + '"') > -1)) || items.find(x => nkey(x.displayName) === want) || null;
-    if (pick) id = String(pick.id || ((/a:(\d+)/.exec(pick.uid || '') || [])[1]) || '');
-  } catch (e) {}
-  if (!id) try {
-    const s = await fetch(`https://site.api.espn.com/apis/search/v2?query=${encodeURIComponent(name)}&limit=10&type=player`, { headers: UA }).then(x => x.json());
-    for (const g of s.results || []) for (const c of g.contents || []) { if (nkey(c.displayName) === want && /l:28/.test(c.uid || '')) { id = (/a:(\d+)/.exec(c.uid) || [])[1] || ''; break; } }
-  } catch (e) {}
-  if (id) ctx.waitUntil(caches.default.put(key, new Response(id, { headers: { 'Cache-Control': 'public, max-age=2592000' } })));
-  return id;
-}
-async function playerCard(ctx, name, team) {
-  const id = await espnId(ctx, name, team); if (!id) return { espn: '' };
-  const get = (u, ttl) => cachedJSON(ctx, u, ttl).catch(() => null);
-  const [a, ov, gl, st] = await Promise.all([get(`${EW}/athletes/${id}`, 21600), get(`${EW}/athletes/${id}/overview`, 900), get(`${EW}/athletes/${id}/gamelog?season=${Y}`, 900), get(`${EW}/athletes/${id}/stats`, 86400)]);
-  const A = (a && a.athlete) || {};
-  const bio = { photo: A.headshot && A.headshot.href || '', jersey: A.jersey || '', height: A.displayHeight || '', weight: A.displayWeight || '', age: A.age || '', born: A.displayDOB || '', college: A.college && A.college.name || '', exp: A.displayExperience || '', draft: A.displayDraft || '', status: A.status && A.status.name || '', inj: ((A.injuries || [])[0] || {}).status || '' };
-  const news = ((ov && ov.news) || []).slice(0, 6).map(n => ({ hl: n.headline || '', body: n.description || '', when: n.published || n.lastModified || '', href: n.links && n.links.web && n.links.web.href || '' }));
-  // game log: one row per game, stats in ESPN's column order
-  let log = null;
-  if (gl && gl.seasonTypes) {
-    const ev = gl.events || {}, rows = [];
-    gl.seasonTypes.filter(t => /regular|post/i.test(t.displayName || '')).forEach(t => (t.categories || []).forEach(c => (c.events || []).forEach(e => {
-      const m = ev[e.eventId] || {}; rows.push({ wk: m.week || '', opp: (m.atVs || '') + ' ' + ((m.opponent && m.opponent.abbreviation) || ''), res: (m.gameResult || '') + ' ' + (m.score || ''), s: e.stats || [] });
-    })));
-    rows.sort((x, y) => (+x.wk || 0) - (+y.wk || 0));
-    log = { labels: gl.labels || [], names: gl.displayNames || gl.names || [], rows };
-  }
-  // career: each stat category → seasons
-  const career = ((st && st.categories) || []).filter(c => /passing|rushing|receiving|scoring|kicking/i.test(c.name || '')).slice(0, 3).map(c => ({ name: c.displayName || c.name, labels: c.labels || [], rows: (c.statistics || []).map(s => ({ yr: s.season && (s.season.displayName || s.season.year) || '', tm: (s.teamSlug || s.teamAbbreviation || '').toUpperCase(), s: s.stats || [] })) }));
-  return { espn: id, bio, news, log, career };
+  const tok = (s && s.t) || (env.DC && await env.DC.get('svc'));
+  const r = await fetch(`${HOST}/${Y}/${MFLP[kind](id)}`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
+  let h = await r.text();
+  h = h.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
+  if (r.ok) ctx.waitUntil(caches.default.put(key, new Response(h, { headers: { 'Cache-Control': 'public, max-age=' + (kind === 'news' ? 600 : 1800) } })));
+  return h;
 }
 
 // MFL's processed-waivers page (league members only) → plain rows, using the commissioner's saved login
@@ -241,10 +212,11 @@ export default {
       const v = env.DC && await env.DC.get('c:' + key);
       return new Response(v || 'null', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
-    if (p === '/data/player') {
-      const nm = (u.searchParams.get('name') || '').slice(0, 80), tm = (u.searchParams.get('team') || '').replace(/[^A-Z]/gi, '').toUpperCase();
-      if (!nm) return json({});
-      try { return json(await playerCard(ctx, nm, tm)); } catch (e) { return json({ error: String(e.message || e) }, 502); }
+    if (p === '/data/mfl') {
+      const kind = u.searchParams.get('k'), id = (u.searchParams.get('P') || '').replace(/\D/g, '');
+      if (!MFLP[kind] || !id) return new Response('', { status: 400 });
+      try { return new Response(await mflPage(env, ctx, session(req), kind, id), { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }); }
+      catch (e) { return new Response('', { status: 502 }); }
     }
     if (p === '/data/espn') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');

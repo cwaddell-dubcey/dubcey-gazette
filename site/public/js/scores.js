@@ -26,12 +26,29 @@
       var d = norm(j); if(!d || !d.ms.length) throw 0;
       if(first){ S.cur = +d.week; if(!S.w) S.w = S.cur; }
       var ids = []; d.ms.forEach(function(m){ m.forEach(function(f){ f.pl.forEach(function(p){ ids.push(p.id); }); }); });
-      return Promise.all([D.players(ids), nfl(S.w)]).then(function(){ S.data = d; draw(); schedule(); });
+      return Promise.all([D.players(ids), nfl(S.w), S.w === S.cur ? projs(S.w, ids) : null]).then(function(){ S.data = d; draw(); schedule(); });
     }).catch(function(){
       if(S.w && S.w !== S.cur) return Promise.all([D.api('weeklyResults', 'W=' + S.w), nfl(S.w)]).then(function(x){ var d = norm(x[0]); if(!d) throw 0; S.data = d; draw(); });
       $('mu').innerHTML = '<div class="ld mono">SCORES AREN\u2019T AVAILABLE RIGHT NOW.</div>';
     });
   }
+  // MFL projections for the current week; live projection = points so far + the unplayed share of the projection
+  function projs(w, ids){
+    if(S.pj && S.pjw === w) return Promise.resolve();
+    return D.api('projectedScores', 'W=' + w + '&PLAYERS=' + ids.join(',')).then(function(j){
+      var P = {}; arr(j && j.projectedScores && j.projectedScores.playerScore).forEach(function(x){ if(x.score !== '') P[x.id] = num(x.score); });
+      S.pj = P; S.pjw = w;
+    }).catch(function(){ S.pj = S.pj || {}; });
+  }
+  function hasProj(){ return S.w === S.cur && S.pj && S.pjw === S.w && Object.keys(S.pj).length; }
+  function lproj(p){
+    var pr = S.pj[p.id]; if(pr == null) return p.s;
+    var g = S.nfl && S.nfl[D.pinfo(p.id)[2]], left = p.sec;
+    if(g && g.kick > Date.now()) left = 3600;
+    if(!left || left <= 0) return p.s;
+    return p.s + pr * Math.min(1, left / 3600);
+  }
+  function tproj(f){ return f.pl.reduce(function(a, p){ return p.st ? a + lproj(p) : a; }, 0); }
   // NFL games for the week: who each team plays, kickoff, live clock and score
   function nfl(w){
     return D.api('nflSchedule', 'W=' + w).then(function(j){
@@ -81,7 +98,7 @@
     $('slate').innerHTML = d.ms.map(function(m, k){
       return '<button type="button" class="bug' + (k === S.sel ? ' on' : '') + '" data-m="' + k + '">' + m.map(function(f, i){
         var w = started && f.score > m[1 - i].score;
-        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + '</b><i>' + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
+        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + (hasProj() && (live || !started) ? '<u class="mono">PROJ ' + D.pts(Math.round(tproj(f) * 10) / 10) + '</u>' : '') + '</b><i>' + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
       }).join('') + '</button>';
     }).join('');
     matchup(d.ms[S.sel], live, started);
@@ -90,14 +107,14 @@
   function rows(f, starters){
     var list = f.pl.filter(function(p){ return p.st === starters; }).map(function(p){ var i = D.pinfo(p.id); return { id:p.id, s:p.s, sec:p.sec, n:i[0], pos:i[1], tm:i[2] }; })
       .sort(function(a, b){ return ((ORDER[a.pos] || 9) - (ORDER[b.pos] || 9)) || (b.s - a.s); });
-    var top = starters ? list.reduce(function(m, p){ return p.s > m ? p.s : m; }, 0) : -1;
-    return { sum:list.reduce(function(a, p){ return a + p.s; }, 0), html:list.map(function(p){
+    var top = starters ? list.reduce(function(m, p){ return p.s > m ? p.s : m; }, 0) : -1, hp = hasProj();
+    return { sum:list.reduce(function(a, p){ return a + p.s; }, 0), proj:hp ? list.reduce(function(a, p){ return a + lproj(p); }, 0) : null, html:list.map(function(p){
       var lv = S.w === S.cur && p.sec > 0 && p.sec < 3600;
       var sx = D.statOf(S.w, p.id), known = S.nfl && Object.keys(S.nfl).length, g = known && S.nfl[p.tm], ph = !g ? (known && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
       return '<div class="pr' + (top > 0 && p.s === top ? ' top' : '') + (lv ? ' on' : '') + '" data-p="' + esc(p.id) + '"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span>' +
         '<span class="hs" data-card="' + esc(p.id) + '"><img src="' + D.photo(p.id, p.tm, p.pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + D.nflLogo(p.tm) + '\';this.className=\'lg\'"></span>' +
         '<div style="min-width:0"><div class="n" data-card="' + esc(p.id) + '">' + esc(p.n) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
-        '<span class="p' + (p.s ? '' : ' z') + '">' + D.pts(p.s) + '</span></div>';
+        '<span class="pcol"><span class="p' + (p.s ? '' : ' z') + '">' + D.pts(p.s) + '</span>' + (hp && S.pj[p.id] != null ? '<span class="pj mono">' + (p.s && Math.abs(lproj(p) - p.s) > .05 ? '\u2192 ' + D.pts(Math.round(lproj(p) * 10) / 10) : 'PROJ ' + D.pts(S.pj[p.id])) + '</span>' : '') + '</span></div>';
     }).join('') };
   }
 
@@ -106,14 +123,14 @@
     var ra = rows(a, true), rb = rows(b, true), ba = rows(a, false), bb = rows(b, false);
     function meta(f){ return live ? (f.ytp + ' YET TO PLAY · ' + f.cur + ' PLAYING') : (S.rec[f.id] ? S.rec[f.id] + ' RECORD' : ''); }
     function col(f, r, bn){
-      return '<div><div class="grp mono"><span>STARTERS</span><span>' + D.pts(r.sum) + '</span></div>' + r.html +
+      return '<div><div class="grp mono"><span>STARTERS</span><span>' + D.pts(r.sum) + (r.proj != null ? ' <em>PROJ ' + D.pts(Math.round(r.proj * 10) / 10) + '</em>' : '') + '</span></div>' + r.html +
         (bn.html ? '<button type="button" class="bn mono" data-bench>' + (S.benchOpen ? 'HIDE BENCH' : 'BENCH') + '<span>' + D.pts(bn.sum) + ' PTS</span></button><div class="bench"' + (S.benchOpen ? '' : ' hidden') + '>' + bn.html + '</div>' : '') + '</div>';
     }
     $('mu').innerHTML =
       '<div class="ph"><img class="hl a" src="' + helm(a.id) + '" alt=""><img class="hl b" src="' + helm(b.id) + '" alt="">' +
       '<span class="plate a">' + esc(S.rec[a.id] || '') + '</span><span class="plate b">' + esc(S.rec[b.id] || '') + '</span>' +
       '</div><div class="sb"><div class="nums"><b class="' + (started && a.score >= b.score ? 'w' : '') + '">' + D.pts(a.score) + '</b><i></i><b class="' + (started && b.score >= a.score ? 'w' : '') + '">' + D.pts(b.score) + '</b></div>' +
-      '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
+      (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), sd = Math.max(25, Math.sqrt(pa + pb) * 2.2), z = (pa - pb) / sd, wa = Math.round(100 / (1 + Math.exp(-1.7 * z))); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + wa + '% \u2013 ' + (100 - wa) + '%</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a.id]) + '</b><span class="mono">' + esc(meta(a)) + '</span></div><div><b>' + esc(D.NAME[b.id]) + '</b><span class="mono">' + esc(meta(b)) + '</span></div></div>' +
       '<div class="cols">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
     wantStats(m);

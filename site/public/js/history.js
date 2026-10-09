@@ -9,6 +9,9 @@
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
   fetch('data/history.json').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
 
+  function notes(s){ return String(s || '').split(/\s*,\s*/).filter(Boolean).map(function(n){
+    var c = /league champion/i.test(n) ? 'ch' : /runner|finalist|2nd/i.test(n) ? 'ru' : /division/i.test(n) ? 'dv' : /toilet|last|sacko/i.test(n) ? 'lo' : '';
+    return '<span class="nchip mono ' + c + '">' + esc(n.replace(/ Division Champion$/i, ' Div. Champ').replace(/^League Champion$/i, '\u2605 League Champion')) + '</span>'; }).join(''); }
   function idOf(n){ return H.n2id[n] || ''; }
   function hl(n){ var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
@@ -59,7 +62,7 @@
       '<div class="tled"><div class="lh"><span class="t">Season by Season</span><a class="btn ghost2" href="#h2h/' + id + '">HEAD-TO-HEAD \u2192</a></div><div class="sx">' +
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]);
-        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + (ch ? '\ud83c\udfc6 ' : '') + esc(s[7]) + '</td></tr>';
+        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
       }).join('') + '</tbody></table></div></div></div>';
   }
 
@@ -91,9 +94,12 @@
   /* ---------- records / standings tables ---------- */
   function table(t, wide){
     var ti = t.team, cols = t.c, vi = cols.indexOf('W') > -1 ? cols.indexOf('W') : (cols[0] === '#' ? 1 : ti + 1);
+    // MFL milestone tables put the clinching game on its own row ("vs X, score" + "year, wk n"): fold it into the team row above
+    var R = [];
+    t.r.forEach(function(r){ var v = String(r[ti] || ''); if(/^vs\.? /i.test(v) && R.length){ var p = R[R.length - 1]; p._sub = v.replace(/^vs\.? /i, 'vs ') + (r[vi] ? ' \u00b7 ' + r[vi] : ''); } else R.push(r.slice()); });
     return '<article class="card rt' + (wide ? ' wide' : '') + '"><div class="bar mono"><span>' + esc(t.t) + '</span></div><div class="sx"><table class="ht"><thead><tr>' + cols.map(function(c, i){ return '<th class="' + (i === ti ? 'l' : '') + '">' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      t.r.map(function(r, k){ return '<tr class="' + (k === 0 && /^1/.test(String(r[0])) ? 'gold' : '') + '">' + r.map(function(v, i){
-        if(i === ti){ var n2 = now(v); return '<td class="l"><span class="tn3"><img src="' + hl(v) + '" alt=""><b>' + esc(v) + (n2 ? '<i class="mono">NOW ' + esc(D.SHORT[idOf(v)]) + '</i>' : '') + '</b></span></td>'; }
+      R.map(function(r, k){ return '<tr class="' + (k === 0 && /^1/.test(String(r[0])) ? 'gold' : '') + '">' + r.map(function(v, i){
+        if(i === ti){ var n2 = now(v); return '<td class="l"><span class="tn3"><img src="' + hl(v) + '" alt=""><b>' + esc(v) + (n2 ? '<i class="mono">NOW ' + esc(D.SHORT[idOf(v)]) + '</i>' : '') + (r._sub ? '<i class="mono sub">' + esc(r._sub) + '</i>' : '') + '</b></span></td>'; }
         return '<td class="' + (i === vi ? 'b' : '') + '">' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div></article>';
   }

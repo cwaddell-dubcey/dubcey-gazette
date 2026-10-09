@@ -12,12 +12,12 @@
   function no(){ return null; }
   Promise.all([D.api('rosters'), D.api('league').catch(no), D.api('injuries').catch(no), D.api('nflByeWeeks').catch(no), D.records()]).then(function(r){
     var R = {}; arr(r[0] && r[0].rosters && r[0].rosters.franchise).forEach(function(f){ R[f.id] = arr(f.player); });
-    var O = {}, cap = 0;
-    if(r[1] && r[1].league){ cap = num(r[1].league.salaryCapAmount); arr(r[1].league.franchises && r[1].league.franchises.franchise).forEach(function(f){ O[f.id] = f.owner_name || ''; }); }
+    var O = {};
+    if(r[1] && r[1].league){ arr(r[1].league.franchises && r[1].league.franchises.franchise).forEach(function(f){ O[f.id] = f.owner_name || ''; }); }
     var INJ = {}; arr(r[2] && r[2].injuries && r[2].injuries.injury).forEach(function(i){ INJ[i.id] = IW[String(i.status || '').toLowerCase()] || ''; });
     var BYE = {}; arr(r[3] && r[3].nflByeWeeks && r[3].nflByeWeeks.team).forEach(function(b){ BYE[b.id] = b.bye_week; });
     var ids = []; Object.keys(R).forEach(function(k){ R[k].forEach(function(p){ ids.push(p.id); }); });
-    S.d = { R:R, O:O, cap:cap, INJ:INJ, BYE:BYE, REC:r[4].rec, PTS:{} };
+    S.d = { R:R, O:O, INJ:INJ, BYE:BYE, REC:r[4].rec, PTS:{} };
     if(!S.sel) S.sel = S.me || D.IDS[0];
     return D.players(ids).then(function(){ draw(); return D.api('playerScores', 'W=YTD&PLAYERS=' + ids.join(',')); }).then(function(ps){
       arr(ps && ps.playerScores && ps.playerScores.playerScore).forEach(function(s){ if(s.score !== '') S.d.PTS[s.id] = s.score; });
@@ -32,7 +32,7 @@
     }).sort(function(a, b){ return ((PO[a.pos] || 9) - (PO[b.pos] || 9)) || (b.sal - a.sal); });
     var tot = pl.reduce(function(a, p){ return a + p.sal; }, 0), g = [], cur = null;
     pl.forEach(function(p){ if(!cur || cur.pos !== p.pos){ cur = { pos:p.pos, items:[], sal:0 }; g.push(cur); } cur.items.push(p); cur.sal += p.sal; });
-    return { pl:pl, tot:tot, groups:g, room:d.cap ? money(d.cap - tot) : '\u2013', pct:d.cap ? Math.min(100, tot / d.cap * 100).toFixed(1) : 0 };
+    return { pl:pl, tot:tot, groups:g };
   }
 
   function ledger(x, compact){
@@ -53,15 +53,15 @@
     }).join('');
     var pnl = '<div class="shf"><img src="' + helm(f) + '" alt="">' + (rec ? '<span class="plate">' + esc(rec) + '</span>' : '') + '</div>' +
       '<div class="inf"><div><div class="kk mono">SEASON ' + D.Y + '</div><div class="tn">' + esc(D.NAME[f]) + '</div>' + (d.O[f] ? '<div class="ow mono">' + esc(d.O[f]) + '</div>' : '') + D.divTag(f, D.div(f) ? D.div(f).name + ' Division' : '') + '</div>' +
-      (d.cap ? '<div><div class="ct mono"><span>CAP USED</span><b>' + money(x.tot) + ' / ' + money(d.cap) + '</b></div><div class="mt"><i style="width:' + x.pct + '%"></i></div><span class="rm mono">' + x.room + ' ROOM</span></div>' : '') +
+      '<div class="ct mono"><span>TOTAL SALARY</span><b>' + money(x.tot) + '</b></div>' +
       '<div class="cnt" style="grid-template-columns:repeat(' + Math.max(1, x.groups.length) + ',1fr)">' + x.groups.map(function(g){ return '<div><b>' + g.items.length + '</b><span class="mono">' + esc(g.pos || 'OTH') + '</span></div>'; }).join('') + '</div>' +
-      '<div class="tl mono">' + x.pl.length + ' PLAYERS ON ROSTER</div></div>';
+      '<div class="tl mono">' + x.pl.length + ' PLAYERS ON ROSTER</div></div>' + (D.div(f) && D.div(f).crest ? '<img class="dvwm ' + D.div(f).k + '" src="' + D.div(f).crest + '" alt="">' : '');
     var on = S.pick || cmp;
     var led = '<div class="lh"><span class="t">Roster</span><button type="button" class="btn' + (on ? ' cmpon' : ' ghost2') + '" data-cmp>' + (on ? 'CLOSE COMPARE \u00d7' : 'COMPARE +') + '</button></div>';
     if(S.pick && !cmp) led += '<div class="hint mono">PICK A TEAM TO COMPARE WITH ' + esc(D.SHORT[f]).toUpperCase() + '</div>';
     if(cmp){
       var y = team(cmp);
-      var th = function(id, xx){ return '<div class="th2"><img src="' + helm(id) + '" alt=""><div><b>' + esc(D.NAME[id]) + '</b><span class="mono">' + (d.REC[id] ? esc(d.REC[id]) + ' · ' : '') + money(xx.tot) + (d.cap ? ' · <em>' + xx.room + ' ROOM</em>' : '') + '</span></div></div>'; };
+      var th = function(id, xx){ return '<div class="th2"><img src="' + helm(id) + '" alt=""><div><b>' + esc(D.NAME[id]) + '</b><span class="mono">' + (d.REC[id] ? esc(d.REC[id]) + ' · ' : '') + money(xx.tot) + ' SALARY</span></div></div>'; };
       led += '<div class="two"><div>' + th(f, x) + ledger(x, true) + '</div><div>' + th(cmp, y) + ledger(y, true) + '</div></div>';
     } else {
       led += '<div class="lr hd mono"><span>PLAYER</span><span>PTS</span><span>BYE</span><span>SALARY</span></div>' + ledger(x, false);
