@@ -201,7 +201,7 @@
     e.preventDefault(); e.stopPropagation();
     var id = c.getAttribute('data-card');
     if(D.openCard) return D.openCard(id);
-    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js'; s.onload = res; document.head.appendChild(s); }); }
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=inj1dien'; s.onload = res; document.head.appendChild(s); }); }
     PC.then(function(){ D.openCard(id); });
   }, true);
 })();
