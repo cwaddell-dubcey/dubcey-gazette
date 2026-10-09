@@ -113,7 +113,7 @@
       var sx = D.statOf(S.w, p.id), known = S.nfl && Object.keys(S.nfl).length, g = known && S.nfl[p.tm], ph = !g ? (known && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
       return '<div class="pr' + (top > 0 && p.s === top ? ' top' : '') + (lv ? ' on' : '') + '" data-p="' + esc(p.id) + '"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span>' +
         '<span class="hs" data-card="' + esc(p.id) + '"><img src="' + D.photo(p.id, p.tm, p.pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + D.nflLogo(p.tm) + '\';this.className=\'lg\'"></span>' +
-        '<div style="min-width:0"><div class="n" data-card="' + esc(p.id) + '">' + esc(p.n) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
+        '<div style="min-width:0"><div class="n" data-card="' + esc(p.id) + '">' + esc(p.n) + D.ij(p.id) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
         '<span class="pcol"><span class="p' + (p.s ? '' : ' z') + '">' + D.pts(p.s) + '</span>' + (hp && S.pj[p.id] != null ? '<span class="pj mono">' + (p.s && Math.abs(lproj(p) - p.s) > .05 ? '\u2192 ' + D.pts(Math.round(lproj(p) * 10) / 10) : 'PROJ ' + D.pts(S.pj[p.id])) + '</span>' : '') + '</span></div>';
     }).join('') };
   }

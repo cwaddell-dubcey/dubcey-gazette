@@ -59,7 +59,7 @@
   function card(id){
     var i = D.pinfo(id), own = S.own[id], ij = S.inj[id];
     sheet('<div class="bar mono"><span>PLAYER CARD</span><button type="button" data-x aria-label="Close">\u00d7</button></div>' +
-      '<div class="pc"><div class="pch">' + D.face(id, i[1], i[2], 1) + '<div><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span><h2>' + esc(i[0]) + '</h2><span class="mono">' + esc(i[2]) + (ij ? ' · <em>' + ij + '</em>' : '') + '</span></div></div>' +
+      '<div class="pc"><div class="pch">' + D.face(id, i[1], i[2], 1) + '<div><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span><h2>' + esc(i[0]) + D.ij(id) + '</h2><span class="mono">' + esc(i[2]) + (ij ? ' · <em>' + ij + '</em>' : '') + '</span></div></div>' +
       '<div class="pcs"><div><b>' + D.pts(S.pts[id] || 0) + '</b><span class="mono">SEASON PTS</span></div><div><b>' + (own ? esc(D.SHORT[own]) : 'FA') + '</b><span class="mono">' + (own ? 'ROSTERED BY' : 'AVAILABLE') + '</span></div></div>' +
       (!own ? '<div style="padding:0 22px 22px"><button class="btn" type="button" data-add="' + esc(id) + '" data-x>ADD THIS PLAYER</button></div>' : '') + '</div>');
   }
@@ -67,7 +67,7 @@
     if(!S.me){ D.signIn(); return; }
     var i = D.pinfo(id), mine = S.rows.filter(function(r){ return r.own === S.me; }).sort(function(a, b){ return a.p - b.p; });
     var v = sheet('<div class="bar mono"><span>WAIVER CLAIM</span><button type="button" data-x aria-label="Close">\u00d7</button></div>' +
-      '<form class="cl"><div class="pch">' + D.face(id, i[1], i[2], 1) + '<div><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span><h2>' + esc(i[0]) + '</h2><span class="mono">' + esc(i[2]) + ' · ' + D.pts(S.pts[id] || 0) + ' PTS</span></div></div>' +
+      '<form class="cl"><div class="pch">' + D.face(id, i[1], i[2], 1) + '<div><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span><h2>' + esc(i[0]) + D.ij(id) + '</h2><span class="mono">' + esc(i[2]) + ' · ' + D.pts(S.pts[id] || 0) + ' PTS</span></div></div>' +
       '<label class="mono">YOUR BID' + (S.faab ? ' · ' + esc(S.faab) + ' LEFT' : '') + '<input name="bid" type="number" min="0" step="1" value="1" inputmode="numeric"></label>' +
       '<label class="mono">DROP<select name="drop"><option value="">Nobody (if you have room)</option>' + mine.map(function(r){ return '<option value="' + esc(r.id) + '">' + esc(r.pos + ' · ' + r.n + ' (' + D.pts(r.p) + ')') + '</option>'; }).join('') + '</select></label>' +
       '<div class="err" hidden></div><button class="btn" type="submit">SUBMIT CLAIM</button><div class="fine mono">CLAIMS RUN AT THE NEXT WAIVER PROCESS. CHECK THEM UNDER MY TEAM \u2192 WAIVERS.</div></form>');

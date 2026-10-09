@@ -1135,3 +1135,95 @@ html.nos{overflow:hidden}
 /* injury chips inline after player names */
 b .ij,.n .ij,.nm2 .ij,.ck span .ij,li span .ij{display:inline-block;margin-left:6px;vertical-align:2px;line-height:1;font-weight:400}
 .pk+.ij{display:inline-block;margin-left:4px;vertical-align:1px;line-height:1}
+
+/* ---------- finances ---------- */
+.fpx{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fchip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;background:#16304F;border:1.5px solid #2C4C78;font-size:9.5px;color:#9FB4CC}
+.fchip b{color:#F7EFDB;font-weight:700}
+.fchip i{width:7px;height:7px;border-radius:50%;background:#4F6C90}
+.fchip i.on{background:#3f9d82;box-shadow:0 0 0 3px rgba(63,157,130,.25)}
+.fpx .btn.ghost{padding:7px 11px;font-size:13px}
+.fsum{display:grid;grid-template-columns:1.5fr repeat(3,minmax(0,1fr));margin-bottom:28px}
+.fsum>div{padding:18px 20px;border-left:1px solid #E0D6B8;min-width:0}
+.fsum>div:first-child{border-left:0}
+.fsum span,.fcrt span{display:block;font-size:9.5px;color:#6B6455}
+.fsum b,.fcrt b{display:block;margin-top:8px;font:400 30px/1 'Alfa Slab One',serif;color:#102542;font-variant-numeric:tabular-nums}
+.fsum i,.fcrt i{display:block;margin-top:8px;font-size:9px;font-style:normal;color:#6B6455}
+.fsum .fbig{background:#102542}
+.fsum .fbig span{color:#E0A72B}.fsum .fbig i{color:#9FB4CC}
+.fsum .fbig b{font-size:44px;color:#F7EFDB;text-shadow:2px 2px 0 #c8282d}
+.fin-wrap{}
+.up{color:#1f6f5c !important}.dn{color:#c8282d !important}.warn{color:#b07a12 !important}
+.fcr{margin-bottom:28px}
+.fcrt{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid #102542}
+.fcrt>div{padding:16px 20px}
+.fcrt>div+div{border-left:1px solid #E0D6B8}
+.fcrt .hi{background:#F1E3B8}
+.fas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.fcx{padding:16px 20px;border-left:1px solid #E0D6B8;display:flex;flex-direction:column;gap:12px;min-width:0}
+.fcx:first-child{border-left:0}
+.fah{display:flex;align-items:center;gap:8px;min-width:0}
+.fah b{font:400 18px/1 'Alfa Slab One',serif}
+.fah i{font-size:8.5px;font-style:normal;color:#6B6455;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fah em{margin-left:auto;font-size:9.5px;font-style:normal;color:#102542;white-space:nowrap}
+.fmk{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font:700 14px/1 'Zilla Slab',serif;color:#fff}
+.fmk.btc{background:#E0A72B;color:#102542}.fmk.zec{background:#43648A}.fmk.zcat{background:#1f6f5c}
+.fag{display:grid;grid-template-columns:1.2fr 1fr;gap:10px}
+.fag label{display:flex;flex-direction:column;gap:5px;font-size:8.5px;color:#6B6455;min-width:0}
+.fag .fv{font:600 16px/1.2 'Zilla Slab',Georgia,serif;color:#102542;letter-spacing:0;text-transform:none}
+.fav{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding-top:10px;border-top:1px solid #E0D6B8}
+.fav b{flex-basis:100%;font:400 22px/1 'Alfa Slab One',serif;font-variant-numeric:tabular-nums}
+.fav span{font-size:9px;color:#6B6455}
+.fgt{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 20px;background:#102542;color:#9FB4CC;font-size:9.5px}
+.fgt b{font:400 20px/1 'Alfa Slab One',serif;color:#E0A72B;letter-spacing:0}
+.fduo{margin-top:0}
+.ft{width:100%;border-collapse:collapse}
+.ft th{padding:10px 14px;text-align:right;font-size:9px;color:#6B6455;border-bottom:1.5px solid #102542;font-weight:700}
+.ft td{padding:7px 14px;text-align:right;border-bottom:1px solid #E0D6B8;font-size:15px;vertical-align:middle}
+.ft .l{text-align:left}
+.ft th:first-child,.ft td:first-child{padding-left:18px}
+.ft th:last-child,.ft td:last-child{padding-right:18px}
+.ft td.mono{font-size:10.5px}
+.ft tr.off td{color:#A39B87}
+.ft .amt{font:400 15px/1 'Alfa Slab One',serif;color:#102542;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ft tr.off .amt{color:#C9C2AC}
+.ft tfoot td{border-bottom:0;border-top:2px solid #102542;padding-top:12px;padding-bottom:12px;background:#F1E9D2}
+.ft tfoot td.mono{font-size:9.5px;color:#6B6455}
+.ft .ld{text-align:center}
+.ftm{display:inline-flex;align-items:center;gap:10px;color:#102542;min-width:0}
+.ftm img{flex:none;width:40px;height:30px;object-fit:contain}
+.ftm b{font:600 15px/1.15 'Zilla Slab',Georgia,serif}
+a.ftm:hover b{color:#c8282d}
+.fv{font-variant-numeric:tabular-nums}
+input.fin,select.fin{width:100%;min-width:0;height:34px;padding:0 9px;border:1.5px solid #C9C2AC;background:#fff;color:#102542;font:600 14px/1 'Zilla Slab',Georgia,serif;border-radius:0;outline:none}
+input.fin:focus,select.fin:focus{border-color:#102542;box-shadow:2px 2px 0 #E0A72B}
+input.fin.r{text-align:right;font-variant-numeric:tabular-nums}
+input.fin.sm{max-width:96px;margin-left:auto;display:block}
+input.fin.nm{font-weight:600}
+.fpd{min-width:62px;padding:6px 8px;font-size:9px;border:1.5px solid #c8282d;background:transparent;color:#c8282d;cursor:pointer}
+.fpd.on{background:#1f6f5c;border-color:#1f6f5c;color:#fff}
+.fpd:disabled{cursor:default}
+.fadd{background:none;border:1px solid #E0A72B;color:#E0A72B;font-size:9px;padding:3px 8px;cursor:pointer}
+.fadd:hover{background:#E0A72B;color:#102542}
+.fx{background:none;border:0;color:#A39B87;font-size:18px;cursor:pointer;line-height:1}
+.fx:hover{color:#c8282d}
+.fnote{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 18px;font-size:9.5px;color:#6B6455;border-top:1px solid #E0D6B8}
+.fnote.warn{background:#FBEFC9}
+#ffoot .out{padding:0 0 0 4px;font-size:10px;color:#E0A72B}
+@media (max-width:1100px){
+  .fsum{grid-template-columns:1fr 1fr}
+  .fsum>div:nth-child(3){border-left:0}
+  .fsum>div:nth-child(n+3){border-top:1px solid #E0D6B8}
+  .fas{grid-template-columns:1fr}
+  .fcx{border-left:0;border-top:1px solid #E0D6B8}
+  .fcx:first-child{border-top:0}
+}
+@media (max-width:760px){
+  .fsum{grid-template-columns:1fr}
+  .fsum>div{border-left:0;border-top:1px solid #E0D6B8}
+  .fsum .fbig b{font-size:36px}
+  .fcrt{grid-template-columns:1fr}
+  .fcrt>div+div{border-left:0;border-top:1px solid #E0D6B8}
+  .ftm img{width:30px;height:24px}
+  .ftm b{font-size:13.5px}
+}

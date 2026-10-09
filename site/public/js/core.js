@@ -174,7 +174,7 @@
   }
 
   // ---------- header ----------
-  var NAV = [['scores', 'SCORES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['rules', 'RULES']];
+  var NAV = [['scores', 'SCORES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'RULES']];
   D.shell = function(active){
     var top = D.$('top');
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
@@ -201,7 +201,7 @@
     e.preventDefault(); e.stopPropagation();
     var id = c.getAttribute('data-card');
     if(D.openCard) return D.openCard(id);
-    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=inj2pjg0'; s.onload = res; document.head.appendChild(s); }); }
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=v3dueqd'; s.onload = res; document.head.appendChild(s); }); }
     PC.then(function(){ D.openCard(id); });
   }, true);
 })();

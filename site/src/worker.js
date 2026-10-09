@@ -21,7 +21,7 @@ function session(req) {
 const cookie = (v, age) => `dc_s=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o || o === u.origin; };
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
-const CONTENT = { column:1, teams:1, calendar:1, bylaws:1, popups:1 };
+const CONTENT = { column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1 };
 const txt = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
 // MFL's per-player weekly box ("detailed") page → short stat line, e.g. "245 PASS YDS · 2 PASS TD"
@@ -211,6 +211,11 @@ export default {
       }
       const v = env.DC && await env.DC.get('c:' + key);
       return new Response(v || 'null', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
+    // one-time import of the old Netlify auction tracker's league financials
+    if (p === '/data/legacy-fin') {
+      try { const r = await fetch('https://dubcey2026.netlify.app/api/league', { headers: UA }); const d = await r.json(); return json({ finance: (d && d.finance) || null }); }
+      catch (e) { return json({ finance: null }); }
     }
     if (p === '/data/mfl') {
       const kind = u.searchParams.get('k'), id = (u.searchParams.get('P') || '').replace(/\D/g, '');
