@@ -180,6 +180,7 @@
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
       '<nav class="nav mono">' + NAV.map(function(n){ return '<a class="' + (n[0] === active ? 'on' : '') + (n[2] ? ' soon' : '') + '" href="' + D.href(n[0]) + '">' + n[1] + '</a>'; }).join('') + '</nav>' +
       '<div class="who" id="who"></div></div>';
+    mobileNav(active);
     return Promise.all([D.me(), D.teamsReady]).then(function(x){
       var me = x[0], w = D.$('who');
       var bi = top.querySelector('.brand img'); if(bi) bi.src = D.helm('x');
@@ -190,9 +191,41 @@
         w.innerHTML = '<button class="btn" type="button">SIGN IN</button>';
         w.querySelector('.btn').addEventListener('click', signIn);
       }
+      mobileMe(me, active);
       return me || {};
     });
   };
+
+  // ---------- phone navigation: bottom tab bar + full "More" sheet (CSS shows it under 761px) ----------
+  var TABS = [['', 'HOME', 'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z'], ['scores', 'SCORES', 'M4 5h16v14H4zM12 5v14M4 12h16'], ['standings', 'STANDINGS', 'M5 20V10M12 20V4M19 20v-7'], ['myteam', 'MY TEAM', 'M12 3c4.5 0 8 3 8 8v2l-2 1v4h-5l-1-3H7a3 3 0 0 1-3-3v-1c0-4.5 3.5-8 8-8z']];
+  function ico(d){ return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>'; }
+  function mobileNav(active){
+    var old = document.getElementById('mbar'); if(old) old.remove(); old = document.getElementById('msheet'); if(old) old.remove();
+    var inMore = !TABS.some(function(t){ return t[0] === (active || ''); }) && active !== 'home';
+    var bar = document.createElement('nav'); bar.id = 'mbar'; bar.className = 'mbar mono'; bar.setAttribute('aria-label', 'Sections');
+    bar.innerHTML = TABS.map(function(t){ var on = (t[0] || 'home') === (active || 'home'); return '<a href="' + D.href(t[0]) + '" class="' + (on ? 'on' : '') + '">' + ico(t[2]) + '<span>' + t[1] + '</span></a>'; }).join('') +
+      '<button type="button" class="' + (inMore ? 'on' : '') + '" data-more aria-expanded="false">' + ico('M4 7h16M4 12h16M4 17h16') + '<span>MORE</span></button>';
+    var sh = document.createElement('div'); sh.id = 'msheet'; sh.className = 'msheet'; sh.hidden = true;
+    sh.innerHTML = '<div class="msb"><div class="msh mono"><span>THE DUBCEY CHRONICLE · ’26</span><button type="button" data-close aria-label="Close">×</button></div>' +
+      '<div class="msg">' + NAV.map(function(n){ return '<a href="' + D.href(n[0]) + '" class="' + (n[0] === active ? 'on' : '') + '">' + n[1].replace('THE ', '') + '</a>'; }).join('') + '</div>' +
+      '<div class="msme" id="msme"></div></div>';
+    document.body.appendChild(bar); document.body.appendChild(sh); document.body.classList.add('hasmbar');
+    function set(open){ sh.hidden = !open; bar.querySelector('[data-more]').setAttribute('aria-expanded', open ? 'true' : 'false'); document.documentElement.classList.toggle('mlock', open); }
+    bar.querySelector('[data-more]').addEventListener('click', function(){ set(sh.hidden); });
+    sh.addEventListener('click', function(e){ if(e.target === sh || e.target.closest('[data-close]')) set(false); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !sh.hidden) set(false); });
+  }
+  function mobileMe(me, active){
+    var m = document.getElementById('msme'); if(!m) return;
+    if(me && me.franchise){
+      m.innerHTML = '<a class="msteam" href="' + D.href('myteam') + '"><img src="' + D.helm(me.franchise) + '" alt=""><span><b>' + D.esc(D.NAME[me.franchise]) + '</b><i class="mono">LINEUP · TRADES · WAIVERS</i></span></a>' +
+        '<div class="msrow mono">' + (me.commish ? '<a href="' + D.href('commish') + '" class="' + (active === 'commish' ? 'on' : '') + '">COMMISH TOOLS</a>' : '') + '<button type="button" data-so>SIGN OUT</button></div>';
+      m.querySelector('[data-so]').addEventListener('click', signOut);
+    } else {
+      m.innerHTML = '<button class="btn msin" type="button">SIGN IN WITH MFL</button>';
+      m.querySelector('.msin').addEventListener('click', signIn);
+    }
+  }
 
   // any element with data-card="MFL player id" opens the player card (loaded on first use)
   var PC = null;
@@ -201,7 +234,7 @@
     e.preventDefault(); e.stopPropagation();
     var id = c.getAttribute('data-card');
     if(D.openCard) return D.openCard(id);
-    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=v3dueqd'; s.onload = res; document.head.appendChild(s); }); }
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=r5e4h9f'; s.onload = res; document.head.appendChild(s); }); }
     PC.then(function(){ D.openCard(id); });
   }, true);
 })();

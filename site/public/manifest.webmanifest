@@ -1,0 +1,26 @@
+{
+  "name": "The Dubcey Chronicle",
+  "short_name": "Dubcey",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1F38",
+  "theme_color": "#102542",
+  "icons": [
+    {
+      "src": "h/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "h/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "h/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

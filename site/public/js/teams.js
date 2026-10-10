@@ -39,7 +39,7 @@
     return x.groups.map(function(g){
       return '<div class="gh"><span class="pos ' + esc(g.pos) + '">' + esc(g.pos || 'OTH') + '</span><span class="gn">' + esc(PFULL[g.pos] || g.pos || 'Other') + '</span><span class="gs mono">' + g.items.length + ' · ' + money(g.sal) + '</span></div>' +
         g.items.map(function(p){
-          return '<div class="lr' + (compact ? ' c' : '') + '"><div class="pn">' + D.face(p.id, p.pos, p.tm) + '<span class="nm">' + esc(p.n) + '</span><span class="tmk mono">' + D.tlogo(p.tm) + esc(p.tm) + '</span>' + (p.inj ? '<span class="ij mono">' + esc(p.inj) + '</span>' : '') + (p.tag ? '<span class="tg mono">' + p.tag + '</span>' : '') + '</div>' +
+          return '<div class="lr' + (compact ? ' c' : '') + '"><div class="pn">' + D.face(p.id, p.pos, p.tm) + '<span class="nm" data-card="' + esc(p.id) + '">' + esc(p.n) + '</span><span class="tmk mono">' + D.tlogo(p.tm) + esc(p.tm) + '</span>' + (p.inj ? '<span class="ij mono">' + esc(p.inj) + '</span>' : '') + (p.tag ? '<span class="tg mono">' + p.tag + '</span>' : '') + '</div>' +
             '<span class="pt mono">' + (p.pts || '\u2013') + '</span>' + (compact ? '' : '<span class="by mono">' + esc(p.bye || '\u2013') + '</span>') + '<span class="sl">' + money(p.sal) + '</span></div>';
         }).join('');
     }).join('');

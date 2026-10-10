@@ -108,7 +108,7 @@
     var list = f.pl.filter(function(p){ return p.st === starters; }).map(function(p){ var i = D.pinfo(p.id); return { id:p.id, s:p.s, sec:p.sec, n:i[0], pos:i[1], tm:i[2] }; })
       .sort(function(a, b){ return ((ORDER[a.pos] || 9) - (ORDER[b.pos] || 9)) || (b.s - a.s); });
     var top = starters ? list.reduce(function(m, p){ return p.s > m ? p.s : m; }, 0) : -1, hp = hasProj();
-    return { sum:list.reduce(function(a, p){ return a + p.s; }, 0), proj:hp ? list.reduce(function(a, p){ return a + lproj(p); }, 0) : null, html:list.map(function(p){
+    return { n:list.length, sum:list.reduce(function(a, p){ return a + p.s; }, 0), proj:hp ? list.reduce(function(a, p){ return a + lproj(p); }, 0) : null, html:list.map(function(p){
       var lv = S.w === S.cur && p.sec > 0 && p.sec < 3600;
       var sx = D.statOf(S.w, p.id), known = S.nfl && Object.keys(S.nfl).length, g = known && S.nfl[p.tm], ph = !g ? (known && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
       return '<div class="pr' + (top > 0 && p.s === top ? ' top' : '') + (lv ? ' on' : '') + '" data-p="' + esc(p.id) + '"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span>' +
@@ -124,7 +124,7 @@
     function meta(f){ return live ? (f.ytp + ' YET TO PLAY · ' + f.cur + ' PLAYING') : (S.rec[f.id] ? S.rec[f.id] + ' RECORD' : ''); }
     function col(f, r, bn){
       return '<div><div class="grp mono"><span>STARTERS</span><span>' + D.pts(r.sum) + (r.proj != null ? ' <em>PROJ ' + D.pts(Math.round(r.proj * 10) / 10) + '</em>' : '') + '</span></div>' + r.html +
-        (bn.html ? '<button type="button" class="bn mono" data-bench>' + (S.benchOpen ? 'HIDE BENCH' : 'BENCH') + '<span>' + D.pts(bn.sum) + ' PTS</span></button><div class="bench"' + (S.benchOpen ? '' : ' hidden') + '>' + bn.html + '</div>' : '') + '</div>';
+        (bn.html ? '<button type="button" class="bn mono" data-bench>' + (S.benchOpen ? '\u25b4 HIDE BENCH' : '\u25be SHOW BENCH \u00b7 ' + bn.n) + '<span>' + D.pts(bn.sum) + ' PTS</span></button><div class="bench"' + (S.benchOpen ? '' : ' hidden') + '>' + bn.html + '</div>' : '') + '</div>';
     }
     $('mu').innerHTML =
       '<div class="ph"><img class="hl a" src="' + helm(a.id) + '" alt=""><img class="hl b" src="' + helm(b.id) + '" alt="">' +
