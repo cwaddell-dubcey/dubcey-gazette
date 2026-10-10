@@ -1396,3 +1396,9 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 }
 @media (max-width:760px){.cols.mir .pr .n .mpos{min-width:0}.cols.mir .pr{gap:4px}.cols.mir .pr .p{font-size:13px}.cols.mir .pr .n{gap:3px}}
 @media (max-width:760px){.cols.mir .pr .hs{align-self:center;margin:0;flex:none}.cols.mir .pr .hs img{max-width:none;flex:none}.cols.mir .pr .hs img.lg{margin-bottom:0;align-self:flex-start}}
+/* phone side-by-side: full names when they fit, short names on narrow phones */
+@media (min-width:381px) and (max-width:760px){
+  .cols.mir .pr .n .fn{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cols.mir .pr .n .sn{display:none}
+  .cols.mir .pr .n{font-size:12px}
+}

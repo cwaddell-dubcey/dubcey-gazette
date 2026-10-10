@@ -21,7 +21,7 @@
   }
 
   function load(first){
-    var q = S.w && S.w !== S.cur ? 'W=' + S.w : '';
+    var q = 'DETAILS=1' + (S.w && S.w !== S.cur ? '&W=' + S.w : '');
     return D.api('liveScoring', q).then(function(j){
       var d = norm(j); if(!d || !d.ms.length) throw 0;
       if(first){ S.cur = +d.week; if(!S.w) S.w = S.cur; }
