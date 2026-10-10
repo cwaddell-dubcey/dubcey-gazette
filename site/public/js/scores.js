@@ -104,6 +104,7 @@
     matchup(d.ms[S.sel], live, started);
   }
 
+  function shortN(n, pos){ n = String(n || ''); if(/^(Def|DEF|TMDEF|ST)$/.test(pos || '')) return n.split(' ').slice(-1)[0]; var w = n.split(' '); return w.length > 1 ? w[0].charAt(0) + '. ' + w.slice(1).join(' ') : n; }
   function rows(f, starters){
     var list = f.pl.filter(function(p){ return p.st === starters; }).map(function(p){ var i = D.pinfo(p.id); return { id:p.id, s:p.s, sec:p.sec, n:i[0], pos:i[1], tm:i[2] }; })
       .sort(function(a, b){ return ((ORDER[a.pos] || 9) - (ORDER[b.pos] || 9)) || (b.s - a.s); });
@@ -113,8 +114,8 @@
       var sx = D.statOf(S.w, p.id), known = S.nfl && Object.keys(S.nfl).length, g = known && S.nfl[p.tm], ph = !g ? (known && p.tm ? 'BYE WEEK' : '\u2014') : (g.kick > Date.now() && S.w >= S.cur ? 'YET TO PLAY' : 'NO STATS');
       return '<div class="pr' + (top > 0 && p.s === top ? ' top' : '') + (lv ? ' on' : '') + '" data-p="' + esc(p.id) + '"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span>' +
         '<span class="hs" data-card="' + esc(p.id) + '"><img src="' + D.photo(p.id, p.tm, p.pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + D.nflLogo(p.tm) + '\';this.className=\'lg\'"></span>' +
-        '<div style="min-width:0"><div class="n" data-card="' + esc(p.id) + '">' + esc(p.n) + D.ij(p.id) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
-        '<span class="pcol"><span class="p' + (p.s ? '' : ' z') + '">' + D.pts(p.s) + '</span>' + (hp && S.pj[p.id] != null ? '<span class="pj mono">' + (p.s && Math.abs(lproj(p) - p.s) > .05 ? '\u2192 ' + D.pts(Math.round(lproj(p) * 10) / 10) : 'PROJ ' + D.pts(S.pj[p.id])) + '</span>' : '') + '</span></div>';
+        '<div style="min-width:0"><div class="n" data-card="' + esc(p.id) + '"><span class="pos mpos ' + esc(p.pos) + '">' + esc(p.pos || '\u2013') + '</span><span class="fn">' + esc(p.n) + '</span><span class="sn">' + esc(shortN(p.n, p.pos)) + '</span>' + D.ij(p.id) + '</div><div class="m mono"><img class="nl" src="' + D.nflLogo(p.tm) + '" alt="' + esc(p.tm) + '" title="' + esc(p.tm) + '">' + (game(p.tm) || esc(p.tm || '')) + '</div><div class="sx mono' + (sx ? '' : ' none') + '" data-ph="' + ph + '">' + esc(sx || ph) + '</div></div>' +
+        '<span class="pcol"><span class="p' + (p.s ? '' : ' z') + '">' + D.pts(p.s) + '</span>' + (hp && S.pj[p.id] != null ? '<span class="pj mono">' + (p.s && Math.abs(lproj(p) - p.s) > .05 ? '\u2192 ' + D.pts(Math.round(lproj(p) * 10) / 10) : '<i class="pjk">PROJ </i>' + D.pts(S.pj[p.id])) + '</span>' : '') + '</span></div>';
     }).join('') };
   }
 
@@ -132,7 +133,7 @@
       '</div><div class="sb"><div class="nums"><b class="' + (started && a.score >= b.score ? 'w' : '') + '">' + D.pts(a.score) + '</b><i></i><b class="' + (started && b.score >= a.score ? 'w' : '') + '">' + D.pts(b.score) + '</b></div>' +
       (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), sd = Math.max(25, Math.sqrt(pa + pb) * 2.2), z = (pa - pb) / sd, wa = Math.round(100 / (1 + Math.exp(-1.7 * z))); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + wa + '% \u2013 ' + (100 - wa) + '%</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a.id]) + '</b><span class="mono">' + esc(meta(a)) + '</span></div><div><b>' + esc(D.NAME[b.id]) + '</b><span class="mono">' + esc(meta(b)) + '</span></div></div>' +
-      '<div class="cols">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
+      '<div class="cols mir">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
     wantStats(m);
   }
 

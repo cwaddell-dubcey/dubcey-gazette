@@ -1328,3 +1328,71 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
   .h2pick>div{min-width:0}
   .hrail{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 }
+
+/* scores rows: headshot centered in the row like everywhere else */
+.pr .face{width:44px;height:44px;align-self:center;justify-self:center}
+.pr .face img{object-position:center center}
+
+/* phone: show your helmet + team name chip like desktop */
+@media (max-width:760px){
+  .who{min-width:0;flex:0 1 auto}
+  .mine{padding:3px 10px 3px 3px;gap:7px;border-width:1.5px;min-width:0;max-width:46vw}
+  .mine img{width:38px;height:28px;flex:none}
+  .mine b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+}
+@media (max-width:360px){.mine b{display:none}.mine{padding:2px}}
+
+/* ---------- scores: phone = both lineups side by side, second team mirrored ---------- */
+.pr .n .mpos,.pr .n .sn{display:none}
+@media (max-width:760px){
+  .cols.mir{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cols.mir>div+div{border-left:1px solid #C9C2AC;border-top:0}
+  .cols.mir>div{min-width:0}
+  .cols.mir .grp{padding:7px 8px;font-size:8.5px;letter-spacing:.08em;flex-wrap:wrap;gap:2px 6px}
+  .cols.mir .grp em{font-size:8px}
+  .cols.mir .bn{padding:10px 8px;font-size:8.5px;letter-spacing:.06em;flex-wrap:wrap;gap:3px}
+  .cols.mir .pr{grid-template-columns:28px minmax(0,1fr) auto;gap:6px;height:54px;padding:0 6px}
+  .cols.mir .pr>.pos{display:none}
+  .cols.mir .pr .hs{width:28px;height:28px;border-radius:50%;overflow:hidden;background:#E8DFC6;display:flex;align-items:flex-start;justify-content:center}
+  .cols.mir .pr .hs img{width:28px;height:37px;object-fit:cover;object-position:center top}
+  .cols.mir .pr .hs img.lg{width:20px;height:20px;margin-top:4px;object-fit:contain}
+  .cols.mir .pr .n{display:flex;align-items:center;gap:4px;font-size:12.5px;min-width:0}
+  .cols.mir .pr .n .fn{display:none}
+  .cols.mir .pr .n .sn{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cols.mir .pr .n .mpos{display:inline-block;flex:none;width:auto;height:auto;padding:2px 3px;font-size:7.5px;line-height:1}
+  .cols.mir .pr .n .ij{flex:none;margin-left:0;font-size:8px;padding:1px 3px}
+  .cols.mir .pr .m{font-size:8px;letter-spacing:.02em;margin-top:4px;gap:3px}
+  .cols.mir .pr .m .nl{width:11px;height:11px}
+  .cols.mir .pr .sx{font-size:7.5px;margin-top:2px;letter-spacing:.02em}
+  .cols.mir .pr .p{font-size:14px}
+  .cols.mir .pr .pj{font-size:7.5px;letter-spacing:0}
+  /* right team mirrored: points | name | photo */
+  .cols.mir>div+div .pr{grid-template-columns:auto minmax(0,1fr) 28px}
+  .cols.mir>div+div .pr .pcol{order:-1;align-items:flex-start;text-align:left}
+  .cols.mir>div+div .pr>div{order:0;text-align:right}
+  .cols.mir>div+div .pr .hs{order:1}
+  .cols.mir>div+div .pr .n{flex-direction:row-reverse}
+  .cols.mir>div+div .pr .m{justify-content:flex-end;flex-direction:row-reverse}
+  .cols.mir>div+div .grp{flex-direction:row-reverse}
+  .cols.mir>div+div .bn{flex-direction:row-reverse}
+  .cols.mir .pr.on{box-shadow:inset 3px 0 0 #c8282d}
+  .cols.mir>div+div .pr.on{box-shadow:inset -3px 0 0 #c8282d}
+}
+
+.pj .pjk{font-style:normal}
+@media (max-width:760px){
+  .cols.mir .pr{grid-template-columns:26px minmax(0,1fr) auto;gap:5px;padding:0 5px}
+  .cols.mir>div+div .pr{grid-template-columns:auto minmax(0,1fr) 26px}
+  .cols.mir .pr .hs{width:26px;height:26px}
+  .cols.mir .pr .hs img{width:26px;height:35px}
+  .cols.mir .pr .pj .pjk{display:none}
+  .cols.mir .pr .p{font-size:13.5px}
+  .cols.mir .grp{flex-wrap:nowrap;white-space:nowrap;height:26px;align-items:center;overflow:hidden}
+  .cols.mir .grp em{display:none}
+  .cols.mir .bn{flex-wrap:nowrap;white-space:nowrap;height:36px;align-items:center;overflow:hidden}
+}
+@media (max-width:380px){
+  .cols.mir .pr .n .mpos{display:none}
+}
+@media (max-width:760px){.cols.mir .pr .n .mpos{min-width:0}.cols.mir .pr{gap:4px}.cols.mir .pr .p{font-size:13px}.cols.mir .pr .n{gap:3px}}
+@media (max-width:760px){.cols.mir .pr .hs{align-self:center;margin:0;flex:none}.cols.mir .pr .hs img{max-width:none;flex:none}.cols.mir .pr .hs img.lg{margin-bottom:0;align-self:flex-start}}
