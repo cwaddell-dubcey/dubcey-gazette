@@ -34,8 +34,30 @@
       mine.forEach(function(p){ S.start[p.id] = p.status === 'starter'; var sec = num(p.gameSecondsRemaining); S.lock[p.id] = !D.LOCAL && (sec > 0 && sec < 3600 || (num(p.score) > 0 && sec === 0)); });
       (S.R[S.me] || []).forEach(function(id){ if(!(id in S.start)) S.start[id] = false; });
       var ids = Object.keys(S.start); Object.keys(S.R).forEach(function(k){ ids = ids.concat(S.R[k]); });
-      return D.players(ids);
+      return Promise.all([D.players(ids), extras()]);
     }).then(draw).catch(function(){ $('mtb').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD YOUR TEAM. TRY AGAIN IN A MINUTE.</div>'; });
+  }
+  // matchup, kickoff, projection and season average for every player on my roster
+  S.nfl = {}; S.pj = {}; S.avg = {};
+  function extras(){
+    var mine = Object.keys(S.start); if(!mine.length || !S.week) return Promise.resolve();
+    return Promise.all([
+      D.api('nflSchedule', 'W=' + S.week).catch(function(){ return null; }),
+      D.api('projectedScores', 'W=' + S.week + '&PLAYERS=' + mine.join(',')).catch(function(){ return null; }),
+      D.scores('YTD', mine).catch(function(){ return {}; })
+    ]).then(function(r){
+      arr(r[0] && r[0].nflSchedule && r[0].nflSchedule.matchup).forEach(function(g){ var t = arr(g.team); if(t.length < 2) return; t.forEach(function(x, i){ var o = t[1 - i]; S.nfl[x.id] = { opp:o.id, home:x.isHome === '1', kick:num(g.kickoff) * 1000, sec:num(g.gameSecondsRemaining), my:x.score, their:o.score, rank:x.passDefenseRank || '', rrank:x.rushDefenseRank || '', spread:x.spread }; }); });
+      arr(r[1] && r[1].projectedScores && r[1].projectedScores.playerScore).forEach(function(x){ if(x.score !== '') S.pj[x.id] = num(x.score); });
+      var gp = Math.max(1, S.week - 1), y = r[2] || {}; S.avg = {}; Object.keys(y).forEach(function(id){ S.avg[id] = Math.round(y[id] / gp * 100) / 100; });
+    });
+  }
+  function gline(tm){
+    var g = S.nfl[tm]; if(!Object.keys(S.nfl).length) return esc(tm || '');
+    if(!g) return tm ? esc(tm) + ' · BYE' : 'FREE AGENT';
+    var vs = (g.home ? 'VS ' : '@ ') + D.tlogo(g.opp) + esc(g.opp), now = Date.now();
+    if(g.sec > 0 && g.kick <= now) return vs + ' · <b class="lvg">LIVE ' + num(g.my) + '–' + num(g.their) + '</b>';
+    if(g.kick <= now && (num(g.my) || num(g.their))) return vs + ' · FINAL ' + num(g.my) + '–' + num(g.their);
+    return vs + ' · ' + esc(new Date(g.kick).toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase());
   }
   function draw(){ tabs(); if(S.tab === 'trades') return trades(); if(S.tab === 'waivers') return waivers(); lineup(); }
 
@@ -56,7 +78,9 @@
   }
   function prow(id, starter){
     var i = D.pinfo(id), lk = S.lock[id];
-    return '<button type="button" class="lu' + (lk ? ' lk' : '') + '" data-p="' + esc(id) + '"' + (lk ? ' disabled' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(id, i[1], i[2]) + '<span class="nm2">' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + (lk ? ' · LOCKED' : '') + '</i></span><span class="mv mono">' + (lk ? '\ud83d\udd12' : starter ? 'BENCH \u2193' : 'START \u2191') + '</span></button>';
+    return '<button type="button" class="lu' + (lk ? ' lk' : '') + '" data-p="' + esc(id) + '"' + (lk ? ' disabled' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1] || '\u2013') + '</span>' + D.face(id, i[1], i[2]) + '<span class="nm2"><span class="nmx" data-card="' + esc(id) + '">' + esc(i[0]) + '</span>' + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i><i class="mono gl">' + gline(i[2]) + (lk ? ' \u00b7 LOCKED' : '') + '</i></span>' +
+      '<span class="lupj"><b>' + (S.pj[id] != null ? D.pts(S.pj[id]) : '\u2014') + '</b><i class="mono">PROJ</i>' + (S.avg[id] != null ? '<i class="mono av">AVG ' + D.pts(S.avg[id]) + '</i>' : '') + '</span>' +
+      '<span class="mv mono">' + (lk ? '\ud83d\udd12' : starter ? 'BENCH \u2193' : 'START \u2191') + '</span></button>';
   }
   function lineup(){
     var ids = Object.keys(S.start).sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); });
@@ -65,7 +89,7 @@
     var chips = Object.keys(v.lim.pos).map(function(p){ var l = v.lim.pos[p], k = v.c[p] || 0, ok = k >= l[0] && k <= l[1]; return '<span class="chip mono' + (ok ? '' : ' no') + '">' + p + ' ' + k + '<em>/' + (l[0] === l[1] ? l[0] : l[0] + '\u2013' + l[1]) + '</em></span>'; }).join('') +
       (v.lim.count ? '<span class="chip mono' + (v.n === v.lim.count ? '' : ' no') + '">TOTAL ' + v.n + '<em>/' + v.lim.count + '</em></span>' : '');
     $('mtb').innerHTML = opp +
-      '<div class="lugrid"><article class="card"><div class="bar mono"><span>STARTERS</span><span>TAP TO BENCH</span></div>' + (st.map(function(id){ return prow(id, true); }).join('') || '<div class="ld mono">NO STARTERS SET</div>') + '</article>' +
+      '<div class="lugrid"><article class="card"><div class="bar mono"><span>STARTERS' + (Object.keys(S.pj).length ? ' \u00b7 PROJ ' + D.pts(Math.round(st.reduce(function(a, id){ return a + (S.pj[id] || 0); }, 0) * 10) / 10) : '') + '</span><span>TAP TO BENCH</span></div>' + (st.map(function(id){ return prow(id, true); }).join('') || '<div class="ld mono">NO STARTERS SET</div>') + '</article>' +
       '<article class="card"><div class="bar mono"><span>BENCH</span><span>TAP TO START</span></div>' + (bn.map(function(id){ return prow(id, false); }).join('') || '<div class="ld mono">BENCH IS EMPTY</div>') + '</article></div>' +
       '<div class="savebar"><div class="chips">' + chips + '</div><div class="sv">' + (v.bad.length ? '<span class="why">' + esc(v.bad[0]) + '</span>' : (S.dirty ? '<span class="why ok mono">UNSAVED CHANGES</span>' : '')) +
       '<button class="btn" type="button" id="save"' + (v.bad.length || !S.dirty ? ' disabled' : '') + '>SAVE LINEUP</button></div></div>';

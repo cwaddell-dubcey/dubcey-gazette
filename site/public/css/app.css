@@ -1402,3 +1402,41 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
   .cols.mir .pr .n .sn{display:none}
   .cols.mir .pr .n{font-size:12px}
 }
+/* standings on phones: fit the screen (no sideways scroll), key columns only */
+@media (max-width:760px){
+  .stand{overflow-x:visible}
+  .stand .sr,.stand .bar,.stand .note{min-width:0}
+  .stand .sr{grid-template-columns:20px minmax(0,1fr) 38px 62px 58px !important;gap:6px;padding:8px 12px}
+  .stand .sr>:nth-child(4),.stand .sr>:nth-child(6),.stand .sr>:nth-child(8),.stand .sr>:nth-child(9),.stand .sr>:nth-child(10){display:none}
+  .stand .sr .tn2{gap:7px}
+  .stand .sr .tn2 img{width:38px;height:28px}
+  .stand .sr .tn2 b{font-size:12px;white-space:normal;line-height:1.1}
+  .stand .sr .wl{font-size:14px}
+  .stand .sr .rk{font-size:13px}
+  .stand .sr{font-size:11px}
+  .stand .sr.hd{font-size:8.5px;letter-spacing:.08em}
+}
+
+/* lineup rows: matchup, kickoff, projection */
+.lu{grid-template-columns:34px 38px minmax(0,1fr) auto auto}
+.nm2 .gl{display:flex;margin-top:4px;font-size:10.5px;color:#102542;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm2 .gl .nl{width:14px;height:14px}
+.nm2 .lvg{color:#c8282d;font-weight:700}
+.lupj{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right}
+.lupj b{font:400 17px/1 'Alfa Slab One',serif;color:#102542;font-variant-numeric:tabular-nums}
+.lupj i{font-size:9px;font-style:normal;color:#6B6455;letter-spacing:.06em;white-space:nowrap}
+.nav a[href*="myteam"]{color:#E0A72B}
+@media (max-width:760px){
+  .lu{grid-template-columns:30px 34px minmax(0,1fr) auto;gap:8px;padding:10px 12px}
+  .lu .mv{display:none}
+  .lu .face{width:34px;height:40px}
+  .nm2{font-size:15px}
+  .nm2 .gl{font-size:9.5px;letter-spacing:.02em}
+  .lupj b{font-size:15px}
+  .lupj i{font-size:8px}
+}
+@media (max-width:760px){.lu{grid-template-columns:30px 34px minmax(0,1fr) 56px}.lupj{min-width:0}.lupj i.av{font-size:7.5px}}
+/* scores rows (all sizes): headshot centered in the row, not hanging off the bottom */
+.pr .hs{align-self:center;margin:0;width:44px;height:52px;align-items:center;overflow:hidden}
+.pr .hs img{object-fit:contain;object-position:center center}
+.pr .hs img.lg{margin-bottom:0;align-self:center}
