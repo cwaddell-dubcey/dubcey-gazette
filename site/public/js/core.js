@@ -28,6 +28,25 @@
   };
   D.weekMin = function(d, t){ var hm = String(t || '0:0').split(':'); return D.DAYS.indexOf(d) * 1440 + (+hm[0]) * 60 + (+hm[1] || 0); };
   D.inWindow = function(p, now){ var a = D.weekMin(p.sd, p.st), b = D.weekMin(p.ed, p.et); now = now == null ? D.etNow() : now; return a <= b ? now >= a && now < b : now >= a || now < b; };
+  // Dubcey add rules: free agency opens Thu 9 a.m. ET; a player locks at his game's kickoff and stays on blind-bid waivers until the Wed 8 p.m. run
+  D.FA_OPEN = ['Thu', '9:00']; D.WAIVER_RUN = ['Wed', '20:00'];
+  var NFLW = null;
+  D.addWindow = function(team){
+    NFLW = NFLW || D.api('nflSchedule').catch(function(){ return null; });
+    return NFLW.then(function(j){
+      var now = Date.now(), m = D.etNow(), open = D.weekMin(D.FA_OPEN[0], D.FA_OPEN[1]), run = D.weekMin(D.WAIVER_RUN[0], D.WAIVER_RUN[1]);
+      var since = ((m - open) % 10080 + 10080) % 10080, lastOpen = now - since * 60000, cycle = (run - open + 10080) % 10080;
+      var kick = 0, last = 0;
+      D.arr(j && j.nflSchedule && j.nflSchedule.matchup).forEach(function(g){ var k = D.num(g.kickoff) * 1000; if(k > last) last = k; D.arr(g.team).forEach(function(t){ if(t.id === team) kick = k; }); });
+      var lock = kick || last;
+      var fa = since < cycle && lock > now && lock - lastOpen < cycle * 60000;
+      return { mode:fa ? 'fa' : 'bid', lock:fa ? lock : 0, bye:!kick };
+    });
+  };
+  D.addWhy = function(w){
+    if(w.mode === 'fa') return 'FREE AGENCY IS OPEN. HE\u2019S ADDED RIGHT AWAY. HE LOCKS AT KICKOFF ' + new Date(w.lock).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase() + ' ET.';
+    return 'HE\u2019S LOCKED UNTIL WAIVERS RUN WEDNESDAY AT 8 P.M. ET. PUT IN A BLIND BID; HIGHEST BID WINS. FREE AGENCY REOPENS THURSDAY AT 9 A.M.';
+  };
   D.div = function(id){ for(var i = 0; i < D.DIVS.length; i++) if(D.DIVS[i].ids.indexOf(id) > -1) return D.DIVS[i]; return null; };
   // division header: crest + name (divisions with a crest), otherwise the old banner image
   D.divBanner = function(d, extra){
@@ -190,7 +209,7 @@
   }
 
   // ---------- header ----------
-  var NAV = [['scores', 'SCORES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'RULES'], ['myteam', 'MY TEAM']];
+  var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'RULES'], ['myteam', 'MY TEAM']];
   D.shell = function(active){
     var top = D.$('top');
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +

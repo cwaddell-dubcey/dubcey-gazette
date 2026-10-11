@@ -69,7 +69,7 @@ async function cachedJSON(ctx, url, ttl) {
   return JSON.parse(t);
 }
 function nkey(n) { return String(n || '').toLowerCase().replace(/[.'’]/g, '').replace(/\s+(jr|sr|ii|iii|iv|v)$/, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
-async function espnWeek(ctx, w) {
+async function espnWeek(ctx, w, raw) {
   const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2&week=${w}`, 60);
   const out = {};
   await Promise.all((sb.events || []).map(async ev => {
@@ -84,14 +84,15 @@ async function espnWeek(ctx, w) {
         (cat.athletes || []).forEach(a => {
           const nm = a.athlete && a.athlete.displayName; if (!nm) return;
           const k = nkey(nm) + '|' + ab, o = P[k] = P[k] || {}, v = lab => { const i = L.indexOf(lab); return i > -1 ? a.stats[i] : ''; };
-          if (cat.name === 'passing') { o.py = v('YDS'); o.pt = v('TD'); o.int = v('INT'); }
-          if (cat.name === 'rushing') { o.ry = v('YDS'); o.rt = v('TD'); }
-          if (cat.name === 'receiving') { o.rec = v('REC'); o.cy = v('YDS'); o.ct = v('TD'); }
+          if (cat.name === 'passing') { o.py = v('YDS'); o.pt = v('TD'); o.int = v('INT'); o.ca = v('C/ATT'); }
+          if (cat.name === 'rushing') { o.ry = v('YDS'); o.rt = v('TD'); o.car = v('CAR'); }
+          if (cat.name === 'receiving') { o.rec = v('REC'); o.cy = v('YDS'); o.ct = v('TD'); o.tgt = v('TGTS'); }
           if (cat.name === 'fumbles') { o.fl = v('LOST'); }
           if (cat.name === 'kicking') { o.fg = v('FG'); o.xp = v('XP'); }
         });
       });
     });
+    if (raw) { Object.keys(P).forEach(k => { const o = P[k], n = x => +String(x || '0').split('/')[0] || 0, ca = String(o.ca || '').split('/'); out[k] = { cmp: +ca[0] || 0, att: +ca[1] || 0, py: n(o.py), pt: n(o.pt), int: n(o.int), car: n(o.car), ry: n(o.ry), rt: n(o.rt), tgt: n(o.tgt), rec: n(o.rec), cy: n(o.cy), ct: n(o.ct) }; }); return; }
     Object.keys(P).forEach(k => {
       const o = P[k], n = x => +String(x || '0').split('/')[0] || 0, s2 = [];
       if (n(o.py)) s2.push(o.py + ' PASS YDS'); if (n(o.pt)) s2.push(o.pt + ' PASS TD'); if (n(o.int)) s2.push(o.int + ' INT');
@@ -226,7 +227,27 @@ export default {
     if (p === '/data/espn') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
       if (!wk) return json({});
-      try { return json(await espnWeek(ctx, wk)); } catch (e) { return json({ error: String(e.message || e) }, 502); }
+      try { return json(await espnWeek(ctx, wk, u.searchParams.get('raw') === '1')); } catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+    if (p === '/data/nflgames') {
+      const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
+      try {
+        const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2${wk ? '&week=' + wk : ''}`, 60);
+        const OFF = { passing: 1, rushing: 1, receiving: 1 };
+        const games = await Promise.all((sb.events || []).map(async ev => {
+          const c = (ev.competitions || [])[0] || {}, st = (c.status && c.status.type) || {};
+          const side = x => x ? { ab: x.team && x.team.abbreviation, name: x.team && x.team.shortDisplayName, logo: x.team && x.team.logo, score: x.score, rec: ((x.records || [])[0] || {}).summary || '' } : {};
+          const T = c.competitors || [], g = { id: ev.id, kick: Date.parse(ev.date) || 0, state: st.state, detail: st.shortDetail || st.detail || '', away: side(T.find(x => x.homeAway === 'away')), home: side(T.find(x => x.homeAway === 'home')), box: {} };
+          if (st.state === 'pre') return g;
+          let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 45); } catch (e) { return g; }
+          ((s.boxscore && s.boxscore.players) || []).forEach(tm => {
+            const ab = tm.team && tm.team.abbreviation, o = g.box[ab] = {};
+            (tm.statistics || []).forEach(cat => { if (!OFF[cat.name]) return; o[cat.name] = { labels: cat.labels || [], rows: (cat.athletes || []).map(a => [a.athlete && a.athlete.displayName, a.athlete && a.athlete.id].concat(a.stats || [])) }; });
+          });
+          return g;
+        }));
+        return json({ week: (sb.week && sb.week.number) || +wk || 0, games: games.sort((a, b) => a.kick - b.kick) });
+      } catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
     if (p === '/data/stats') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, ''), ids = (u.searchParams.get('P') || '').split(',').filter(x => /^\d+$/.test(x));

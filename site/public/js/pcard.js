@@ -165,14 +165,16 @@
     }
     if(k === 'add'){
       var p = el().querySelector('.pact');
-      Promise.all([D.api('rosters'), D.api('leagueStandings').catch(no)]).then(function(r){
+      Promise.all([D.api('rosters'), D.api('leagueStandings').catch(no), D.addWindow(d.team)]).then(function(r){
         var mine = []; arr(r[0] && r[0].rosters && r[0].rosters.franchise).forEach(function(f){ if(f.id === d.me) mine = arr(f.player).map(function(x){ return x.id; }); });
         var bal = ''; arr(r[1] && r[1].leagueStandings && r[1].leagueStandings.franchise).forEach(function(f){ if(f.id === d.me) bal = f.bbidbalance || ''; });
+        var w = r[2], fa = w.mode === 'fa';
         return D.players(mine).then(function(){
-          p.innerHTML = '<form class="pclaim"><label class="mono">BID' + (bal ? ' \u00b7 ' + esc(String(bal).replace('.00', '')) + ' LEFT' : '') + '<input name="bid" type="number" min="0" step="1" value="1" inputmode="numeric"></label><label class="mono">DROP<select name="drop"><option value="">Nobody</option>' +
-            mine.map(function(id){ var i = D.pinfo(id); return '<option value="' + esc(id) + '">' + esc(i[1] + ' \u00b7 ' + i[0]) + '</option>'; }).join('') + '</select></label><button class="btn sm" type="submit">SUBMIT CLAIM</button></form>';
+          p.innerHTML = '<form class="pclaim"><div class="awin mono ' + w.mode + '">' + D.addWhy(w) + '</div>' + (fa ? '' : '<label class="mono">BID' + (bal ? ' \u00b7 ' + esc(String(bal).replace('.00', '')) + ' LEFT' : '') + '<input name="bid" type="number" min="0" step="1" value="1" inputmode="numeric" required></label>') + '<label class="mono">DROP<select name="drop"><option value="">Nobody</option>' +
+            mine.map(function(id){ var i = D.pinfo(id); return '<option value="' + esc(id) + '">' + esc(i[1] + ' \u00b7 ' + i[0]) + '</option>'; }).join('') + '</select></label><button class="btn sm" type="submit">' + (fa ? 'ADD NOW' : 'SUBMIT BID') + '</button></form>';
           p.querySelector('form').addEventListener('submit', function(e){ e.preventDefault(); var f = this, bt = f.querySelector('button'); bt.disabled = true;
-            D.act('blindBidWaiverRequest', { PICKS:d.id + ',' + num(f.bid.value) + ',' + (f.drop.value || '') }).then(function(r){ toast(r && r.ok ? (r.demo ? 'PREVIEW ONLY \u2014 CLAIM NOT SENT' : 'CLAIM IN FOR ' + d.name.toUpperCase()) : ((r && r.error) || 'MFL DIDN\u2019T ACCEPT THAT CLAIM'), !(r && r.ok)); bt.disabled = false; if(r && r.ok) p.innerHTML = acts(); }); });
+            var go = fa ? D.act('fcfsWaiver', f.drop.value ? { ADD:d.id, DROP:f.drop.value } : { ADD:d.id }) : D.act('blindBidWaiverRequest', { PICKS:d.id + ',' + num(f.bid.value) + ',' + (f.drop.value || '') });
+            go.then(function(r){ toast(r && r.ok ? (r.demo ? 'PREVIEW ONLY \u2014 NOT SENT' : fa ? d.name.toUpperCase() + ' ADDED' : 'BID IN FOR ' + d.name.toUpperCase()) : ((r && r.error) || 'MFL DIDN\u2019T ACCEPT THAT'), !(r && r.ok)); bt.disabled = false; if(r && r.ok) p.innerHTML = acts(); }); });
         });
       });
     }

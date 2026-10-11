@@ -130,11 +130,35 @@
           var f = new Date(first); for(var i = 0; i < 4; i++){ var k2 = ymd(f.getTime() + i * 864e5); if(new Date(k2 + 'T12:00:00Z').getUTCDay() === 5){ (DAY[k2] = DAY[k2] || { ev:[] }).inj = 1; break; } }
         }
       });
+      // Dubcey weekly rhythm: waivers run Wed 8 p.m., free agency opens Thu 9 a.m. (the days before each NFL week's first game)
+      function etTs(k, hh){ for(var o = 4; o <= 5; o++){ var t = Date.parse(k + 'T' + hh + ':00-0' + o + ':00'); if(+new Date(t).toLocaleString('en-US', { timeZone:TZ, hour:'numeric', hour12:false }) === +hh.split(':')[0]) return t; } return Date.parse(k + 'T' + hh + ':00-04:00'); }
+      function dow(k){ return new Date(k + 'T12:00:00Z').getUTCDay(); }
+      function shift(k, n){ return new Date(Date.parse(k + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
+      arr(N).forEach(function(w){
+        if(num(w.week) < 2) return;
+        var first = Infinity; arr(w.matchup).forEach(function(m){ var t = num(m.kickoff) * 1000; if(t && t < first) first = t; });
+        if(first === Infinity) return;
+        var k = ymd(first); for(var i = 0; i < 7 && dow(k) !== 3; i++) k = shift(k, -1);
+        if(dow(k) !== 3) return;
+        var has = (DAY[k] && DAY[k].ev || []).some(function(e){ return e.lbl === 'WAIVERS RUN'; });
+        if(!has){ var t1 = etTs(k, '20:00'); add(k, { t:t1, lbl:'WAIVERS RUN', tm:tm(t1), full:'Blind-bid waivers run at 8 p.m.', tone:'g', raw:'waiver run' }); }
+        var k2 = shift(k, 1), t2 = etTs(k2, '09:00');
+        if(!(DAY[k2] && DAY[k2].ev || []).some(function(e){ return e.lbl === 'FREE AGENCY OPENS'; })) add(k2, { t:t2, lbl:'FREE AGENCY OPENS', tm:tm(t2), full:'Free agency opens at 9 a.m. Players lock at their game\u2019s kickoff.', tone:'y', raw:'free agency opens' });
+      });
+      // collapse MFL duplicates of the league rhythm: one chip per real event
+      Object.keys(DAY).forEach(function(k){
+        var ev = DAY[k].ev, fa = ev.some(function(e){ return e.lbl === 'FREE AGENCY OPENS'; }), wr = ev.filter(function(e){ return e.lbl === 'WAIVERS RUN'; })[0];
+        DAY[k].ev = ev.filter(function(e){
+          if(fa && /^(ADD\/DROPS OPEN|PLAYERS UNLOCK)$/.test(e.lbl)) return false;
+          if(wr && e !== wr && /^(ADD\/DROPS LOCK|WAIVERS RUN)$/.test(e.lbl) && Math.abs(e.t - wr.t) < 36e5) return false;
+          return true;
+        });
+      });
       Object.keys(DAY).forEach(function(k){ DAY[k].ev.sort(function(a, b){ return a.t - b.t; }); });
       var now = ymd(Date.now()), all = [];
       Object.keys(DAY).forEach(function(k){ DAY[k].ev.forEach(function(e){ all.push(e); }); });
       all.sort(function(a, b){ return a.t - b.t; });
-      S.cal = { DAY:DAY, today:now, m:now.slice(0, 7), nextW:all.filter(function(e){ return e.tone === 'g' && e.t > Date.now(); })[0], dl:all.filter(function(e){ return /no trade|trade deadline/i.test(e.raw) && e.t > Date.now(); })[0] };
+      S.cal = { DAY:DAY, today:now, m:now.slice(0, 7), nextW:all.filter(function(e){ return e.lbl === 'WAIVERS RUN' && e.t > Date.now(); })[0], nextFA:all.filter(function(e){ return e.lbl === 'FREE AGENCY OPENS' && e.t > Date.now(); })[0], dl:all.filter(function(e){ return /no trade|trade deadline/i.test(e.raw) && e.t > Date.now(); })[0] };
       drawCal();
     });
   }
@@ -154,19 +178,22 @@
     for(var d = 1; d <= days; d++){
       var k = key(d), D2 = C.DAY[k] || { ev:[] }, it = items(D2), cls = k === C.today ? ' td' : k < C.today ? ' ps' : '';
       cells += '<div class="cgc' + cls + '"><b class="dn2">' + d + '</b>' + (it ? '<ul>' + it + '</ul>' : '') + '</div>';
-      if(it) list += '<div class="cgl' + cls + '"><div class="cgd"><b>' + d + '</b><span class="mono">' + new Date(Date.UTC(y, mo - 1, d)).toLocaleDateString('en-US', { weekday:'short', timeZone:'UTC' }).toUpperCase() + '</span></div><ul>' + it + '</ul></div>';
+      if(it) list += '<div class="cgl' + cls + (cls === ' ps' && !C.showPast ? ' hid' : '') + '"><div class="cgd"><b>' + d + '</b><span class="mono">' + new Date(Date.UTC(y, mo - 1, d)).toLocaleDateString('en-US', { weekday:'short', timeZone:'UTC' }).toUpperCase() + '</span></div><ul>' + it + '</ul></div>';
     }
+    var nPast = (list.match(/ hid"/g) || []).length;
+    if(nPast) list = '<button type="button" class="cgpast mono" data-past>SHOW ' + nPast + ' EARLIER DAY' + (nPast === 1 ? '' : 'S') + ' \u25be</button>' + list;
     var tail = (7 - (lead + days) % 7) % 7; for(var t = 0; t < tail; t++) cells += '<div class="cgc x"></div>';
     function when(e){ return e ? new Date(e.t).toLocaleDateString('en-US', { timeZone:TZ, weekday:'short', month:'short', day:'numeric' }) : '\u2013'; }
     $('sb2').innerHTML = '<div class="calhd">' +
       '<div class="box cd"><span class="mono">NEXT WAIVER RUN</span><b>' + when(C.nextW) + '</b><i class="mono">' + (C.nextW ? hm(C.nextW.t).toUpperCase() + ' ET' : 'NOT SCHEDULED') + '</i></div>' +
-      '<div class="box cd"><span class="mono">TRADE DEADLINE</span><b>' + when(C.dl) + '</b><i class="mono">' + (C.dl ? Math.max(0, Math.ceil((C.dl.t - Date.now()) / 864e5)) + ' DAYS LEFT' : 'NOT SET') + '</i></div></div>' +
+      '<div class="box cd"><span class="mono">FREE AGENCY OPENS</span><b>' + when(C.nextFA) + '</b><i class="mono">' + (C.nextFA ? hm(C.nextFA.t).toUpperCase() + ' ET' : 'NOT SCHEDULED') + '</i></div>' +
+      (C.dl ? '<div class="box cd"><span class="mono">TRADE DEADLINE</span><b>' + when(C.dl) + '</b><i class="mono">' + Math.max(0, Math.ceil((C.dl.t - Date.now()) / 864e5)) + ' DAYS LEFT</i></div>' : '') + '</div>' +
       '<article class="card cg"><div class="cgh"><button type="button" data-cm="-1" aria-label="Previous month">\u2039</button><h2>' + esc(title) + '</h2><button type="button" data-cm="1" aria-label="Next month">\u203a</button></div>' +
-      '<div class="cgk mono"><span><i class="r"></i>LOCKS</span><span><i class="g"></i>WAIVERS &amp; REOPENS</span><span><i class="y"></i>UNLOCKS</span><span><i class="k"></i>OTHER</span><em>ALL TIMES EASTERN</em></div>' +
+      '<div class="cgk mono"><span><i class="r"></i>LOCKS</span><span><i class="g"></i>WAIVERS &amp; REOPENS</span><span><i class="y"></i>FREE AGENCY &amp; UNLOCKS</span><span><i class="k"></i>OTHER</span><em>ALL TIMES EASTERN</em></div>' +
       '<div class="cgw mono"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div><div class="cgg">' + cells + '</div>' +
       '<div class="cgm">' + (list || '<div class="ld mono">NOTHING THIS MONTH</div>') + '</div></article>';
   }
-  document.addEventListener('click', function(e){ var b = e.target.closest('[data-cm]'); if(!b || !S.cal) return; var y = +S.cal.m.slice(0, 4), m = +S.cal.m.slice(5, 7) + +b.getAttribute('data-cm'); if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } S.cal.m = y + '-' + String(m).padStart(2, '0'); drawCal(); });
+  document.addEventListener('click', function(e){ if(e.target.closest('[data-past]') && S.cal){ S.cal.showPast = 1; drawCal(); return; } var b = e.target.closest('[data-cm]'); if(!b || !S.cal) return; var y = +S.cal.m.slice(0, 4), m = +S.cal.m.slice(5, 7) + +b.getAttribute('data-cm'); if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } S.cal.m = y + '-' + String(m).padStart(2, '0'); drawCal(); });
   function kind(s){ s = String(s || ''); return /trade/i.test(s) ? 'TRADE' : /waiver|bbid|fcfs/i.test(s) ? 'WAIVERS' : /draft|auction|keeper/i.test(s) ? 'DRAFT' : 'LEAGUE'; }
   function no(){ return null; }
 

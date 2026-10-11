@@ -20,7 +20,27 @@
     ],
     "lineups": [],
     "scoring": [],
-    "moves": [],
+    "moves": [
+      {
+        "h": "Two ways to add.",
+        "t": "During the season, players are added through free agency or through blind-bid waivers. Which one applies depends on the day and on whether the player’s game has started."
+      },
+      {
+        "h": "Free agency.",
+        "t": "Free agency opens every Thursday at 9 a.m. ET. Until a player’s NFL game kicks off that week, anyone can add or drop him, and the move goes through right away.",
+        "v": "Thu 9 a.m."
+      },
+      {
+        "h": "Player lock.",
+        "t": "At kickoff of his NFL game, a player locks for the rest of the week. From then until waivers run, he can only be added with a blind-bid waiver claim.",
+        "v": "At kickoff"
+      },
+      {
+        "h": "Blind-bid waivers.",
+        "t": "Waivers run every Wednesday at 8 p.m. ET. Each claim includes a bid from the team’s budget, and the highest bid wins the player. The site prompts for a bid whenever an add falls inside the lock.",
+        "v": "Wed 8 p.m."
+      }
+    ],
     "playoffs": [
       {
         "h": "Field.",
