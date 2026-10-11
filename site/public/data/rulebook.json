@@ -1,0 +1,73 @@
+{
+  "updated": "2026-10-11",
+  "add": {
+    "league": [
+      {
+        "h": "Weekly low-score penalty.",
+        "t": "In each of Weeks 1 through 13, the franchise with the lowest score pays $50 into the penalty pool. That money buys bitcoin, which is held separately from the luxury pool. The fine is called out in the Dispatch and on the home page every week.",
+        "v": "$50 / week"
+      },
+      {
+        "h": "Penalty pool payout.",
+        "t": "The penalty pool is paid out after Week 14. Half goes to the team with the most points in the whole league that week. A quarter goes to the team with the second-most.",
+        "v": "50% / 25%"
+      },
+      {
+        "h": "Best single week.",
+        "t": "The last quarter of the pool goes to the team with the highest single-week score from Weeks 1 through 13. The current record holder is shown on the home page, and every new record is announced.",
+        "v": "25%"
+      }
+    ],
+    "lineups": [],
+    "scoring": [],
+    "moves": [],
+    "playoffs": [
+      {
+        "h": "Field.",
+        "t": "Eight teams make the playoffs. Six spots are set when the regular season ends after Week 13. The last two are decided in Week 14.",
+        "v": "8 teams"
+      },
+      {
+        "h": "Division winners.",
+        "t": "The three division winners get in automatically. A division is won by the best overall record in it. If records are tied, the team with more total season points wins the division.",
+        "v": "3 auto bids"
+      },
+      {
+        "h": "Best records.",
+        "t": "The three teams with the best records among the non-division-winners also get in, using the same total-points tiebreaker. Seeds 1 through 6 are now set.",
+        "v": "3 bids"
+      },
+      {
+        "h": "Week 14 Free-For-All.",
+        "t": "The teams ranked 7th through 10th after Week 13 play one week against each other at once. Head-to-head results don't count. Only each team's total score matters.",
+        "v": "4 teams"
+      },
+      {
+        "h": "Head start.",
+        "t": "Points are added to Week 14 scores based on rank after Week 13. The 7th-place team gets 100 points and the 8th-place team gets 50. The 9th- and 10th-place teams start from zero.",
+        "v": "+100 / +50"
+      },
+      {
+        "h": "Last two spots.",
+        "t": "The two highest Free-For-All scores, head start included, take the 7 and 8 seeds. Whichever of the two scores higher is the 7 seed.",
+        "v": "Seeds 7–8"
+      },
+      {
+        "h": "Pick your opponent.",
+        "t": "Before the first round, the three division winners each choose their opponent from the other playoff teams. The 1 seed picks first, then the 2 seed, then the 3 seed.",
+        "v": "Picks 1–3"
+      },
+      {
+        "h": "Unpicked teams.",
+        "t": "The two teams nobody picks play each other in the first round. For the rest of the playoffs, those two are the 4 and 5 seeds.",
+        "v": "Seeds 4–5"
+      },
+      {
+        "h": "Semifinal picks.",
+        "t": "The four first-round winners move on to the semifinals. The highest remaining seed picks its opponent, and the other two teams play each other.",
+        "v": "Semis"
+      }
+    ]
+  },
+  "articles": []
+}

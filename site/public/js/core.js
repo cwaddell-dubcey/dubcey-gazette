@@ -35,6 +35,7 @@
     return '<div class="dvb ' + d.k + '"><img class="dvc" src="' + d.crest + '" alt=""><div class="dvt"><span class="dvn">' + D.esc(d.name) + '</span></div>' + (extra ? '<div class="dvx">' + extra + '</div>' : '') + '</div>';
   };
   D.divTag = function(id, txt){ var d = D.div(id); return d ? '<span class="dtag ' + d.k + '"><img src="' + (d.crest || 'img/div-' + d.k + '-badge.webp') + '" alt="">' + D.esc(txt || d.name) + '</span>' : ''; };
+  D.divChip = function(id, txt){ var d = D.div(id); return d ? '<span class="dchip ' + d.k + '" title="' + D.esc(d.name) + ' divisional game"><img src="' + d.crest + '" alt=""><i class="mono">' + D.esc(txt || 'DIV GAME') + '</i></span>' : ''; };
   D.esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); };
   D.arr = function(x){ return x == null ? [] : (Array.isArray(x) ? x : [x]); };
   D.num = function(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; };
@@ -80,6 +81,21 @@
   D.columnFile = function(){ return fetch(D.LOCAL ? 'demo/column.json' : D.RAW + 'column.json?t=' + Math.floor(Date.now() / 300000)).then(function(r){ return r.json(); }); };
   D.column = function(){ return D.content('column').then(function(c){ return c && c.weeks ? c : D.columnFile(); }); };
   D.award = function(v){ return typeof v === 'string' ? { text:v, id:'' } : (v || { text:'', id:'' }); };
+  // $50 weekly low scorer: commish's pick in Finances wins; otherwise the lowest MFL score that week
+  D.LOW_FINE = 50;
+  D.lowScores = function(upTo){
+    var ws = []; for(var i = 1; i <= upTo; i++) ws.push(i);
+    return Promise.all([D.content('finance').catch(function(){ return null; })].concat(ws.map(function(w){ return D.api('weeklyResults', 'W=' + w).catch(function(){ return null; }); }))).then(function(r){
+      var pen = {}; D.arr(r[0] && r[0].penalties).forEach(function(p, i){ if(p.fid) pen[p.week || i + 1] = p.fid; });
+      return ws.map(function(w, k){
+        var all = []; D.arr(r[k + 1] && r[k + 1].weeklyResults && r[k + 1].weeklyResults.matchup).forEach(function(m){ D.arr(m.franchise).forEach(function(f){ all.push({ id:f.id, s:D.num(f.score) }); }); });
+        all = all.filter(function(x){ return D.NAME[x.id]; }).sort(function(a, b){ return a.s - b.s; });
+        if(!all.length || !all.some(function(x){ return x.s > 0; })) return pen[w] ? { w:w, id:pen[w], s:null } : null;
+        var id = pen[w] || all[0].id, me = all.filter(function(x){ return x.id === id; })[0], top = all[all.length - 1];
+        return { w:w, id:id, s:me ? me.s : null, gap:all[1] && id === all[0].id ? all[1].s - all[0].s : null, top:{ id:top.id, s:top.s } };
+      }).filter(Boolean);
+    });
+  };
 
   // player names, cached in the browser for a day
   var PK = 'dcPlayers', PI = null;
@@ -127,10 +143,10 @@
 
   D.records = function(){
     return D.api('leagueStandings').then(function(j){
-      var R = {}, order = [];
-      D.arr(j && j.leagueStandings && j.leagueStandings.franchise).forEach(function(f){ if(!D.NAME[f.id]) return; var t = D.num(f.h2ht); R[f.id] = D.num(f.h2hw) + '-' + D.num(f.h2hl) + (t ? '-' + t : ''); order.push(f.id); });
-      return { rec:R, order:order };
-    }).catch(function(){ return { rec:{}, order:D.IDS.slice() }; });
+      var R = {}, order = [], ST = {};
+      D.arr(j && j.leagueStandings && j.leagueStandings.franchise).forEach(function(f){ if(!D.NAME[f.id]) return; var t = D.num(f.h2ht); R[f.id] = D.num(f.h2hw) + '-' + D.num(f.h2hl) + (t ? '-' + t : ''); ST[f.id] = { w:D.num(f.h2hw), l:D.num(f.h2hl), t:t, pf:D.num(f.pf) }; order.push(f.id); });
+      return { rec:R, order:order, st:ST };
+    }).catch(function(){ return { rec:{}, order:D.IDS.slice(), st:{} }; });
   };
 
   // ---------- sign-in ----------

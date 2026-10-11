@@ -38,8 +38,8 @@
     var luxSum = D.IDS.reduce(function(a, id){ return a + num(F.luxTax[id]); }, 0);
     var A = [
       { k:'btc', sym:'BTC', name:'Bitcoin', mark:'\u20bf', live:px.btc, dp:8 },
-      { k:'zec', sym:'ZEC', name:'Zcash', mark:'\u24e9', live:px.zec, dp:4 },
-      { k:'zcat', sym:'ZCAT', name:'ZCAT \u00b7 Solana', mark:'\u25c8', live:px.zcat, dp:0 }
+      { k:'zec', sym:'ZEC', name:'Zcash', mark:'\u24cf', logo:'img/zec-logo.png', live:px.zec, dp:4 },
+      { k:'zcat', sym:'ZCAT', name:'ZCAT \u00b7 Solana', mark:'\u25c8', logo:'img/zcat-logo.png', live:px.zcat, dp:0 }
     ].map(function(x){ x.qty = num(F[x.k + 'Qty']); x.cost = num(F[x.k + 'Cost']); x.value = x.live > 0 && x.qty > 0 ? x.qty * x.live : x.cost; return x; });
     var costSum = A.reduce(function(a, x){ return a + x.cost; }, 0), luxNow = A.reduce(function(a, x){ return a + x.value; }, 0);
     var luxCost = costSum > 0 ? costSum : (F.luxInvested === '' || F.luxInvested == null ? luxSum : num(F.luxInvested));
@@ -81,8 +81,8 @@
 
     // penalties + payouts
     var opts = function(sel){ return '<option value="">\u2014</option>' + D.IDS.map(function(id){ return '<option value="' + id + '"' + (id === sel ? ' selected' : '') + '>' + esc(D.NAME[id]) + '</option>'; }).join(''); };
-    h += '<div class="duo fduo"><section class="card"><div class="bar mono"><span>\u20bf LAST-PLACE PENALTIES</span><span>$' + PENALTY + ' EACH \u00b7 SEPARATE POOL</span></div>' +
-      '<table class="ft"><thead><tr><th class="l mono">WK</th><th class="l mono">LAST PLACE</th><th class="mono">BTC BOUGHT</th><th class="mono">BUY</th></tr></thead><tbody>' +
+    h += '<div class="duo fduo"><section class="card"><div class="bar mono"><span>\u20bf WEEKLY LOW-SCORE PENALTIES</span><span>$' + PENALTY + ' EACH \u00b7 SEPARATE POOL</span></div>' +
+      '<table class="ft"><thead><tr><th class="l mono">WK</th><th class="l mono">LOW SCORER</th><th class="mono">BTC BOUGHT</th><th class="mono">BUY</th></tr></thead><tbody>' +
       F.penalties.map(function(p, i){ var on = p.fid || String(p.name || '').trim();
         return '<tr class="' + (on ? '' : 'off') + '"><td class="l mono">' + (p.week || i + 1) + '</td><td class="l">' + (S.edit ? '<select class="fin" data-f="penalties.' + i + '.fid">' + opts(p.fid) + '</select>' : team(p.fid, p.name)) + '</td><td>' + inp('penalties.' + i + '.btc', p.btc, { num:1, ph:'0.0000', cls:'r', show:p.btc ? '\u20bf' + p.btc : '\u2014' }) + '</td><td class="amt">' + (on ? '$' + PENALTY : '\u2014') + '</td></tr>';
       }).join('') + '</tbody><tfoot><tr><td colspan="2" class="l mono">POOL \u00b7 ' + c.penN + ' OF ' + F.penalties.length + ' WEEKS</td><td class="mono">\u20bf' + c.penBtc.toFixed(8).replace(/0+$/, '').replace(/\.$/, '') + '</td><td class="amt">' + money0(c.penCost) + '</td></tr></tfoot></table>' +
@@ -94,6 +94,18 @@
       F.payouts.map(function(p, i){ return '<tr><td class="l">' + inp('payouts.' + i + '.label', p.label, { cls:'nm' }) + '</td><td>' + inp('payouts.' + i + '.pct', p.pct, { num:1, cls:'r sm', show:num(p.pct) + '%' }) + '</td><td class="amt">' + money(c.net * num(p.pct) / 100) + '</td></tr>'; }).join('') +
       '</tbody><tfoot><tr><td class="l mono">TOTAL</td><td class="mono ' + (off ? 'warn' : '') + '">' + c.pctSum.toFixed(2).replace(/\.00$/, '') + '%</td><td class="amt">' + money(c.net) + '</td></tr></tfoot></table>' +
       (off ? '<div class="fnote warn mono">SHARES ADD UP TO ' + c.pctSum.toFixed(2) + '% \u2014 THEY SHOULD TOTAL 100%</div>' : '') + '</section></div>';
+
+    // penalty pool → Week 14 payout
+    var R = S.hi, pp = c.penNow;
+    h += '<section class="card fpp"><div class="bar mono"><span>\u20bf PENALTY POOL PAYOUT \u00b7 AFTER WEEK 14</span><span>POOL TODAY ' + money(pp) + '</span></div>' +
+      '<div class="fppg">' +
+        '<div class="fppc hi"><span class="mono">CURRENT WEEKLY HIGH SCORE \u00b7 WEEKS 1\u201313</span>' +
+          (R ? '<a class="fpph" href="' + D.href('teams', 'f=' + R.id) + '"><img src="' + D.helm(R.id) + '" alt=""><div><b>' + esc(D.NAME[R.id]) + '</b><i class="mono">' + D.pts(R.s) + ' PTS \u00b7 WEEK ' + R.w + '</i></div></a>' : '<div class="fpph"><span class="ph2"></span><div><b>To be decided</b><i class="mono">' + (S.hiErr ? 'COULDN\u2019T LOAD SCORES' : 'WAITING ON WEEK 1') + '</i></div></div>') +
+          '<div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 IF THE RECORD HOLDS</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 HIGHEST SCORE IN THE LEAGUE</span><div class="fppa"><b>' + money(pp * .5) + '</b><i class="mono">50% OF POOL</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 SECOND-HIGHEST SCORE</span><div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL</i></div></div>' +
+      '</div>' +
+      '<div class="fnote mono"><span>THE LOW SCORER IN EACH OF WEEKS 1\u201313 PAYS $' + PENALTY + '. THE POOL IS HELD IN BITCOIN, SO PAYOUTS MOVE WITH THE PRICE.</span><a href="' + D.href('rules') + '#a-league">RULES \u2192</a></div></section>';
 
     // dues + expenses
     h += '<div class="duo fduo"><section class="card"><div class="bar mono"><span>DUES & LUXURY TAX</span><span>DUES $' + DUES + '</span></div>' +
@@ -160,4 +172,8 @@
     return legacy().then(function(f){ S.F = convert(f); S.from = f ? 'legacy' : 'seed'; });
   }).then(function(){ var F = S.F; F.dues = F.dues || {}; F.luxTax = F.luxTax || {}; F.expenses = F.expenses || []; F.payouts = F.payouts || seed().payouts; F.penalties = F.penalties && F.penalties.length ? F.penalties : seed().penalties; draw(); });
   prices(); setInterval(prices, 60000);
+  D.api('liveScoring').then(function(j){ var w = Math.min(13, num(j && j.liveScoring && j.liveScoring.week)); if(!w) return []; return D.lowScores(w); }).then(function(L){
+    var r = null; (L || []).forEach(function(x){ if(x.top && x.top.s > 0 && (!r || x.top.s > r.s)) r = { w:x.w, id:x.top.id, s:x.top.s }; });
+    S.hi = r; if(S.F) draw();
+  }).catch(function(){ S.hiErr = 1; if(S.F) draw(); });
 })();

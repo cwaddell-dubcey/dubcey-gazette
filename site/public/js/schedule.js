@@ -7,7 +7,7 @@
     S.W = arr(r[0] && r[0].schedule && r[0].schedule.weeklySchedule).map(function(w){
       return { n:num(w.week), ms:arr(w.matchup).map(function(m){ return arr(m.franchise).map(function(f){ return { id:f.id, s:f.score != null && f.score !== '' ? num(f.score) : null, res:f.result }; }); }).filter(function(m){ return m.length === 2; }) };
     }).filter(function(w){ return w.ms.length; }).sort(function(a, b){ return a.n - b.n; });
-    S.rec = r[1].rec; S.order = r[1].order; S.lg = (r[2] && r[2].league) || {};
+    S.rec = r[1].rec; S.order = r[1].order; S.st = r[1].st || {}; S.lg = (r[2] && r[2].league) || {};
     draw();
   }).catch(function(){ $('sb2').innerHTML = '<div class="ld mono">THE SCHEDULE ISN\u2019T AVAILABLE RIGHT NOW.</div>'; });
 
@@ -31,7 +31,7 @@
         var m = wk.ms.filter(function(x){ return x[0].id === t || x[1].id === t; })[0]; if(!m) return '<div class="sg2"><span class="wk mono">WK ' + wk.n + '</span><span class="bye mono">BYE</span></div>';
         var me = m[0].id === t ? m[0] : m[1], op = m[0].id === t ? m[1] : m[0], done = me.s != null && op.s != null, res = done ? (me.s > op.s ? 'W' : me.s < op.s ? 'L' : 'T') : '';
         if(res === 'W') w++; if(res === 'L') l++;
-        return '<a class="sg2' + (wk.n === last + 1 ? ' nxt' : '') + '" href="' + (done || op.id === 'AVG' ? D.href('scores', 'w=' + wk.n) : D.href('teams', 'f=' + op.id)) + '"><span class="wk mono">WK ' + wk.n + '</span><span class="tn3"><img src="' + helm(op.id) + '" alt=""><b>' + esc(nm(op.id)) + '</b>' + (D.div(t) && D.div(t) === D.div(op.id) ? '<img class="dmini" src="img/div-' + D.div(t).k + '-badge.webp" alt="Divisional Matchup" title="Divisional Matchup">' : '') + '</span><span class="rr mono">' + (done ? '' : esc(op.id === 'AVG' ? '' : S.rec[op.id] || '')) + '</span>' +
+        return '<a class="sg2' + (wk.n === last + 1 ? ' nxt' : '') + '" href="' + (done || op.id === 'AVG' ? D.href('scores', 'w=' + wk.n) : D.href('teams', 'f=' + op.id)) + '"><span class="wk mono">WK ' + wk.n + '</span><span class="tn3"><img src="' + helm(op.id) + '" alt=""><b>' + esc(nm(op.id)) + '</b>' + (D.div(t) && D.div(t) === D.div(op.id) ? D.divChip(t) : '') + '</span><span class="rr mono">' + (done ? '' : esc(op.id === 'AVG' ? '' : S.rec[op.id] || '')) + '</span>' +
           (done ? '<span class="res ' + res + '">' + (op.id === 'AVG' ? '' : res) + '</span><span class="sc">' + D.pts(me.s) + (op.id === 'AVG' ? '' : ' \u2013 ' + D.pts(op.s)) + '</span><span class="mono rr">' + w + '-' + l + '</span>' : '<span class="res">' + (wk.n === last + 1 ? '<i class="mono">NEXT</i>' : '') + '</span><span class="sc"></span><span></span>') + '</a>';
       }).join('') + '</article>';
     } else {
@@ -73,10 +73,24 @@
       if(!html) throw 0;
       $('sb2').innerHTML = html + '<div style="height:44px"></div>';
     }).catch(function(){
-      var o = S.order.length ? S.order : D.IDS;
-      $('sb2').innerHTML = '<article class="card"><div class="bar mono"><span>PLAYOFF PICTURE</span><span>IF THE SEASON ENDED TODAY</span></div>' + o.map(function(id, i){
-        return '<a class="pp2' + (i === cut - 1 ? ' cut' : '') + (i < cut ? ' in' : '') + '" href="' + D.href('teams', 'f=' + id) + '"><b class="n2">' + (i + 1) + '</b><span class="tn3"><img src="' + helm(id) + '" alt=""><b>' + esc(D.NAME[id]) + '</b></span><span class="mono rr">' + esc(S.rec[id] || '') + '</span><span class="mono tg2">' + (i < cut ? 'IN' : i < cut + 2 ? 'BUBBLE' : '') + '</span></a>';
-      }).join('') + '<div class="note mono">TOP ' + cut + ' MAKE IT. THE REAL BRACKET SHOWS HERE ONCE MFL SETS IT AFTER WEEK ' + lastReg + '.</div></article><div style="height:44px"></div>';
+      // Dubcey format: 3 division winners (1–3), 3 best records (4–6), ranks 7–10 play the Week 14 Free-For-All for seeds 7–8
+      var st = S.st || {}, base = (S.order.length ? S.order : D.IDS).slice();
+      function pct(id){ var x = st[id] || {}, g = (x.w || 0) + (x.l || 0) + (x.t || 0); return g ? ((x.w || 0) + (x.t || 0) / 2) / g : 0; }
+      function cmp(a, b){ return pct(b) - pct(a) || ((st[b] || {}).pf || 0) - ((st[a] || {}).pf || 0) || base.indexOf(a) - base.indexOf(b); }
+      var dw = D.DIVS.map(function(d){ return d.ids.filter(function(id){ return D.NAME[id]; }).sort(cmp)[0]; }).filter(Boolean).sort(cmp);
+      var rest = base.filter(function(id){ return dw.indexOf(id) < 0; }).sort(cmp);
+      var o = dw.concat(rest), HS = ['+100', '+50', '+0', '+0'];
+      function row(id, i, tag, cls){
+        var d = D.div(id);
+        return '<a class="pp2 ' + cls + '" href="' + D.href('teams', 'f=' + id) + '"><b class="n2">' + (i + 1) + '</b><span class="tn3"><img src="' + helm(id) + '" alt=""><b>' + esc(D.NAME[id]) + '</b></span><span class="mono rr">' + esc(S.rec[id] || '') + '</span><span class="mono tg2">' + esc(tag || (d && cls === 'in dvw' ? d.name.toUpperCase() : '')) + '</span></a>';
+      }
+      function grp(t, s){ return '<div class="ppg mono"><span>' + t + '</span><span>' + s + '</span></div>'; }
+      $('sb2').innerHTML = '<article class="card"><div class="bar mono"><span>PLAYOFF PICTURE</span><span>IF THE SEASON ENDED TODAY</span></div>' +
+        grp('DIVISION WINNERS', 'SEEDS 1\u20133 \u00b7 PICK THEIR OPPONENT') + o.slice(0, 3).map(function(id, i){ return row(id, i, '', 'in dvw'); }).join('') +
+        grp('BEST RECORDS', 'SEEDS 4\u20136 \u00b7 IN') + o.slice(3, 6).map(function(id, i){ return row(id, i + 3, 'IN', 'in'); }).join('') +
+        grp('WEEK 14 FREE-FOR-ALL', 'TOP 2 SCORES TAKE SEEDS 7\u20138') + o.slice(6, 10).map(function(id, i){ return row(id, i + 6, HS[i] + ' HEAD START', 'ffa'); }).join('') +
+        grp('OUT', '') + o.slice(10).map(function(id, i){ return row(id, i + 10, '', 'out'); }).join('') +
+        '<div class="note mono">TIES BROKEN BY TOTAL POINTS. DIVISION WINNERS PICK THEIR FIRST-ROUND OPPONENT IN SEED ORDER; THE TWO UNPICKED TEAMS PLAY EACH OTHER AND BECOME SEEDS 4\u20135. IN THE SEMIFINALS THE HIGHEST SEED LEFT PICKS AGAIN. <a href="' + D.href('rules') + '#a-playoffs">FULL RULES \u2192</a></div></article><div style="height:44px"></div>';
     });
   }
 
