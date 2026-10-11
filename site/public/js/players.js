@@ -71,6 +71,20 @@
     var t = S.st[r.id]; return t ? t[k] || 0 : null;
   }
   function fmt(v, k){ if(v == null) return '\u2013'; if(k === 'own' || k === 'add') return (Math.round(v * 10) / 10) + '%'; if(k === 'ppg') return v.toFixed(1); if(k === 'p') return D.pts(v); return String(Math.round(v)); }
+  var SH = { p:'PTS', ppg:'PPG', cmp:'CMP', att:'ATT', py:'PASS YDS', pt:'PASS TD', int:'INT', car:'CAR', ry:'RUSH YDS', rt:'RUSH TD', tgt:'TGT', rec:'REC', cy:'REC YDS', ct:'REC TD', own:'OWN', add:'ADD' };
+  function phone(R, C){
+    var sk = S.sort, big = sk === 'p' ? 'p' : sk;
+    $('plist').innerHTML = '<div class="pmsort mono"><span>SORT</span>' + C.map(function(c){ return '<button type="button" data-sort="' + c[0] + '" class="' + (c[0] === sk ? 'on' : '') + '">' + c[1] + '</button>'; }).join('') + '</div>' +
+      (R.map(function(r){
+        var line = C.filter(function(c){ return c[0] !== big && c[0] !== 'p' && val(r, c[0]) != null; }).slice(0, 4).map(function(c){ return '<span><b>' + fmt(val(r, c[0]), c[0]) + '</b> ' + SH[c[0]] + '</span>'; }).join('');
+        return '<div class="pm"><span class="pos ' + esc(r.pos) + '">' + esc(r.pos || '\u2013') + '</span>' +
+          '<button type="button" class="pmn" data-card="' + esc(r.id) + '"><b>' + esc(r.n) + D.ij(r.id) + '</b><i class="mono">' + D.tlogo(r.tm) + esc(r.tm) + (sk !== 'p' ? ' \u00b7 ' + D.pts(r.p) + ' PTS' : '') + '</i>' + (line ? '<u class="mono">' + line + '</u>' : '') + '</button>' +
+          '<div class="pmv"><b>' + fmt(val(r, big), big) + '</b><span class="mono">' + SH[big] + '</span></div>' +
+          (r.own ? '<a class="pma" href="' + D.href('teams', 'f=' + r.own) + '" title="' + esc(D.NAME[r.own]) + '"><img src="' + helm(r.own) + '" alt=""></a>' : '<button class="pma add mono" type="button" data-add="' + esc(r.id) + '" aria-label="Add ' + esc(r.n) + '">+</button>') + '</div>';
+      }).join('') || '<div class="ld mono">NO PLAYERS MATCH</div>') +
+      '<div class="fnote mono"><span>TAP A PLAYER FOR GAME LOGS</span><span>% ACROSS ALL MFL LEAGUES</span></div>';
+  }
+  var MQ = window.matchMedia('(max-width:760px)'); if(MQ.addEventListener) MQ.addEventListener('change', function(){ if(S.rows.length) list(); });
   function list(){
     var q = S.q.toLowerCase(), C = COLS[S.pos] || COLS.ALL;
     if(!C.some(function(c){ return c[0] === S.sort; })) S.sort = 'p';
@@ -79,6 +93,7 @@
     [].forEach.call(document.querySelectorAll('[data-pos]'), function(b){ b.classList.toggle('on', b.getAttribute('data-pos') === S.pos); });
     [].forEach.call(document.querySelectorAll('[data-fa]'), function(b){ b.classList.toggle('on', (b.getAttribute('data-fa') === '1') === S.fa); });
     $('cnt').textContent = R.length + (R.length === 120 ? '+' : '') + ' PLAYERS';
+    if(window.matchMedia('(max-width:760px)').matches){ phone(R, C); return; }
     $('plist').innerHTML = '<div class="ptw"><table class="ptab"><thead><tr><th class="l mono">PLAYER</th><th class="mono act"></th>' + C.map(function(c){ return '<th class="mono' + (c[0] === S.sort ? ' on' : '') + '"><button type="button" data-sort="' + c[0] + '">' + c[1] + (c[0] === S.sort ? ' \u25be' : '') + '</button></th>'; }).join('') + '</tr></thead><tbody>' +
       (R.map(function(r){
         return '<tr><td class="l"><div class="ptn"><span class="pos ' + esc(r.pos) + '">' + esc(r.pos || '\u2013') + '</span>' + D.face(r.id, r.pos, r.tm) + '<button type="button" class="pnb" data-card="' + esc(r.id) + '"><b>' + esc(r.n) + D.ij(r.id) + '</b><i class="mono">' + D.tlogo(r.tm) + esc(r.tm) + '</i></button></div></td>' +

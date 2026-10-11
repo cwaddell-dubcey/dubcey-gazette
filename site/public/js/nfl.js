@@ -36,6 +36,16 @@
       c.rows.map(function(r){ return '<tr><td>' + owner(r[0], ab) + '<span>' + esc(r[0]) + '</span></td>' + want.map(function(k){ return '<td class="mono">' + esc(r[2 + L.indexOf(k)]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
   }
   function side(t, win, live){ return '<div class="nsd' + (win ? ' w' : '') + '"><img src="' + esc(t.logo || D.nflLogo(t.ab)) + '" alt=""><b>' + esc(t.name || t.ab) + '</b><i class="mono">' + esc(t.rec || '') + '</i><em>' + (live ? esc(t.score) : '') + '</em></div>'; }
+  function ml(v){ if(v == null || v === '') return '\u2013'; var n = num(v); return (n > 0 ? '+' : '') + n; }
+  function lines(g){
+    var o = g.odds;
+    if(!o && !g.tv) return '';
+    return '<div class="nodds mono">' +
+      '<div><span>SPREAD</span><b>' + esc(o && o.line ? o.line : '\u2013') + '</b></div>' +
+      '<div><span>MONEYLINE</span><b>' + (o ? esc(g.away.ab) + ' ' + ml(o.mlA) + ' \u00b7 ' + esc(g.home.ab) + ' ' + ml(o.mlH) : '\u2013') + '</b></div>' +
+      '<div><span>TOTAL</span><b>' + (o && o.ou !== '' ? 'O/U ' + esc(o.ou) : '\u2013') + '</b></div>' +
+      '<div><span>TV</span><b>' + esc(g.tv || '\u2013') + '</b></div></div>';
+  }
   function draw(){
     $('games').innerHTML = S.data.games.map(function(g){
       var live = g.state !== 'pre', a = num(g.away.score), h = num(g.home.score), fin = g.state === 'post', op = S.open[g.id];
@@ -43,7 +53,7 @@
       var hasBox = Object.keys(g.box || {}).length;
       return '<article class="card ng' + (op ? ' open' : '') + '"><button type="button" class="nhd" data-g="' + esc(g.id) + '"' + (hasBox ? '' : ' disabled') + '>' +
         '<div class="nst mono"><span class="' + (g.state === 'in' ? 'lv' : '') + '">' + esc(String(when).toUpperCase()) + '</span>' + (hasBox ? '<span>' + (op ? 'HIDE' : 'BOX SCORE') + ' ' + (op ? '\u25b4' : '\u25be') + '</span>' : '') + '</div>' +
-        side(g.away, fin && a > h, live) + side(g.home, fin && h > a, live) + '</button>' +
+        side(g.away, fin && a > h, live) + side(g.home, fin && h > a, live) + '</button>' + lines(g) +
         (op && hasBox ? '<div class="nbody">' + [g.away, g.home].map(function(t){ var B = g.box[t.ab] || {};
           return '<div class="nteam"><div class="ntt mono"><img src="' + esc(t.logo || D.nflLogo(t.ab)) + '" alt="">' + esc(t.name || t.ab) + '</div>' + table('passing', B.passing, t.ab) + table('rushing', B.rushing, t.ab) + table('receiving', B.receiving, t.ab) + '</div>';
         }).join('') + '</div>' : '') + '</article>';

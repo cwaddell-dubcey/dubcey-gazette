@@ -238,6 +238,10 @@ export default {
           const c = (ev.competitions || [])[0] || {}, st = (c.status && c.status.type) || {};
           const side = x => x ? { ab: x.team && x.team.abbreviation, name: x.team && x.team.shortDisplayName, logo: x.team && x.team.logo, score: x.score, rec: ((x.records || [])[0] || {}).summary || '' } : {};
           const T = c.competitors || [], g = { id: ev.id, kick: Date.parse(ev.date) || 0, state: st.state, detail: st.shortDetail || st.detail || '', away: side(T.find(x => x.homeAway === 'away')), home: side(T.find(x => x.homeAway === 'home')), box: {} };
+          const od = (c.odds || [])[0];
+          if (od) { const ml = x => x && (x.moneyLine != null ? x.moneyLine : x.moneyline && x.moneyline.close && x.moneyline.close.odds); g.odds = { line: od.details || '', ou: od.overUnder != null ? od.overUnder : '', mlA: ml(od.awayTeamOdds), mlH: ml(od.homeTeamOdds), by: (od.provider && od.provider.name) || '' }; }
+          const tv = []; (c.broadcasts || []).forEach(b => (b.names || []).forEach(n => tv.indexOf(n) < 0 && tv.push(n))); (c.geoBroadcasts || []).forEach(b => { const n = b.media && b.media.shortName; if (n && tv.indexOf(n) < 0) tv.push(n); });
+          g.tv = tv.slice(0, 3).join(' / ');
           if (st.state === 'pre') return g;
           let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 45); } catch (e) { return g; }
           ((s.boxscore && s.boxscore.players) || []).forEach(tm => {

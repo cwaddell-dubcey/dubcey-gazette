@@ -1658,3 +1658,31 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
   .ptab td{padding:7px 8px}
   .ptab th button{padding:10px 8px 7px}
 }
+
+.nodds{display:grid;grid-template-columns:.9fr 1.5fr .9fr 1fr;border-top:1px solid #E0D6B8;background:#F1E8CF}
+.nodds div{display:flex;flex-direction:column;gap:4px;padding:8px 12px;min-width:0;border-right:1px solid #E0D6B8}
+.nodds div:last-child{border-right:0}
+.nodds span{font-size:8.5px;color:#6B6455}
+.nodds b{font-size:11px;color:#102542;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){ .nodds{grid-template-columns:repeat(2,minmax(0,1fr))} .nodds div:nth-child(2){border-right:0} .nodds div:nth-child(-n+2){border-bottom:1px solid #E0D6B8} .nodds div{padding:7px 12px} }
+
+/* ---------- players: phone list ---------- */
+.pmsort{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:10px 12px;background:#102542;scrollbar-width:none}
+.pmsort::-webkit-scrollbar{display:none}
+.pmsort span{flex:none;font-size:9px;color:#9FB4CC;margin-right:2px}
+.pmsort button{flex:none;height:30px;padding:0 10px;background:#16304F;border:1.5px solid #2C4C78;color:#C9D6E6;font:inherit;font-size:9.5px;letter-spacing:.08em;cursor:pointer}
+.pmsort button.on{background:#E0A72B;border-color:#E0A72B;color:#102542}
+.pm{display:grid;grid-template-columns:30px minmax(0,1fr) auto 40px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #E0D6B8}
+.pm>.pos{min-width:28px;padding:4px 3px;font-size:9px;align-self:start;margin-top:2px}
+.pmn{display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;background:none;border:0;text-align:left;color:#102542;cursor:pointer}
+.pmn b{display:flex;align-items:center;gap:5px;font:600 16px/1.15 'Zilla Slab',Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmn i{display:flex;align-items:center;gap:4px;font-size:9.5px;font-style:normal;color:#6B6455}
+.pmn u{display:flex;flex-wrap:wrap;gap:2px 10px;text-decoration:none;font-size:9px;color:#6B6455;letter-spacing:.06em}
+.pmn u b{display:inline;font:700 11px/1 'Courier Prime',monospace;color:#102542}
+.pmv{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.pmv b{font:400 18px/1 'Alfa Slab One',serif;color:#102542}
+.pmv span{font-size:8.5px;color:#c8282d}
+.pma{display:flex;align-items:center;justify-content:center;width:40px;height:40px}
+.pma img{width:40px;height:30px;object-fit:contain}
+.pma.add{padding:0;background:#E0A72B;border:2px solid #102542;color:#102542;font:400 22px/1 'Alfa Slab One',serif;cursor:pointer;box-shadow:2px 2px 0 #102542}
+.pma.add:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #102542}
