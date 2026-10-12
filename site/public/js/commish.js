@@ -51,10 +51,19 @@
         '<div class="talts"><span class="mono">ALTERNATES' + ((o.alts || []).length ? ' \u00b7 ROTATES WEEKLY \u00b7 THIS WEEK: ' + (D.helmPool(id).indexOf(D.helm(id)) === 0 ? 'MAIN' : 'ALT ' + D.helmPool(id).indexOf(D.helm(id))) : '') + '</span>' + (o.alts || []).map(function(a, i){ return '<span class="talt"><img src="' + esc(D.LOCAL ? (localStorage.getItem('dcImg:' + a.k) || '') : a.url) + '" alt=""><button type="button" data-altrm="' + i + '" aria-label="Remove alternate">\u00d7</button></span>'; }).join('') + ((o.alts || []).length < 5 ? '<label class="taltadd mono">+ ADD<input type="file" accept="image/*" data-alt hidden></label>' : '') + '</div></div>';
     }).join('') + '<div class="ef pad" style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="tsave">SAVE TEAMS</button></div></article>';
   }
+  // match the built-in helmets: trim empty transparent edges, then fit into the same 480×359 frame
   function shrink(file){
     return new Promise(function(res, rej){
-      var img = new Image(); img.onload = function(){ var s = Math.min(1, 520 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); c.toBlob(function(b){ b ? res(b) : rej(); }, 'image/webp', .86); URL.revokeObjectURL(img.src); };
+      var img = new Image(); img.onload = function(){
+        var W = img.width, H = img.height, a = document.createElement('canvas'); a.width = W; a.height = H; var ax = a.getContext('2d'); ax.drawImage(img, 0, 0);
+        var d = ax.getImageData(0, 0, W, H).data, l = W, t = H, r = -1, b = -1;
+        for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 16){ if(x < l) l = x; if(x > r) r = x; if(y < t) t = y; if(y > b) b = y; }
+        if(r < 0){ l = 0; t = 0; r = W - 1; b = H - 1; }
+        var cw = r - l + 1, ch = b - t + 1, FW = 480, FH = 359, s = Math.min(FW / cw, FH / ch), dw = Math.round(cw * s), dh = Math.round(ch * s);
+        var c = document.createElement('canvas'); c.width = FW; c.height = FH; var cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
+        cx.drawImage(a, l, t, cw, ch, Math.round((FW - dw) / 2), Math.round((FH - dh) / 2), dw, dh);
+        c.toBlob(function(bl){ bl ? res(bl) : rej(); }, 'image/webp', .88); URL.revokeObjectURL(img.src);
+      };
       img.onerror = rej; img.src = URL.createObjectURL(file);
     });
   }
