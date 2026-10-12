@@ -1819,3 +1819,25 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 .ffal>.mono{font-size:9.5px;color:#6B6455}
 .ffal img{width:32px;height:24px;object-fit:contain}
 .ffal b{font:600 14.5px 'Zilla Slab',serif;color:#102542}
+
+.sgrid.one{grid-template-columns:minmax(0,760px)}
+
+/* 2027 auction card inside the team panel (desktop); stays under the roster on phones */
+.fut2{margin:6px 0 0;padding:0 18px 24px}
+.fut2 .fut{margin:0;border-top:3px solid #E0A72B}
+.fut2 .futh{flex-direction:column;align-items:flex-start;gap:6px;padding:14px 0 12px}
+.fut2 .futh .t{color:#F7EFDB;font-size:20px}
+.fut2 .futh .mono{color:#9FB4CC;font-size:8.5px}
+.fut2 .futg{grid-template-columns:1fr;gap:16px;padding:16px;background:rgba(13,31,56,.7);border:1.5px solid #2C4C78}
+.fut2 .futb b{font-size:38px}
+.fut2 .futm{border:1.5px solid #2C4C78;border-top:0;background:rgba(13,31,56,.45)}
+.fut2 .futm>div{grid-template-columns:42px 28px minmax(0,1fr) auto;gap:8px;padding:9px 12px;border-bottom-color:#1E3A63}
+.fut2 .futm>div>.mono{color:#9FB4CC;font-size:8.5px}
+.fut2 .futm img{width:28px;height:22px}
+.fut2 .futm b{color:#F7EFDB;font-size:14px}
+.fut2 .futm b em{display:block;margin:2px 0 0;color:#ff8a8d}
+.fut2 .futm b i{color:#9FB4CC;font-size:12px}
+.fut2 .futm .up{color:#7fd6a6}.fut2 .futm .dn{color:#ff8a8d}
+.fut2 .futm .none{color:#9FB4CC}
+@media (min-width:761px){ .tled>.fut{display:none} }
+@media (max-width:760px){ .fut2{display:none} }

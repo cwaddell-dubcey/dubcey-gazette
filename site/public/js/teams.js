@@ -67,6 +67,7 @@
       led += '<div class="lr hd mono"><span>PLAYER</span><span>PTS</span><span>BYE</span><span>SALARY</span></div>' + ledger(x, false);
     }
     if(!cmp && S.fut) led += futCard(f);
+    if(S.fut) pnl += '<div class="fut2">' + futCard(f) + '</div>';
     $('tr').innerHTML = '<div class="trail">' + rail + '</div><div class="tpnl">' + pnl + '</div><div class="tled">' + led + '</div>';
   }
   D.future().then(function(m){ S.fut = D.futureCalc(m); if(S.d) draw(); });

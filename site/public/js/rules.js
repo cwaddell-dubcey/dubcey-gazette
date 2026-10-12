@@ -38,8 +38,11 @@
       if(p.charAt(0) === '/') return '+1 per ' + p.slice(1) + (at ? ' (' + at + ')' : '');
       var n = num(p); return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + rnd(Math.abs(n)) + (at ? ' at ' + at : '');
     }
-    return '<div class="sgrid">' + P.map(function(g){
-      var pos = String(g.positions || '').split('|');
+    // league plays QB/RB/WR/TE only: hide Def/K groups and labels
+    var OUR = { QB:1, RB:1, WR:1, TE:1 };
+    P = P.map(function(g){ return { g:g, pos:String(g.positions || '').split('|').filter(function(x){ return OUR[x]; }) }; }).filter(function(x){ return x.pos.length; });
+    return '<div class="sgrid' + (P.length === 1 ? ' one' : '') + '">' + P.map(function(o){
+      var g = o.g, pos = o.pos;
       return '<div class="sg"><div class="sghd">' + pos.map(function(x){ return '<span class="pos ' + esc(x) + '">' + esc(x) + '</span>'; }).join('') + '</div><table class="st2"><tbody>' + arr(g.rule).map(function(x){
         var ev = v(x.event); return '<tr><td>' + esc(N[ev] || ev) + '</td><td class="mono">' + esc(pts(v(x.points), v(x.range))) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
