@@ -2053,3 +2053,11 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 .btt li{display:flex;align-items:center;gap:8px;font-size:14px;color:#102542}
 .btt li i{margin-left:6px;font-style:normal;font-size:8.5px;color:#6B6455}
 @media (max-width:760px){ .bt2{grid-template-columns:1fr} .btm{border-right:0;border-bottom:1px solid #E0D6B8} .ptn{grid-template-columns:30px minmax(0,1fr) 28px} }
+
+.talts{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:8px}
+.talts>.mono{font-size:8.5px;color:#6B6455;margin-right:4px}
+.talt{position:relative;display:block;width:64px;height:48px;background:#16304F;border:1.5px solid #2C4C78}
+.talt img{width:100%;height:100%;object-fit:contain}
+.talt button{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:0;background:#c8282d;border:0;border-radius:50%;color:#fff;font-size:12px;line-height:1;cursor:pointer}
+.taltadd{display:flex;align-items:center;justify-content:center;width:64px;height:48px;border:1.5px dashed #9a917c;font-size:9px;color:#43526A;cursor:pointer}
+.taltadd:hover{border-color:#102542;color:#102542}

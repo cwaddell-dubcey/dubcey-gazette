@@ -215,7 +215,7 @@ export default {
     if (p.startsWith('/content/')) {
       const key = p.slice(9);
       if (key.startsWith('img/')) {
-        const id = key.slice(4).replace(/\D/g, '').slice(0, 4);
+        const id = key.slice(4).replace(/[^0-9_]/g, '').slice(0, 7);
         if (req.method === 'PUT') {
           const s = session(req); if (!isCommish(s, env) || !sameOrigin(req, u)) return json({ ok: false, error: 'Commissioner only.' }, 403);
           if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);

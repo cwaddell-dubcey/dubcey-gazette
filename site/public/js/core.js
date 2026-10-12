@@ -9,7 +9,15 @@
   D.SHORT = {"0001":"Bloodfeast","0002":"E720","0003":"Ligers","0004":"Wet Bandits","0005":"Full Blown","0006":"Nuts","0007":"Scallywags","0008":"Wad of Hell","0009":"Viva","0010":"Prestige","0011":"BMB","0012":"Diamond Dogs"};
   D.HELM = {"0001":"bloodfeast2026","0002":"helmet-e720","0003":"helmet-ligers","0004":"windy2026","0005":"helmet-full","0006":"helmet-nuts","0007":"scally2026","0008":"helmet-devil","0009":"helmet-resistance","0010":"helmet-prestige","0011":"helmet-bmb","0012":"diamonddogs2026v2"};
   D.CUSTOM = {};
-  D.helm = function(id){ return D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp'); };
+  // helmets: a team with alternates rotates them, one per week (changes Tuesday), same pick for everyone
+  D.ALT = {};
+  D.helmWeek = Math.floor((Date.now() - Date.UTC(2026, 0, 6, 9)) / 6048e5);
+  D.helmPool = function(id){ return [D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp')].concat(D.ALT[id] || []); };
+  D.helm = function(id){
+    var P = D.helmPool(id); if(P.length < 2) return P[0];
+    var s = String(id) + ':' + D.helmWeek, h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return P[(h >>> 0) % P.length];
+  };
   D.COMMISH = ['0001'];
   // divisions: full banner for section headers, badge crop for inline tags
   D.DIVS = [
@@ -77,7 +85,7 @@
   };
   // team-name / helmet overrides, applied before any page draws
   D.teamsReady = D.content('teams').then(function(t){
-    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; if(o.name) D.NAME[id] = o.name; if(o.short) D.SHORT[id] = o.short; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; });
+    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; if(o.name) D.NAME[id] = o.name; if(o.short) D.SHORT[id] = o.short; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; if(Array.isArray(o.alts) && o.alts.length) D.ALT[id] = o.alts.map(function(a){ return D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; }).filter(Boolean); });
     return t || {};
   }).catch(function(){ return {}; });
 
