@@ -66,7 +66,20 @@
     } else {
       led += '<div class="lr hd mono"><span>PLAYER</span><span>PTS</span><span>BYE</span><span>SALARY</span></div>' + ledger(x, false);
     }
+    if(!cmp && S.fut) led += futCard(f);
     $('tr').innerHTML = '<div class="trail">' + rail + '</div><div class="tpnl">' + pnl + '</div><div class="tled">' + led + '</div>';
+  }
+  D.future().then(function(m){ S.fut = D.futureCalc(m); if(S.d) draw(); });
+  function futCard(f){
+    var N = D.NEXT, x = S.fut[f], b = x.budget, pct = function(v){ return Math.max(0, Math.min(100, (v - N.min) / (N.max - N.min) * 100)); };
+    var over = b > N.max ? b - N.max : 0, under = b < N.min ? N.min - b : 0, room = Math.min(N.max - b, b - N.min);
+    var picks = x.picks.slice().sort(function(a, b2){ return a === f ? -1 : b2 === f ? 1 : 0; });
+    return '<div class="fut"><div class="futh"><span class="t">' + N.year + ' Auction</span><span class="mono">STARTS AT $' + N.base + ' \u00b7 MUST LAND $' + N.min + '\u2013$' + N.max + '</span></div>' +
+      '<div class="futg"><div class="futb"><span class="mono">' + N.year + ' BUDGET</span><b class="' + (b > N.base ? 'up' : b < N.base ? 'dn' : '') + '">$' + b + '</b><i class="mono">' + (b === N.base ? 'EVEN' : (b > N.base ? '+$' + (b - N.base) : '\u2212$' + (N.base - b)) + ' FROM TRADES') + '</i></div>' +
+        '<div class="futr"><div class="futbar"><i style="left:' + pct(N.base) + '%" class="base"></i><b style="left:' + pct(b) + '%"></b></div><div class="futl mono"><span>$' + N.min + '</span><span>$' + N.base + '</span><span>$' + N.max + '</span></div>' +
+        '<div class="futn mono ' + (over || under ? 'bad' : '') + '">' + (over ? '$' + over + ' OVER THE CAP \u00b7 MUST BE FIXED BEFORE THE AUCTION' : under ? '$' + under + ' UNDER THE FLOOR \u00b7 MUST BE FIXED BEFORE THE AUCTION' : '$' + Math.max(0, N.max - b) + ' MORE CAN COME IN \u00b7 $' + Math.max(0, b - N.min) + ' MORE CAN GO OUT') + '</div></div>' +
+        '<div class="futp"><span class="mono">' + N.year + ' ROOKIE PICKS</span>' + (picks.length ? picks.map(function(p){ return '<div><img src="' + helm(p) + '" alt=""><b>' + (p === f ? 'Own pick' : esc(D.SHORT[p]) + '\u2019s pick') + '</b></div>'; }).join('') : '<div class="none mono">NONE \u00b7 TRADED AWAY</div>') + '</div></div>' +
+      (x.moves.length ? '<div class="futm">' + x.moves.slice().reverse().map(function(v){ return '<div><span class="mono">' + esc(new Date(v.m.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase()) + '</span><img src="' + helm(v.other) + '" alt=""><b>' + (v.d > 0 ? 'From ' : 'To ') + esc(D.SHORT[v.other]) + (v.pick ? ' <em class="mono">+ ' + esc(D.SHORT[v.m.pick]) + ' ROOKIE PICK</em>' : '') + (v.m.note ? '<i>' + esc(v.m.note) + '</i>' : '') + '</b><strong class="mono ' + (v.d > 0 ? 'up' : 'dn') + '">' + (v.d > 0 ? '+$' + v.d : v.d < 0 ? '\u2212$' + (-v.d) : '$0') + '</strong></div>'; }).join('') + '</div>' : '<div class="futm"><div class="none mono">NO ' + N.year + ' MONEY TRADED YET</div></div>') + '</div>';
   }
   function IDS(){ var o = Object.keys(S.d.REC); return o.length === 12 ? D.IDS.slice().sort(function(a, b){ return o.indexOf(a) - o.indexOf(b); }) : D.IDS; }
 

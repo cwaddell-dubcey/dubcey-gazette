@@ -3,7 +3,7 @@
 const L = '18919', Y = '2026', HOST = 'https://www45.myfantasyleague.com', API = 'https://api.myfantasyleague.com';
 
 // public league data: cached at the edge for N seconds
-const PUB = { liveScoring:30, leagueStandings:300, schedule:900, league:3600, rosters:120, players:86400, playerScores:300, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:30, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
+const PUB = { liveScoring:12, leagueStandings:300, schedule:900, league:3600, rosters:120, players:86400, playerScores:60, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:20, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
 // owner-specific data: needs sign-in, never cached
 const PRIV = { myleagues:1, pendingWaivers:1, pendingTrades:1, myWatchList:1, tradeBait:1, assets:1, myDraftList:1, lineup:1 };
 // write actions passed through to MFL with the owner's own login
@@ -70,12 +70,12 @@ async function cachedJSON(ctx, url, ttl) {
 }
 function nkey(n) { return String(n || '').toLowerCase().replace(/[.'’]/g, '').replace(/\s+(jr|sr|ii|iii|iv|v)$/, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
 async function espnWeek(ctx, w, raw) {
-  const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2&week=${w}`, 60);
+  const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2&week=${w}`, 20);
   const out = {};
   await Promise.all((sb.events || []).map(async ev => {
     const st = ev.competitions && ev.competitions[0] && ev.competitions[0].status && ev.competitions[0].status.type || {};
     if (st.state === 'pre') return;
-    let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 45); } catch (e) { return; }
+    let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 20); } catch (e) { return; }
     const P = {};
     ((s.boxscore && s.boxscore.players) || []).forEach(tm => {
       const ab = tm.team && tm.team.abbreviation;
@@ -186,6 +186,31 @@ export default {
     if (p === '/auth/me') { const s = session(req); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env) } : {}); }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
+    // ---- suggestion box: any signed-in owner files bugs/ideas; commish sets status ----
+    if (p === '/data/feedback') {
+      const s = session(req), clip = (x, n) => String(x == null ? '' : x).replace(/\s+$/,'').slice(0, n);
+      const list = async () => { try { return JSON.parse((env.DC && await env.DC.get('fb')) || '[]'); } catch (e) { return []; } };
+      if (req.method === 'GET') return json({ items: await list(), me: s ? s.f : '', commish: isCommish(s, env) });
+      if (!sameOrigin(req, u)) return json({ ok: false }, 403);
+      if (!s) return json({ ok: false, error: 'Sign in first.' }, 401);
+      if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
+      const b = await req.json().catch(() => ({})), items = await list();
+      if (req.method === 'POST') {
+        const title = clip(b.title, 120).trim(); if (!title) return json({ ok: false, error: 'Add a short title.' }, 400);
+        const recent = items.filter(x => x.f === s.f && Date.now() - x.at < 60000).length; if (recent >= 3) return json({ ok: false, error: 'Slow down a little.' }, 429);
+        items.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type: b.type === 'bug' ? 'bug' : 'idea', title, body: clip(b.body, 2000), page: clip(b.page, 40), ua: clip(req.headers.get('User-Agent'), 160), f: s.f, at: Date.now(), status: 'new', note: '', votes: [s.f] });
+        await env.DC.put('fb', JSON.stringify(items.slice(0, 400)));
+        return json({ ok: true });
+      }
+      if (req.method === 'PATCH') {
+        const it = items.find(x => x.id === b.id); if (!it) return json({ ok: false, error: 'Not found.' }, 404);
+        if (b.vote) { it.votes = it.votes || []; const i = it.votes.indexOf(s.f); if (i > -1) it.votes.splice(i, 1); else it.votes.push(s.f); }
+        else if (isCommish(s, env)) { if (b.status && /^(new|planned|doing|done|wont)$/.test(b.status)) it.status = b.status; if (b.note != null) it.note = clip(b.note, 500); if (b.remove) items.splice(items.indexOf(it), 1); }
+        else return json({ ok: false, error: 'Commissioner only.' }, 403);
+        await env.DC.put('fb', JSON.stringify(items));
+        return json({ ok: true });
+      }
+    }
     // ---- site content edited by the commissioner (Dispatch, team names, calendar, by-laws, helmets) ----
     if (p.startsWith('/content/')) {
       const key = p.slice(9);
@@ -232,7 +257,7 @@ export default {
     if (p === '/data/nflgames') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
       try {
-        const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2${wk ? '&week=' + wk : ''}`, 60);
+        const sb = await cachedJSON(ctx, `${ESPN}/scoreboard?dates=${Y}&seasontype=2${wk ? '&week=' + wk : ''}`, 20);
         const OFF = { passing: 1, rushing: 1, receiving: 1 };
         const games = await Promise.all((sb.events || []).map(async ev => {
           const c = (ev.competitions || [])[0] || {}, st = (c.status && c.status.type) || {};
@@ -243,7 +268,7 @@ export default {
           const tv = []; (c.broadcasts || []).forEach(b => (b.names || []).forEach(n => tv.indexOf(n) < 0 && tv.push(n))); (c.geoBroadcasts || []).forEach(b => { const n = b.media && b.media.shortName; if (n && tv.indexOf(n) < 0) tv.push(n); });
           g.tv = tv.slice(0, 3).join(' / ');
           if (st.state === 'pre') return g;
-          let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 45); } catch (e) { return g; }
+          let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 20); } catch (e) { return g; }
           ((s.boxscore && s.boxscore.players) || []).forEach(tm => {
             const ab = tm.team && tm.team.abbreviation, o = g.box[ab] = {};
             (tm.statistics || []).forEach(cat => { if (!OFF[cat.name]) return; o[cat.name] = { labels: cat.labels || [], rows: (cat.athletes || []).map(a => [a.athlete && a.athlete.displayName, a.athlete && a.athlete.id].concat(a.stats || [])) }; });
@@ -295,7 +320,8 @@ export default {
         res = new Response(txt, { status: m.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': bad ? 'no-store' : 'public, max-age=' + PUB[type] } });
         if (!bad) ctx.waitUntil(cache.put(key, res.clone()));
       }
-      return res;
+      const out = new Response(res.body, res); out.headers.set('Cache-Control', 'no-cache'); out.headers.set('X-Fetched', res.headers.get('Date') || new Date().toUTCString());
+      return out;
     }
 
     // ---- write actions: lineups, waivers, trades, etc. ----

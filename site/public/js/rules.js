@@ -83,6 +83,7 @@
     if(L.bbidMinimum != null) mv.push(rule('The lowest bid allowed is $' + num(L.bbidMinimum) + '.', '$' + num(L.bbidMinimum)));
     if(num(L.bbidIncrement)) mv.push(rule('Bids go up in $' + num(L.bbidIncrement) + ' steps.', '$' + num(L.bbidIncrement)));
     A.push({ id:'moves', title:'Waivers & Trades', src:'FROM MFL', rules:mv.concat(custom(ADD.moves)) });
+    if(arr(ADD.draft).length) A.push({ id:'draft', title:'The Drafts', rules:custom(ADD.draft) });
 
     var po = [];
     if(L.lastRegularSeasonWeek && L.endWeek) po.push(rule('The playoffs run from Week ' + (num(L.lastRegularSeasonWeek) + 1) + ' through Week ' + L.endWeek + '.', 'Wk ' + (num(L.lastRegularSeasonWeek) + 1) + '\u2013' + L.endWeek));

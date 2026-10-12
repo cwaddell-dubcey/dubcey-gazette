@@ -78,8 +78,12 @@
       [].forEach.call(document.querySelectorAll('.pr[data-p]'), function(el){ var s = D.statOf(S.w, el.getAttribute('data-p')), x = el.querySelector('.sx'); if(x){ var t = s || x.getAttribute('data-ph'); if(x.textContent !== t){ x.textContent = t; x.classList.toggle('none', !s); } } });
     });
   }
-  function isLive(){ return S.data && S.w === S.cur && S.data.ms.some(function(m){ return m.some(function(f){ return f.sec > 0 && f.score > 0; }); }); }
-  function schedule(){ clearTimeout(S.timer); if(isLive()) S.timer = setTimeout(function(){ if(!document.hidden) load(); else schedule(); }, 30000); }
+  // poll the current week: every 15s while anyone is on the field, every 60s while players are still to come
+  function playing(){ return S.data && S.data.ms.some(function(m){ return m.some(function(f){ return f.cur > 0; }); }); }
+  function pending(){ return S.data && S.data.ms.some(function(m){ return m.some(function(f){ return f.cur > 0 || f.ytp > 0; }); }); }
+  function isLive(){ return S.w === S.cur && pending(); }
+  function schedule(){ clearTimeout(S.timer); S.at = Date.now(); stamp(); if(isLive()) S.timer = setTimeout(function(){ if(!document.hidden) load(); else schedule(); }, playing() ? 15000 : 60000); }
+  function stamp(){ var el = $('upd'); if(!el) return; el.hidden = !isLive(); el.textContent = 'UPDATED ' + new Date(S.at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit' }).toUpperCase(); }
 
   function weeks(){
     var h = ''; for(var i = 1; i <= Math.max(S.cur, 1); i++) h += '<a class="' + (i === S.w ? 'on' : '') + '" href="' + D.href('scores', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
@@ -144,7 +148,8 @@
     if(w){ e.preventDefault(); S.w = +w.getAttribute('data-w'); S.sel = -1; S.data = null; $('mu').innerHTML = '<div class="ld mono">LOADING WEEK ' + S.w + '\u2026</div>'; weeks(); history.replaceState(null, '', D.href('scores', 'w=' + S.w)); load(); return; }
     if(e.target.closest('[data-bench]')){ S.benchOpen = !S.benchOpen; draw(); }
   });
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden && isLive()) load(); });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden && isLive() && Date.now() - (S.at || 0) > 10000) load(); });
+  window.addEventListener('pageshow', function(e){ if(e.persisted && isLive()) load(); });
 
   load(true);
 })();

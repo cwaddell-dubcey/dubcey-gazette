@@ -87,6 +87,43 @@
         "t": "The four first-round winners move on to the semifinals. The highest remaining seed picks its opponent, and the other two teams play each other.",
         "v": "Semis"
       }
+    ],
+    "draft": [
+      {
+        "h": "Rookie draft.",
+        "t": "Each year, a rookie draft is held before the auction draft. It is one round, and every team gets one pick, in order from 1 to 12.",
+        "v": "1 round"
+      },
+      {
+        "h": "Rookie values.",
+        "t": "Each drafted rookie is given a salary based on the pick used. The first pick is worth $25, and each pick after it is worth $3 less, down to $4 at pick 8. Picks 9 through 12 are also worth $4. Pick 1 is $25, pick 2 is $22, pick 3 is $19, pick 4 is $16, pick 5 is $13, pick 6 is $10, pick 7 is $7, and picks 8 through 12 are $4.",
+        "v": "$25 → $4"
+      },
+      {
+        "h": "Passing on a pick.",
+        "t": "A team that doesn’t want a player at its pick’s value may pass and move to the end of the order. When it picks later, the player gets the value of the pick slot it actually uses. For example, a team that passes at pick 2 picks last and pays $4.",
+        "v": "Pass"
+      },
+      {
+        "h": "Auction draft.",
+        "t": "The league holds an auction draft every year. Each team starts with a $200 budget to bid on players.",
+        "v": "$200"
+      },
+      {
+        "h": "Trading budget.",
+        "t": "Auction dollars for next year’s draft can be traded. A team’s budget can rise or fall by up to $30 through trades, so every team enters the auction with between $170 and $230.",
+        "v": "$170–$230"
+      },
+      {
+        "h": "In-season trades.",
+        "t": "The $170–$230 limit applies only to next year’s auction budget. Once the season starts, a team may go above or below that range during the year. The limit is checked against the budget each team brings to the next auction.",
+        "v": "Next year"
+      },
+      {
+        "h": "Trading picks and dollars.",
+        "t": "Next year’s auction dollars and rookie picks can be included in any trade proposed on the site. Once the trade is accepted, both teams’ budgets and pick ownership update automatically.",
+        "v": "Tracked"
+      }
     ]
   },
   "articles": []

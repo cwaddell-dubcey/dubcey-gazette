@@ -84,26 +84,27 @@
     return D.api('liveScoring').then(function(j){ return Math.max(0, num(j && j.liveScoring && j.liveScoring.week) - 1); }).catch(function(){ return 0; });
   }).then(function(w){
     w = num(w); if(!w) return;
-    return D.lowScores(Math.min(w, 13)).then(function(L){
+    return Promise.all([D.lowScores(Math.min(w, 13)), D.penPool()]).then(function(X){
+      var L = X[0], P = X[1]; if(!P.cost) P.cost = P.now = L.length * D.LOW_FINE;
       var cur = L.filter(function(x){ return x.w === w; })[0]; if(!cur) return;
       var tally = {}; L.forEach(function(x){ tally[x.id] = (tally[x.id] || 0) + 1; });
       var pts = cur.s != null ? D.pts(cur.s) + ' pts' : '';
       $('low').innerHTML = '<div class="bar mono"><span>$' + D.LOW_FINE + ' LOW-SCORE PENALTY</span><span>WEEK ' + w + '</span></div>' +
         '<a class="lowhd" href="' + D.href('teams', 'f=' + cur.id) + '"><img src="' + helm(cur.id) + '" alt=""><div><b>' + esc(D.NAME[cur.id]) + '</b><span class="mono">' + esc(pts) + (cur.gap != null ? ' \u00b7 LOW BY ' + D.pts(cur.gap) : '') + '</span></div><i class="mono">\u2212$' + D.LOW_FINE + '</i></a>' +
         (L.length > 1 ? '<div class="lowls">' + L.slice().reverse().slice(1).map(function(x){ return '<div><span class="mono">WK ' + x.w + '</span><b>' + esc(D.SHORT[x.id] || D.NAME[x.id]) + '</b><span class="mono">' + (x.s != null ? D.pts(x.s) : '') + '</span></div>'; }).join('') + '</div>' : '') +
-        '<div class="lowft mono"><span>SEASON \u00b7 ' + L.length + ' \u00d7 $' + D.LOW_FINE + '</span><span>$' + (L.length * D.LOW_FINE) + ' IN THE POOL</span></div>';
+        '<div class="lowft mono"><span>PAID IN ' + D.usd(P.cost) + (P.live ? ' \u00b7 \u20bf' + P.btc.toFixed(6).replace(/0+$/, '') : '') + '</span><span>' + D.usd(P.now) + ' IN THE POOL' + (P.live ? ' TODAY' : '') + '</span></div>';
       // season-high single week (Weeks 1–13) wins 25% of the pool; a new record gets announced
       var rec = null, prev = null;
       L.forEach(function(x){ if(x.top && x.top.s > 0 && (!rec || x.top.s > rec.s)){ prev = rec; rec = { w:x.w, id:x.top.id, s:x.top.s }; } });
-      var pot = L.length * D.LOW_FINE;
+      var pot = P.now;
       if(rec){
         $('low').innerHTML += '<div class="pot"><div class="pothd mono"><span>WHERE THE POOL GOES \u00b7 WEEK 14</span></div>' +
-          '<div class="potr"><span class="mono">50%</span><b>Week 14 high score</b><i class="mono">$' + Math.round(pot * .5) + '</i></div>' +
-          '<div class="potr"><span class="mono">25%</span><b>Week 14 runner-up</b><i class="mono">$' + Math.round(pot * .25) + '</i></div>' +
-          '<a class="potr hold" href="' + D.href('teams', 'f=' + rec.id) + '"><span class="mono">25%</span><b>Best single week <u>' + esc(D.SHORT[rec.id] || D.NAME[rec.id]) + ' \u00b7 ' + D.pts(rec.s) + ' \u00b7 WK ' + rec.w + '</u></b><i class="mono">$' + Math.round(pot * .25) + '</i></a>' +
-          '<div class="lowft mono"><span>PAYOUTS GROW AS FINES COME IN</span><span>SEE FINANCES \u2192</span></div></div>';
+          '<div class="potr"><span class="mono">50%</span><b>Week 14 high score</b><i class="mono">' + D.usd(pot * .5) + '</i></div>' +
+          '<div class="potr"><span class="mono">25%</span><b>Week 14 runner-up</b><i class="mono">' + D.usd(pot * .25) + '</i></div>' +
+          '<a class="potr hold" href="' + D.href('teams', 'f=' + rec.id) + '"><span class="mono">25%</span><b>Best single week <u>' + esc(D.SHORT[rec.id] || D.NAME[rec.id]) + ' \u00b7 ' + D.pts(rec.s) + ' \u00b7 WK ' + rec.w + '</u></b><i class="mono">' + D.usd(pot * .25) + '</i></a>' +
+          '<div class="lowft mono"><span>' + (P.live ? 'HELD IN BITCOIN \u00b7 MOVES WITH THE PRICE' : 'PAYOUTS GROW AS FINES COME IN') + '</span><span>SEE FINANCES \u2192</span></div></div>';
         if(rec.w === w){
-          var tx = esc(D.NAME[rec.id]) + ' scored ' + D.pts(rec.s) + ' points in Week ' + rec.w + ', the best single week of the season so far.' + (prev ? ' That beats ' + esc(D.SHORT[prev.id] || D.NAME[prev.id]) + '\u2019s ' + D.pts(prev.s) + ' from Week ' + prev.w + '.' : '') + ' If nobody tops it by Week 13, it\u2019s worth 25% of the penalty pool.';
+          var tx = esc(D.NAME[rec.id]) + ' scored ' + D.pts(rec.s) + ' points in Week ' + rec.w + ', the best single week of the season so far.' + (prev ? ' That beats ' + esc(D.SHORT[prev.id] || D.NAME[prev.id]) + '\u2019s ' + D.pts(prev.s) + ' from Week ' + prev.w + '.' : '') + ' If nobody tops it by Week 13, it\u2019s worth 25% of the penalty pool, about ' + D.usd(pot * .25) + ' at today\u2019s bitcoin price.';
           var stH = document.querySelector('#disp .stories');
           if(stH && !stH.querySelector('.st.rec')){ var dh = document.createElement('div'); dh.className = 'st rec'; dh.innerHTML = '<img src="' + helm(rec.id) + '" alt=""><div><div class="kick mono">NEW SINGLE-WEEK RECORD \u00b7 WEEK ' + rec.w + '</div><h2>' + esc(D.NAME[rec.id]) + ' sets the high mark</h2><p>' + tx + '</p></div>'; stH.insertBefore(dh, stH.firstChild); }
           pop('dcPop:rec:' + rec.w + ':' + rec.id, '<article class="card wvhome note2"><div class="bar mono"><span>NEW SINGLE-WEEK RECORD</span><span>WEEK ' + rec.w + '</span></div><div class="nt2"><h2>' + esc(D.NAME[rec.id]) + ' \u00b7 ' + D.pts(rec.s) + '</h2><p>' + tx + '</p></div></article>');

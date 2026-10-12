@@ -90,7 +90,7 @@
   D.api = function(t, q){ return Promise.all([D.teamsReady, D.injReady]).then(function(){ return api(t, q); }); };
   function api(t, q){
     if(D.LOCAL) return fetch('demo/' + t + '.json').then(function(r){ if(!r.ok) throw 0; return r.json(); });
-    return fetch('/api/' + t + (q ? '?' + q : ''), { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); });
+    return fetch('/api/' + t + (q ? '?' + q : ''), { credentials:'same-origin', cache:'no-cache' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); });
   }
   // write actions (lineups, waivers, trades…) — owner must be signed in
   D.act = function(t, body){
@@ -102,6 +102,59 @@
   D.award = function(v){ return typeof v === 'string' ? { text:v, id:'' } : (v || { text:'', id:'' }); };
   // $50 weekly low scorer: commish's pick in Finances wins; otherwise the lowest MFL score that week
   D.LOW_FINE = 50;
+  // next year's auction: $200 each, trades move dollars (budget must land $170–$230) and rookie picks
+  D.NEXT = { year:2027, base:200, min:170, max:230 };
+  D.FUTURE_SEED = [
+    { date:'2026-09-08', from:'0006', to:'0004', amt:4, pick:'', note:'Waddle / Etienne trade' },
+    { date:'2026-09-09', from:'0005', to:'0001', amt:4, pick:'', note:'Kittle / Engram trade' },
+    { date:'2026-10-12', from:'0005', to:'0001', amt:10, pick:'0005', note:'McConkey / Mitchell trade' }
+  ];
+  D.futureCalc = function(moves){
+    var T = {}; D.IDS.forEach(function(id){ T[id] = { id:id, budget:D.NEXT.base, picks:[id], moves:[] }; });
+    D.arr(moves).slice().sort(function(a, b){ return String(a.date).localeCompare(String(b.date)); }).forEach(function(m){
+      if(!T[m.from] || !T[m.to]) return;
+      var a = D.num(m.amt); T[m.from].budget -= a; T[m.to].budget += a;
+      T[m.from].moves.push({ m:m, d:-a, other:m.to, pick:m.pick ? 'out' : '' }); T[m.to].moves.push({ m:m, d:a, other:m.from, pick:m.pick ? 'in' : '' });
+      if(m.pick){ var i = T[m.from].picks.indexOf(m.pick); if(i > -1){ T[m.from].picks.splice(i, 1); T[m.to].picks.push(m.pick); } }
+    });
+    return T;
+  };
+  // trades proposed on the site carry next-year money/picks in a tag inside the MFL comment: [dc27:0001>0005:10:p,0005>0001:4]
+  D.futTag = function(parts){ var p = parts.filter(function(x){ return x.amt > 0 || x.pick; }); return p.length ? '[dc' + String(D.NEXT.year).slice(2) + ':' + p.map(function(x){ return x.from + '>' + x.to + ':' + (x.amt || 0) + (x.pick ? ':' + x.pick : ''); }).join(',') + ']' : ''; };
+  D.futParse = function(s){ var m = new RegExp('\\[dc' + String(D.NEXT.year).slice(2) + ':([^\\]]+)\\]').exec(String(s || '')); if(!m) return []; return m[1].split(',').map(function(x){ var q = x.split(/[>:]/); return { from:q[0], to:q[1], amt:D.num(q[2]), pick:q[3] && q[3] !== 'p' ? q[3] : (q[3] === 'p' ? q[0] : '') }; }).filter(function(x){ return D.NAME[x.from] && D.NAME[x.to]; }); };
+  D.futText = function(s){ return String(s || '').replace(/\s*\[dc\d\d:[^\]]+\]/, '').trim(); };
+  var TXF = null;
+  D.futureFromTrades = function(){
+    TXF = TXF || D.api('transactions', 'TRANS_TYPE=TRADE&COUNT=200').then(function(j){
+      var out = [];
+      D.arr(j && j.transactions && j.transactions.transaction).forEach(function(t){
+        if(!/TRADE/i.test(t.type)) return;
+        D.futParse(t.comments).forEach(function(x, i){ out.push({ date:new Date(D.num(t.timestamp) * 1000).toISOString().slice(0, 10), from:x.from, to:x.to, amt:x.amt, pick:x.pick, note:D.futText(t.comments) || 'Trade', tx:t.timestamp + ':' + i, auto:1 }); });
+      });
+      return out;
+    }).catch(function(){ return []; });
+    return TXF;
+  };
+  D.future = function(){
+    return Promise.all([D.content('finance').catch(function(){ return null; }), D.futureFromTrades()]).then(function(r){
+      var base = r[0] && Array.isArray(r[0].future) ? r[0].future : D.FUTURE_SEED, have = {};
+      base.forEach(function(m){ if(m.tx) have[m.tx] = 1; });
+      return base.concat(r[1].filter(function(m){ return !have[m.tx]; }));
+    });
+  };
+  // penalty pool is held in bitcoin: value it at today's price (falls back to dollars paid in if BTC holdings aren't entered)
+  D.btcPrice = function(){
+    var j = function(u){ return fetch(u).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
+    return j('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(function(r){ var v = r && r.data && parseFloat(r.data.amount); return v > 0 ? v : j('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd').then(function(g){ return (g && g.bitcoin && g.bitcoin.usd) || 0; }); });
+  };
+  D.penPool = function(fallbackCost){
+    return Promise.all([D.content('finance').catch(function(){ return null; }), D.btcPrice().catch(function(){ return 0; })]).then(function(r){
+      var P = D.arr(r[0] && r[0].penalties), n = P.filter(function(p){ return p.fid || String(p.name || '').trim(); }).length;
+      var btc = P.reduce(function(a, p){ return a + D.num(p.btc); }, 0), cost = n ? n * D.LOW_FINE : (fallbackCost || 0), px = r[1];
+      return { cost:cost, btc:btc, px:px, now:px > 0 && btc > 0 ? btc * px : cost, live:px > 0 && btc > 0 };
+    });
+  };
+  D.usd = function(v){ return '$' + Math.round(D.num(v)).toLocaleString('en-US'); };
   D.lowScores = function(upTo){
     var ws = []; for(var i = 1; i <= upTo; i++) ws.push(i);
     return Promise.all([D.content('finance').catch(function(){ return null; })].concat(ws.map(function(w){ return D.api('weeklyResults', 'W=' + w).catch(function(){ return null; }); }))).then(function(r){
@@ -142,8 +195,8 @@
   D.stats = function(w, ids, live){
     if(D.LOCAL){ if(SX.demo) return Promise.resolve(); return fetch('demo/stats.json').then(function(r){ return r.json(); }).then(function(o){ SX.demo = o; }).catch(function(){}); }
     var c = WK[w], now = Date.now();
-    if(c && (!live || now - c.t < 55000)) return c.p;
-    var p = fetch('/data/espn?W=' + w).then(function(r){ return r.json(); }).then(function(o){ WK[w].o = o || {}; }).catch(function(){ WK[w].o = WK[w].o || {}; });
+    if(c && (!live || now - c.t < 20000)) return c.p;
+    var p = fetch('/data/espn?W=' + w, { cache:'no-cache' }).then(function(r){ return r.json(); }).then(function(o){ WK[w].o = o || {}; }).catch(function(){ WK[w].o = WK[w].o || {}; });
     WK[w] = { t:now, p:p, o:(c && c.o) || null };
     return p;
   };
@@ -209,7 +262,7 @@
   }
 
   // ---------- header ----------
-  var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'RULES'], ['myteam', 'MY TEAM']];
+  var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['myteam', 'MY TEAM'], ['ideas', 'SUGGESTION BOX']];
   D.shell = function(active){
     var top = D.$('top');
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
@@ -220,7 +273,7 @@
       var me = x[0], w = D.$('who');
       var bi = top.querySelector('.brand img'); if(bi) bi.src = D.helm('x');
       if(me && me.franchise){
-        w.innerHTML = '<a class="mine" href="' + D.href('myteam') + '" title="' + D.esc(D.NAME[me.franchise]) + '"><img src="' + D.helm(me.franchise) + '" alt=""><b>' + D.esc(D.SHORT[me.franchise] || 'MY TEAM') + '</b></a>' + '<span class="outs">' + (me.commish ? '<a class="out mono' + (active === 'commish' ? ' on' : '') + '" href="' + D.href('commish') + '">COMMISH</a>' : '') + '<button class="out mono" type="button">SIGN OUT</button></span>';
+        w.innerHTML = '<a class="mine" href="' + D.href('myteam') + '" title="' + D.esc(D.NAME[me.franchise]) + '"><img src="' + D.helm(me.franchise) + '" alt=""><b>' + D.esc(D.SHORT[me.franchise] || 'MY TEAM') + '</b></a>' + '<span class="outs"><a class="out mono' + (active === 'ideas' ? ' on' : '') + '" href="' + D.href('ideas') + '" title="Report a bug or suggest a feature">SUGGEST</a>' + (me.commish ? '<a class="out mono' + (active === 'commish' ? ' on' : '') + '" href="' + D.href('commish') + '">COMMISH</a>' : '') + '<button class="out mono" type="button">SIGN OUT</button></span>';
         w.querySelector('button.out').addEventListener('click', signOut);
       } else {
         w.innerHTML = '<button class="btn" type="button">SIGN IN</button>';

@@ -103,25 +103,38 @@
       $('pend').innerHTML = '<div class="bar mono"><span>TRADE OFFERS</span><span>' + T.length + ' PENDING</span></div>' + (T.map(function(t){
         var mine = t.offeringteam === S.me, other = mine ? t.offeredto : t.offeringteam;
         var give = String(t.will_give_up || '').split(',').filter(Boolean), get = String(t.will_receive || '').split(',').filter(Boolean);
-        var you = mine ? give : get, them = mine ? get : give;
+        var you = mine ? give : get, them = mine ? get : give, fx = D.futParse(t.comments);
+        function fli(fromId){ return fx.filter(function(x){ return x.from === fromId; }).map(function(x){ return (x.amt ? '<li class="fx"><span class="pos FX">$</span><span>$' + x.amt + ' in ' + D.NEXT.year + ' auction<i class="mono">NEXT YEAR\u2019S DRAFT DOLLARS</i></span></li>' : '') + (x.pick ? '<li class="fx"><span class="pos FX">R</span><img class="fxh" src="' + helm(x.pick) + '" alt=""><span>' + (x.pick === x.from ? esc(D.SHORT[x.from]) + '\u2019s' : esc(D.SHORT[x.pick]) + '\u2019s') + ' ' + D.NEXT.year + ' rookie pick<i class="mono">ROOKIE DRAFT</i></span></li>' : ''); }).join(''); }
+        var meGive = mine ? t.offeringteam : t.offeredto, meGet = mine ? t.offeredto : t.offeringteam;
         function li(l){ return l.map(function(id){ var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></li>'; }).join(''); }
         return '<div class="tro"><div class="trh"><img src="' + helm(other) + '" alt=""><div><b>' + esc(D.NAME[other]) + '</b><span class="mono">' + (mine ? 'YOU OFFERED' : 'OFFERED TO YOU') + '</span></div></div>' +
-          '<div class="trs"><div><span class="mono">YOU GIVE</span><ul>' + li(you) + '</ul></div><div><span class="mono">YOU GET</span><ul>' + li(them) + '</ul></div></div>' +
-          (t.comments ? '<p class="cm">\u201c' + esc(t.comments) + '\u201d</p>' : '') +
+          '<div class="trs"><div><span class="mono">YOU GIVE</span><ul>' + li(you) + fli(meGive) + '</ul></div><div><span class="mono">YOU GET</span><ul>' + li(them) + fli(meGet) + '</ul></div></div>' +
+          (D.futText(t.comments) ? '<p class="cm">\u201c' + esc(D.futText(t.comments)) + '\u201d</p>' : '') +
           '<div class="tra">' + (mine ? '<button class="btn ghost2" data-resp="revoke" data-id="' + esc(t.trade_id) + '">WITHDRAW</button>' : '<button class="btn" data-resp="accept" data-id="' + esc(t.trade_id) + '">ACCEPT</button><button class="btn ghost2" data-resp="reject" data-id="' + esc(t.trade_id) + '">DECLINE</button>') + '</div></div>';
       }).join('') || '<div class="ld mono">NO PENDING OFFERS</div>');
     }).catch(function(){ $('pend').innerHTML = '<div class="bar mono"><span>TRADE OFFERS</span></div><div class="ld mono">COULDN\u2019T LOAD OFFERS</div>'; });
     propose();
   }
+  D.future().then(function(x){ S.fut = D.futureCalc(x); if(S.tab === 'trades' && $('prop')) propose(); });
   function propose(){
     var t = S.trade, others = D.IDS.filter(function(id){ return id !== S.me; });
     var h = '<div class="bar mono"><span>PROPOSE A TRADE</span><span>' + (t.to ? 'WITH ' + esc(D.SHORT[t.to]).toUpperCase() : 'PICK A TEAM') + '</span></div><div class="pick2">' +
       others.map(function(id){ return '<button type="button" class="' + (id === t.to ? 'on' : '') + '" data-to="' + id + '" title="' + esc(D.NAME[id]) + '"><img src="' + helm(id) + '" alt=""></button>'; }).join('') + '</div>';
     if(t.to){
       function list(f, side){ return (S.R[f] || []).slice().sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); }).map(function(id){ var i = D.pinfo(id), on = t[side][id]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-side="' + side + '" value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></label>'; }).join(''); }
-      var ng = Object.keys(t.give).length, nr = Object.keys(t.get).length;
-      h += '<div class="trs2"><div><div class="sub mono">YOU GIVE · ' + ng + '</div>' + list(S.me, 'give') + '</div><div><div class="sub mono">YOU GET · ' + nr + '</div>' + list(t.to, 'get') + '</div></div>' +
-        '<div class="tsend"><input id="tcm" placeholder="Add a note (optional)" maxlength="200"><button class="btn" type="button" id="tsend"' + (ng && nr ? '' : ' disabled') + '>SEND OFFER</button></div>';
+      var N = D.NEXT, FT = S.fut || {}, mineF = FT[S.me] || { budget:N.base, picks:[S.me] }, theirF = FT[t.to] || { budget:N.base, picks:[t.to] };
+      t.gd = t.gd || 0; t.rd = t.rd || 0; t.gp = t.gp || {}; t.rp = t.rp || {};
+      function extra(side, owner, F){
+        var d = side === 'give' ? t.gd : t.rd, P2 = side === 'give' ? t.gp : t.rp;
+        return '<div class="tfx"><div class="sub mono">' + N.year + ' AUCTION $ \u00b7 ' + esc(D.SHORT[owner]).toUpperCase() + ' HAS $' + F.budget + '</div><div class="tfd"><button type="button" data-fd="' + side + '" data-n="-1">\u2212</button><input inputmode="numeric" data-fdv="' + side + '" value="' + d + '"><button type="button" data-fd="' + side + '" data-n="1">+</button></div>' +
+          (F.picks.length ? F.picks.map(function(p){ var on = P2[p]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-fp="' + side + '" value="' + p + '"' + (on ? ' checked' : '') + '><span class="pos FX">R</span><img class="fxh" src="' + helm(p) + '" alt=""><span>' + (p === owner ? 'Own' : esc(D.SHORT[p]) + '\u2019s') + ' ' + N.year + ' rookie pick<i class="mono">ROOKIE DRAFT</i></span></label>'; }).join('') : '<div class="sub mono" style="color:#c8282d">NO ' + N.year + ' ROOKIE PICK TO TRADE</div>') + '</div>';
+      }
+      var ng = Object.keys(t.give).length + (t.gd > 0 ? 1 : 0) + Object.keys(t.gp).length, nr = Object.keys(t.get).length + (t.rd > 0 ? 1 : 0) + Object.keys(t.rp).length;
+      var after = function(b, d){ return b + d; }, mb = after(mineF.budget, t.rd - t.gd), tb = after(theirF.budget, t.gd - t.rd);
+      var warn = function(v){ return v > N.max || v < N.min; };
+      h += '<div class="trs2"><div><div class="sub mono">YOU GIVE · ' + ng + '</div>' + list(S.me, 'give') + extra('give', S.me, mineF) + '</div><div><div class="sub mono">YOU GET · ' + nr + '</div>' + list(t.to, 'get') + extra('get', t.to, theirF) + '</div></div>' +
+        ((t.gd || t.rd) ? '<div class="tfa mono"><span class="' + (warn(mb) ? 'bad' : '') + '">YOU \u2192 $' + mb + ' IN ' + N.year + '</span><span class="' + (warn(tb) ? 'bad' : '') + '">' + esc(D.SHORT[t.to]).toUpperCase() + ' \u2192 $' + tb + '</span>' + (warn(mb) || warn(tb) ? '<em>OUTSIDE $' + N.min + '\u2013$' + N.max + ' \u00b7 FINE FOR NOW, MUST BE FIXED BY THE AUCTION</em>' : '') + '</div>' : '') +
+        '<div class="tsend"><input id="tcm" placeholder="Add a note (optional)" maxlength="160"><button class="btn" type="button" id="tsend"' + (ng && nr ? '' : ' disabled') + '>SEND OFFER</button></div>';
     }
     $('prop').innerHTML = h;
   }
@@ -156,7 +169,8 @@
       return;
     }
     var to = e.target.closest('[data-to]');
-    if(to){ S.trade = { to:to.getAttribute('data-to'), give:{}, get:{} }; propose(); return; }
+    if(to){ S.trade = { to:to.getAttribute('data-to'), give:{}, get:{}, gd:0, rd:0, gp:{}, rp:{} }; propose(); return; }
+    var fd = e.target.closest('[data-fd]'); if(fd){ var sd = fd.getAttribute('data-fd') === 'give' ? 'gd' : 'rd', cm0 = $('tcm') ? $('tcm').value : ''; S.trade[sd] = Math.max(0, Math.min(D.NEXT.max, (S.trade[sd] || 0) + +fd.getAttribute('data-n'))); propose(); if($('tcm')) $('tcm').value = cm0; return; }
     var rsp = e.target.closest('[data-resp]');
     if(rsp){
       var kind = rsp.getAttribute('data-resp'); rsp.disabled = true;
@@ -165,13 +179,22 @@
     }
     if(e.target.id === 'tsend'){
       var t = S.trade, sb = e.target; sb.disabled = true;
-      D.act('tradeProposal', { OFFEREDTO:t.to, WILL_GIVE_UP:Object.keys(t.give).join(','), WILL_RECEIVE:Object.keys(t.get).join(','), COMMENTS:($('tcm').value || '').trim() }).then(function(r){
+      var parts = [];
+      if(t.gd > 0 || Object.keys(t.gp || {}).length) Object.keys(t.gp).concat(Object.keys(t.gp).length ? [] : ['']).forEach(function(p, i){ parts.push({ from:S.me, to:t.to, amt:i === 0 ? t.gd : 0, pick:p }); });
+      if(t.rd > 0 || Object.keys(t.rp || {}).length) Object.keys(t.rp).concat(Object.keys(t.rp).length ? [] : ['']).forEach(function(p, i){ parts.push({ from:t.to, to:S.me, amt:i === 0 ? t.rd : 0, pick:p }); });
+      var human = parts.filter(function(x){ return x.amt || x.pick; }).map(function(x){ return D.SHORT[x.from] + ' sends ' + D.SHORT[x.to] + ' ' + [x.amt ? '$' + x.amt + ' in ' + D.NEXT.year + ' auction' : '', x.pick ? (x.pick === x.from ? '' : D.SHORT[x.pick] + '\u2019s ') + D.NEXT.year + ' rookie pick' : ''].filter(Boolean).join(' + '); }).join('. ');
+      var note = ($('tcm').value || '').trim(), cm = [note, human ? human + '.' : '', D.futTag(parts)].filter(Boolean).join(' ');
+      var noPlayers = !Object.keys(t.give).length || !Object.keys(t.get).length;
+      if(noPlayers){ toast('MFL NEEDS AT LEAST ONE PLAYER ON EACH SIDE', true); sb.disabled = false; return; }
+      D.act('tradeProposal', { OFFEREDTO:t.to, WILL_GIVE_UP:Object.keys(t.give).join(','), WILL_RECEIVE:Object.keys(t.get).join(','), COMMENTS:cm }).then(function(r){
         if(r && r.ok){ toast(r.demo ? 'PREVIEW ONLY \u2014 OFFER NOT SENT' : 'OFFER SENT TO ' + D.SHORT[t.to].toUpperCase()); if(!r.demo){ S.trade = { to:'', give:{}, get:{} }; trades(); } else sb.disabled = false; }
         else { toast((r && r.error) || 'MFL REJECTED THE OFFER', true); sb.disabled = false; }
       });
     }
   });
   document.addEventListener('change', function(e){
+    var fv = e.target.closest('input[data-fdv]'); if(fv){ var k2 = fv.getAttribute('data-fdv') === 'give' ? 'gd' : 'rd', cm1 = $('tcm') ? $('tcm').value : ''; S.trade[k2] = Math.max(0, Math.min(D.NEXT.max, Math.round(num(fv.value)))); propose(); if($('tcm')) $('tcm').value = cm1; return; }
+    var fp = e.target.closest('input[data-fp]'); if(fp){ var o = S.trade[fp.getAttribute('data-fp') === 'give' ? 'gp' : 'rp'], cm2 = $('tcm') ? $('tcm').value : ''; if(fp.checked) o[fp.value] = 1; else delete o[fp.value]; propose(); if($('tcm')) $('tcm').value = cm2; return; }
     var c = e.target.closest('input[data-side]'); if(!c) return;
     var side = c.getAttribute('data-side'); if(c.checked) S.trade[side][c.value] = 1; else delete S.trade[side][c.value];
     var cm = $('tcm') ? $('tcm').value : ''; propose(); if($('tcm')) $('tcm').value = cm;

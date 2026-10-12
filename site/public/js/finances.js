@@ -2,7 +2,7 @@
 (function(){
   var D = DC, $ = D.$, esc = D.esc, num = D.num;
   var DUES = 250, PENALTY = 50, ZCAT = 'HcRLc9VDgjLeK154xDawfb1dmVJ98DoSqcwTHGqiDeJR';
-  var S = { F:null, edit:false, px:{}, pxAt:0, from:'' };
+  var S = { F:null, edit:false, px:{}, pxAt:0, from:'', tab:location.hash === '#auction' ? 'auction' : 'season' };
 
   function seed(){
     return {
@@ -101,11 +101,22 @@
       '<div class="fppg">' +
         '<div class="fppc hi"><span class="mono">CURRENT WEEKLY HIGH SCORE \u00b7 WEEKS 1\u201313</span>' +
           (R ? '<a class="fpph" href="' + D.href('teams', 'f=' + R.id) + '"><img src="' + D.helm(R.id) + '" alt=""><div><b>' + esc(D.NAME[R.id]) + '</b><i class="mono">' + D.pts(R.s) + ' PTS \u00b7 WEEK ' + R.w + '</i></div></a>' : '<div class="fpph"><span class="ph2"></span><div><b>To be decided</b><i class="mono">' + (S.hiErr ? 'COULDN\u2019T LOAD SCORES' : 'WAITING ON WEEK 1') + '</i></div></div>') +
-          '<div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 IF THE RECORD HOLDS</i></div></div>' +
-        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 HIGHEST SCORE IN THE LEAGUE</span><div class="fppa"><b>' + money(pp * .5) + '</b><i class="mono">50% OF POOL</i></div></div>' +
-        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 SECOND-HIGHEST SCORE</span><div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL</i></div></div>' +
+          '<div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 HIGHEST SCORE IN THE LEAGUE</span><div class="fppa"><b>' + money(pp * .5) + '</b><i class="mono">50% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 SECOND-HIGHEST SCORE</span><div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
       '</div>' +
-      '<div class="fnote mono"><span>THE LOW SCORER IN EACH OF WEEKS 1\u201313 PAYS $' + PENALTY + '. THE POOL IS HELD IN BITCOIN, SO PAYOUTS MOVE WITH THE PRICE.</span><a href="' + D.href('rules') + '#a-league">RULES \u2192</a></div></section>';
+      '<div class="fnote mono"><span>THE LOW SCORER IN EACH OF WEEKS 1\u201313 PAYS $' + PENALTY + '. THE POOL IS HELD IN BITCOIN, SO PAYOUTS MOVE WITH THE PRICE.</span><a href="' + D.href('rules') + '#a-league">BYLAWS \u2192</a></div></section>';
+
+    // next year's auction budgets
+    var NX = D.NEXT, FM = Array.isArray(F.future) ? F.future : (F.future = D.FUTURE_SEED.slice()), AU = (S.auto || []).filter(function(a){ return !FM.some(function(m){ return m.tx === a.tx; }); }), FT = D.futureCalc(FM.concat(AU));
+    var auc = '<section class="card ffut"><div class="bar mono"><span>' + NX.year + ' AUCTION BUDGETS & ROOKIE PICKS</span><span>$' + NX.base + ' EACH \u00b7 MUST LAND $' + NX.min + '\u2013$' + NX.max + '</span></div>' +
+      '<div class="ffg">' + D.IDS.slice().sort(function(a, b){ return FT[b].budget - FT[a].budget; }).map(function(id){ var x = FT[id], bad = x.budget > NX.max || x.budget < NX.min;
+        return '<a class="ffr' + (bad ? ' bad' : '') + '" href="' + D.href('teams', 'f=' + id) + '"><img src="' + D.helm(id) + '" alt=""><b>' + esc(D.SHORT[id]) + '</b><span class="mono">' + (x.picks.length === 1 && x.picks[0] === id ? '1 PICK' : x.picks.length + ' PICK' + (x.picks.length === 1 ? '' : 'S')) + '</span><strong class="mono ' + (x.budget > NX.base ? 'up' : x.budget < NX.base ? 'dn' : '') + '">$' + x.budget + '</strong></a>'; }).join('') + '</div>' +
+      (S.edit ? '<div class="ffe"><div class="ffeh mono">TRADED ' + NX.year + ' MONEY & PICKS \u00b7 COMMISH</div>' +
+        FM.map(function(m, i){ return '<div class="ffl"><input class="fin" type="date" data-f="future.' + i + '.date" value="' + esc(m.date || '') + '"><select class="fin" data-f="future.' + i + '.from">' + opts(m.from) + '</select><span class="mono">SENDS</span><select class="fin" data-f="future.' + i + '.to">' + opts(m.to) + '</select><input class="fin" data-f="future.' + i + '.amt" inputmode="numeric" value="' + esc(m.amt || 0) + '" style="width:64px"><label class="mono"><input type="checkbox" data-fpick="' + i + '"' + (m.pick ? ' checked' : '') + '> + ROOKIE PICK</label><input class="fin" data-f="future.' + i + '.note" value="' + esc(m.note || '') + '" placeholder="Note"><button type="button" class="mono" data-fdel="' + i + '">\u00d7</button></div>'; }).join('') +
+        '<button type="button" class="btn sm" data-fadd>+ ADD A TRADE</button></div>' : '') +
+      (AU.length ? '<div class="ffau"><div class="ffeh mono">FROM TRADES MADE ON THE SITE \u00b7 TRACKED AUTOMATICALLY</div>' + AU.slice().reverse().map(function(a){ return '<div class="ffal"><span class="mono">' + esc(new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase()) + '</span><img src="' + D.helm(a.from) + '" alt=""><b>' + esc(D.SHORT[a.from]) + ' \u2192 ' + esc(D.SHORT[a.to]) + '</b><span class="mono">' + [a.amt ? '$' + a.amt : '', a.pick ? esc(D.SHORT[a.pick]).toUpperCase() + ' ROOKIE PICK' : ''].filter(Boolean).join(' + ') + '</span></div>'; }).join('') + '</div>' : '') +
+      '<div class="fnote mono"><span>BUDGETS CAN GO PAST $' + NX.min + '\u2013$' + NX.max + ' DURING THE SEASON. THEY JUST HAVE TO BE BACK IN RANGE BY THE ' + NX.year + ' AUCTION.</span><a href="' + D.href('rules') + '#a-draft">BYLAWS \u2192</a></div></section>';
 
     // dues + expenses
     h += '<div class="duo fduo"><section class="card"><div class="bar mono"><span>DUES & LUXURY TAX</span><span>DUES $' + DUES + '</span></div>' +
@@ -119,7 +130,8 @@
       (F.expenses.map(function(x, i){ return '<tr><td class="l">' + inp('expenses.' + i + '.label', x.label, { cls:'nm', ph:'What was it?' }) + '</td><td>' + inp('expenses.' + i + '.amount', x.amount, { num:1, ph:'0', cls:'r sm', show:money(x.amount) }) + '</td>' + (S.edit ? '<td><button type="button" class="fx" data-rmx="' + i + '" aria-label="Remove">\u00d7</button></td>' : '') + '</tr>'; }).join('') || '<tr><td colspan="3" class="ld mono">NO SHARED EXPENSES LOGGED</td></tr>') +
       '</tbody><tfoot><tr><td class="l mono">TOTAL</td><td class="amt dn">\u2212' + money(c.expTotal) + '</td>' + (S.edit ? '<td></td>' : '') + '</tr></tfoot></table></section></div>';
 
-    $('fin').innerHTML = h;
+    $('ftabs').innerHTML = '<a href="#season" class="' + (S.tab === 'season' ? 'on' : '') + '">' + D.Y + ' SEASON</a><a href="#auction" class="' + (S.tab === 'auction' ? 'on' : '') + '">' + NX.year + ' AUCTION</a>';
+    $('fin').innerHTML = S.tab === 'auction' ? auc : h;
     $('ffoot').innerHTML = S.edit ? 'COMMISH MODE \u2014 CHANGES SAVE AS YOU GO' + (S.from === 'legacy' ? ' \u00b7 LOADED FROM THE OLD AUCTION TRACKER, NOT SAVED HERE YET' : '') + ' \u00b7 <button type="button" class="out mono" data-imp>RE-IMPORT FROM OLD TRACKER</button>' : '';
   }
 
@@ -133,16 +145,25 @@
     var path = t.getAttribute('data-f'), v = t.value;
     if(t.hasAttribute('inputmode')) v = clean(v);
     if(/\.fid$/.test(path)){ var i = +path.split('.')[1]; S.F.penalties[i].name = v ? D.NAME[v] : ''; }
-    setPath(path, v); if(t.tagName === 'SELECT') draw(); else soon(); save();
+    setPath(path, v);
+    if(/^future\.\d+\.from$/.test(path)){ var fm = S.F.future[+path.split('.')[1]]; if(fm.pick) fm.pick = v; }
+    if(t.tagName === 'SELECT') draw(); else soon(); save();
+  });
+  document.addEventListener('change', function(e){
+    var c = e.target.closest && e.target.closest('[data-fpick]'); if(!c || !S.edit) return;
+    var m = S.F.future[+c.getAttribute('data-fpick')]; m.pick = c.checked ? m.from : ''; draw(); save();
   });
   // redraw only once the commish leaves the inputs, so tabbing between fields isn't interrupted
   function soon(){ setTimeout(function(){ var a = document.activeElement; if(a && a.classList && a.classList.contains('fin')) return; draw(); }, 0); }
+  window.addEventListener('hashchange', function(){ S.tab = location.hash === '#auction' ? 'auction' : 'season'; if(S.F) draw(); });
   document.addEventListener('focusout', function(e){ if(S.edit && e.target.classList && e.target.classList.contains('fin')) soon(); });
   document.addEventListener('click', function(e){
     if(e.target.closest('[data-rf]')){ prices(); return; }
     if(!S.edit) return;
     var d = e.target.closest('[data-due]'); if(d){ var id = d.getAttribute('data-due'); S.F.dues[id] = !S.F.dues[id]; draw(); save(); return; }
     if(e.target.closest('[data-addx]')){ S.F.expenses.push({ id:'ex' + Date.now(), label:'', amount:'' }); draw(); save(); var ins = document.querySelectorAll('[data-f$=".label"][data-f^="expenses"]'); if(ins.length) ins[ins.length - 1].focus(); return; }
+    if(e.target.closest('[data-fadd]')){ S.F.future.push({ date:new Date().toISOString().slice(0, 10), from:'', to:'', amt:0, pick:'', note:'' }); draw(); save(); return; }
+    var fd = e.target.closest('[data-fdel]'); if(fd){ if(!confirm('Remove this trade?')) return; S.F.future.splice(+fd.getAttribute('data-fdel'), 1); draw(); save(); return; }
     var r = e.target.closest('[data-rmx]'); if(r){ S.F.expenses.splice(+r.getAttribute('data-rmx'), 1); draw(); save(); return; }
     if(e.target.closest('[data-imp]')){ if(!confirm('Replace everything here with the numbers from the old Netlify auction tracker?')) return; legacy().then(function(f){ if(!f){ toast('OLD TRACKER DIDN\u2019T ANSWER'); return; } S.F = convert(f); draw(); save(); }); }
   });
@@ -172,6 +193,7 @@
     return legacy().then(function(f){ S.F = convert(f); S.from = f ? 'legacy' : 'seed'; });
   }).then(function(){ var F = S.F; F.dues = F.dues || {}; F.luxTax = F.luxTax || {}; F.expenses = F.expenses || []; F.payouts = F.payouts || seed().payouts; F.penalties = F.penalties && F.penalties.length ? F.penalties : seed().penalties; draw(); });
   prices(); setInterval(prices, 60000);
+  D.futureFromTrades().then(function(a){ S.auto = a; if(S.F) draw(); });
   D.api('liveScoring').then(function(j){ var w = Math.min(13, num(j && j.liveScoring && j.liveScoring.week)); if(!w) return []; return D.lowScores(w); }).then(function(L){
     var r = null; (L || []).forEach(function(x){ if(x.top && x.top.s > 0 && (!r || x.top.s > r.s)) r = { w:x.w, id:x.top.id, s:x.top.s }; });
     S.hi = r; if(S.F) draw();

@@ -70,7 +70,7 @@
   /* ---------- by-laws ---------- */
   function bylaws(){
     if(!S.law){ D.content('bylaws').then(function(b){ S.law = b || { text:'' }; bylaws(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
-    $('cb').innerHTML = '<article class="card" style="max-width:900px;margin-bottom:44px"><div class="bar mono"><span>BY-LAWS</span><span>SHOWS ON THE RULES PAGE</span></div><div class="ef pad"><div class="mono hint3">START A LINE WITH ## FOR A HEADING, - FOR A BULLET. BLANK LINE = NEW PARAGRAPH.</div><textarea id="law" rows="22" placeholder="## Keepers&#10;- Each team keeps up to 3 players&#10;&#10;## Dues&#10;$100, paid before the draft">' + esc(S.law.text || '') + '</textarea><div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="lsave">SAVE BY-LAWS</button></div></div></article>';
+    $('cb').innerHTML = '<article class="card" style="max-width:900px;margin-bottom:44px"><div class="bar mono"><span>BY-LAWS</span><span>SHOWS ON THE BYLAWS PAGE</span></div><div class="ef pad"><div class="mono hint3">START A LINE WITH ## FOR A HEADING, - FOR A BULLET. BLANK LINE = NEW PARAGRAPH.</div><textarea id="law" rows="22" placeholder="## Keepers&#10;- Each team keeps up to 3 players&#10;&#10;## Dues&#10;$100, paid before the draft">' + esc(S.law.text || '') + '</textarea><div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="lsave">SAVE BY-LAWS</button></div></div></article>';
   }
 
   /* ---------- timed home-page popups, on a weekly calendar (Eastern) ---------- */
