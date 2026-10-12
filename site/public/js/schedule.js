@@ -88,7 +88,7 @@
       $('sb2').innerHTML = '<article class="card"><div class="bar mono"><span>PLAYOFF PICTURE</span><span>IF THE SEASON ENDED TODAY</span></div>' +
         grp('DIVISION WINNERS', 'SEEDS 1\u20133 \u00b7 PICK THEIR OPPONENT') + o.slice(0, 3).map(function(id, i){ return row(id, i, '', 'in dvw'); }).join('') +
         grp('BEST RECORDS', 'SEEDS 4\u20136 \u00b7 IN') + o.slice(3, 6).map(function(id, i){ return row(id, i + 3, 'IN', 'in'); }).join('') +
-        grp('WEEK 14 FREE-FOR-ALL', 'TOP 2 SCORES TAKE SEEDS 7\u20138') + o.slice(6, 10).map(function(id, i){ return row(id, i + 6, HS[i] + ' HEAD START', 'ffa'); }).join('') +
+        grp('WEEK 14 FREE-FOR-ALL', 'TOP 2 SCORES MAKE THE PLAYOFFS') + o.slice(6, 10).map(function(id, i){ return row(id, i + 6, HS[i] + ' HEAD START', 'ffa'); }).join('') +
         grp('OUT', '') + o.slice(10).map(function(id, i){ return row(id, i + 10, '', 'out'); }).join('') +
         '<div class="note mono">TIES BROKEN BY TOTAL POINTS. DIVISION WINNERS PICK THEIR FIRST-ROUND OPPONENT IN SEED ORDER; THE TWO UNPICKED TEAMS PLAY EACH OTHER AND BECOME SEEDS 4\u20135. IN THE SEMIFINALS THE HIGHEST SEED LEFT PICKS AGAIN. <a href="' + D.href('rules') + '#a-playoffs">FULL RULES \u2192</a></div></article><div style="height:44px"></div>';
     });

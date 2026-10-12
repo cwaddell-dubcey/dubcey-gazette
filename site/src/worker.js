@@ -254,6 +254,58 @@ export default {
       if (!wk) return json({});
       try { return json(await espnWeek(ctx, wk, u.searchParams.get('raw') === '1')); } catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
+    // MFL "Complete Free Agent Listing": % added / % owned / projection for every free agent (MFL's export API only lists the top-owned)
+    if (p === '/data/fa') {
+      const key = new Request('https://fa.dubcey/' + Y), hit = await caches.default.match(key);
+      if (hit) return new Response(hit.body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+      try {
+        const tok = env.DC && await env.DC.get('svc'), H = tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA;
+        const get = async path => { const r = await fetch(`${HOST}/${Y}/${path}`, { headers: H }); return r.ok ? r.text() : ''; };
+        // find the report link by its menu label, so a changed option code doesn't break it
+        const home = await get(`home/${L}`), m = /href="([^"]+)"[^>]*>\s*Complete Free Agent Listing\s*</i.exec(home);
+        let path = m ? m[1].replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+\/\d{4}\//, '').replace(/^\/\d{4}\//, '') : '';
+        if (!path) throw new Error('report link not found');
+        const sep = path.includes('?') ? '&' : '?';
+        const html = await get(path + sep + 'POSITION=QB|RB|WR|TE');
+        const t = (html.match(/<table[\s\S]*?<\/table>/gi) || []).find(x => /OWN\s*PCT/i.test(x)) || '';
+        const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+        const head = ((t.match(/<tr[^>]*>[\s\S]*?<\/tr>/i) || [''])[0].match(/<th[\s\S]*?<\/th>/gi) || []).map(x => clean(x).toUpperCase());
+        const ix = re => head.findIndex(h => re.test(h));
+        const cA = ix(/ADD/), cO = ix(/OWN/), cP = ix(/PROJ/), out = {};
+        (t.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).slice(1).forEach(row => {
+          const id = (/[?&;]P=(\d+)/.exec(row) || [])[1]; if (!id) return;
+          const td = (row.match(/<td[\s\S]*?<\/td>/gi) || []).map(clean), n = i => i > -1 && td[i] != null && td[i] !== '' ? +String(td[i]).replace(/[^0-9.\-]/g, '') : null;
+          out[id] = [n(cO), n(cA), n(cP)];
+        });
+        if (!Object.keys(out).length) throw new Error('no rows parsed');
+        const body = JSON.stringify(out);
+        ctx.waitUntil(caches.default.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' } })));
+        return new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+      } catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+    // league-wide MFL player news (last 3 days): [{id, head, body, src, ago}]
+    if (p === '/data/news') {
+      const key = new Request('https://news.dubcey/' + Y), hit = await caches.default.match(key);
+      if (hit) return new Response(hit.body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+      try {
+        const tok = env.DC && await env.DC.get('svc');
+        const r = await fetch(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
+        const html = r.ok ? await r.text() : '';
+        const clean = s => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+        const out = [];
+        (html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).forEach(row => {
+          const id = (/[?&;]P=(\d+)/.exec(row) || [])[1]; if (!id) return;
+          const td = row.match(/<td[\s\S]*?<\/td>/gi) || [];
+          const hd = td.find(x => /class="headline"/i.test(x)) || td[0] || '', ts = td.find(x => /class="timestamp"/i.test(x)) || td[td.length - 1] || '';
+          const body = td.filter(x => x !== hd && x !== ts).map(clean).join(' ');
+          const src = (/^\(([^)]+)\)/.exec(body) || [])[1] || '';
+          out.push({ id, head: clean(hd), body: body.replace(/^\([^)]+\)\s*/, '').replace(new RegExp('\\s*' + src + '\\s*$'), ''), src, ago: clean(ts) });
+        });
+        const bodyJ = JSON.stringify(out.slice(0, 400));
+        if (out.length) ctx.waitUntil(caches.default.put(key, new Response(bodyJ, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' } })));
+        return new Response(bodyJ, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+      } catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
     if (p === '/data/nflgames') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
       try {
@@ -307,7 +359,8 @@ export default {
       const extra = q.toString();
       // NFL-wide data lives on MFL's API host and must not carry the league id
       const NFLWIDE = { injuries:1, nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
-      const target = NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
+      const scoped = q.get('LG') === '1' && /^top(Owns|Adds|Drops)$/.test(type); q.delete('LG'); const extra2 = q.toString();
+      const target = scoped ? `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra2 ? '&' + extra2 : ''}` : NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
       if (PRIV[type]) {
         const r = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + s.t } });
         return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });

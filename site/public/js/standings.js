@@ -3,6 +3,32 @@
   var ME = '';
   D.shell('standings').then(function(me){ ME = me.franchise || ''; [].forEach.call(document.querySelectorAll('[data-id="' + ME + '"]'), function(el){ el.classList.add('me'); }); });
 
+  var SV = location.hash === '#power' ? 'power' : 'table', PR = null;
+  function sv(){
+    [].forEach.call(document.querySelectorAll('#stabs [data-v]'), function(a){ a.classList.toggle('on', a.getAttribute('data-v') === SV); });
+    $('vtab').hidden = SV !== 'table'; $('vpow').hidden = SV !== 'power';
+    if(SV === 'power') power();
+  }
+  window.addEventListener('hashchange', function(){ SV = location.hash === '#power' ? 'power' : 'table'; sv(); });
+  function power(){
+    if(PR){ drawPower(); return; }
+    D.api('liveScoring').then(function(j){ var w = num(j && j.liveScoring && j.liveScoring.week) || 1; return D.power(w); }).then(function(p){ PR = p; drawPower(); })
+      .catch(function(){ $('vpow').innerHTML = '<div class="card"><div class="ld mono">POWER RANKINGS AREN\u2019T AVAILABLE YET.</div></div>'; });
+  }
+  function drawPower(){
+    var L = PR.list; if(!PR.week){ $('vpow').innerHTML = '<div class="card"><div class="ld mono">POWER RANKINGS START AFTER WEEK 1.</div></div>'; return; }
+    var top = L[0], up = L.slice().sort(function(a, b){ return b.mv - a.mv; })[0], dn = L.slice().sort(function(a, b){ return a.mv - b.mv; })[0];
+    var hi = L[0].score || 1;
+    $('vpow').innerHTML = '<div class="pwh">' +
+      '<div class="pwc top"><span class="mono">NO. 1 \u00b7 WEEK ' + PR.week + '</span><img src="' + helm(top.id) + '" alt=""><b>' + esc(D.NAME[top.id]) + '</b><i class="mono">' + top.w + '-' + top.l + ' \u00b7 ALL-PLAY ' + top.apw + '-' + top.apl + '</i></div>' +
+      (up && up.mv > 0 ? '<div class="pwc"><span class="mono">BIGGEST RISER</span><img src="' + helm(up.id) + '" alt=""><b>' + esc(D.SHORT[up.id]) + '</b><i class="mono up">\u25b2 ' + up.mv + ' TO NO. ' + up.rk + '</i></div>' : '') +
+      (dn && dn.mv < 0 ? '<div class="pwc"><span class="mono">BIGGEST FALL</span><img src="' + helm(dn.id) + '" alt=""><b>' + esc(D.SHORT[dn.id]) + '</b><i class="mono dn">\u25bc ' + (-dn.mv) + ' TO NO. ' + dn.rk + '</i></div>' : '') +
+      '</div><article class="card pwt"><div class="bar mono"><span>POWER RANKINGS \u00b7 AFTER WEEK ' + PR.week + '</span><span>40% POINTS \u00b7 40% ALL-PLAY \u00b7 20% LAST 3 WEEKS</span></div>' +
+      '<div class="pwr2 hd mono"><span>#</span><span></span><span>TEAM</span><span>RECORD</span><span class="px">ALL-PLAY</span><span class="px">POINTS</span><span class="px">LAST 3 AVG</span><span>POWER</span></div>' +
+      L.map(function(t){ return '<a class="pwr2' + (t.id === ME ? ' me' : '') + '" href="' + D.href('teams', 'f=' + t.id) + '"><b class="n2">' + t.rk + '</b><span class="mv mono ' + (t.mv > 0 ? 'up' : t.mv < 0 ? 'dn' : '') + '">' + (t.mv > 0 ? '\u25b2' + t.mv : t.mv < 0 ? '\u25bc' + (-t.mv) : '\u2013') + '</span><span class="tn2"><img src="' + helm(t.id) + '" alt=""><b>' + esc(D.NAME[t.id]) + '</b></span><span class="mono">' + t.w + '-' + t.l + '</span><span class="mono">' + t.apw + '-' + t.apl + '</span><span class="mono">' + D.pts(t.pf) + '</span><span class="mono">' + D.pts(Math.round(t.r3 * 100) / 100) + '</span><span class="pws"><i style="width:' + (t.score / hi * 100).toFixed(1) + '%"></i><em class="mono">' + t.score.toFixed(1) + '</em></span></a>'; }).join('') +
+      '<div class="fnote mono"><span>ALL-PLAY = YOUR RECORD IF YOU PLAYED ALL 11 TEAMS EVERY WEEK</span><span>ARROWS = CHANGE SINCE LAST WEEK</span></div></article>';
+  }
+  sv();
   Promise.all([D.api('leagueStandings'), D.api('schedule').catch(function(){ return null; }), D.api('league').catch(function(){ return null; })]).then(function(r){
     var F = arr(r[0] && r[0].leagueStandings && r[0].leagueStandings.franchise).filter(function(f){ return D.NAME[f.id]; });
     if(!F.length) throw 0;

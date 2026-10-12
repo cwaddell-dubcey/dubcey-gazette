@@ -111,6 +111,11 @@
         }
       }
       $('low').hidden = false;
+      var stA = document.querySelector('#disp .stories');
+      if(stA && !stA.querySelector('.st.auto')){
+        D.power(w).then(function(PR){ if(!PR.week) return; var s = D.powerStory(PR), dv = document.createElement('div'); dv.className = 'st auto'; dv.innerHTML = '<img src="' + helm(s.id) + '" alt=""><div><div class="kick mono">' + s.kick + '</div><h2><a href="' + D.href('standings') + '#power">' + s.head + '</a></h2><p>' + s.body + '</p></div>'; stA.appendChild(dv); }).catch(function(){});
+        D.previews(w + 1).then(function(P){ var p = P[0]; if(!p) return; var dv = document.createElement('div'); dv.className = 'st auto'; dv.innerHTML = '<img src="' + helm(p.pa >= p.ph ? p.a : p.h) + '" alt=""><div><div class="kick mono">WEEK ' + (w + 1) + ' PREVIEW \u00b7 CLOSEST GAME</div><h2><a href="' + D.href('dispatch') + '#prevSec">' + esc(D.SHORT[p.a]) + ' at ' + esc(D.SHORT[p.h]) + '</a></h2><p>MFL projections have ' + esc(D.SHORT[p.a]) + ' at ' + D.pts(Math.round(p.pa * 100) / 100) + ' and ' + esc(D.SHORT[p.h]) + ' at ' + D.pts(Math.round(p.ph * 100) / 100) + ', the tightest projected game of the week.' + (p.div ? ' It\u2019s a division game.' : '') + '</p></div>'; stA.appendChild(dv); }).catch(function(){});
+      }
       var st = document.querySelector('#disp .stories');
       if(st && !st.querySelector('.st.low')){
         var dv = document.createElement('div'); dv.className = 'st low';

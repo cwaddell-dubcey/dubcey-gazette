@@ -97,7 +97,8 @@
 
   /* ---------- trades ---------- */
   function trades(){
-    $('mtb').innerHTML = '<div class="duo" style="margin-top:6px"><article class="card" id="pend"><div class="bar mono"><span>TRADE OFFERS</span></div><div class="ld mono">LOADING…</div></article><article class="card" id="prop"></article></div>';
+    $('mtb').innerHTML = '<div class="duo" style="margin-top:6px"><article class="card" id="pend"><div class="bar mono"><span>TRADE OFFERS</span></div><div class="ld mono">LOADING…</div></article><article class="card" id="prop"></article></div><article class="card" id="bait" style="margin:22px 0 44px"><div class="bar mono"><span>THE TRADE BLOCK</span></div><div class="ld mono">LOADING…</div></article>';
+    bait();
     D.api('pendingTrades').then(function(j){
       var T = arr(j && j.pendingTrades && j.pendingTrades.pendingTrade);
       $('pend').innerHTML = '<div class="bar mono"><span>TRADE OFFERS</span><span>' + T.length + ' PENDING</span></div>' + (T.map(function(t){
@@ -106,7 +107,7 @@
         var you = mine ? give : get, them = mine ? get : give, fx = D.futParse(t.comments);
         function fli(fromId){ return fx.filter(function(x){ return x.from === fromId; }).map(function(x){ return (x.amt ? '<li class="fx"><span class="pos FX">$</span><span>$' + x.amt + ' in ' + D.NEXT.year + ' auction<i class="mono">NEXT YEAR\u2019S DRAFT DOLLARS</i></span></li>' : '') + (x.pick ? '<li class="fx"><span class="pos FX">R</span><img class="fxh" src="' + helm(x.pick) + '" alt=""><span>' + (x.pick === x.from ? esc(D.SHORT[x.from]) + '\u2019s' : esc(D.SHORT[x.pick]) + '\u2019s') + ' ' + D.NEXT.year + ' rookie pick<i class="mono">ROOKIE DRAFT</i></span></li>' : ''); }).join(''); }
         var meGive = mine ? t.offeringteam : t.offeredto, meGet = mine ? t.offeredto : t.offeringteam;
-        function li(l){ return l.map(function(id){ var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></li>'; }).join(''); }
+        function li(l){ return l.map(function(id){ if(/^BB_/.test(id)) return '<li class="fx"><span class="pos FX">$</span><span>$' + num(id.slice(3)) + ' FAAB<i class="mono">' + D.Y + ' BLIND-BID DOLLARS</i></span></li>'; if(/^(FP|DP)_/.test(id)) return '<li class="fx"><span class="pos FX">R</span><span>Draft pick<i class="mono">' + esc(id) + '</i></span></li>'; var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></li>'; }).join(''); }
         return '<div class="tro"><div class="trh"><img src="' + helm(other) + '" alt=""><div><b>' + esc(D.NAME[other]) + '</b><span class="mono">' + (mine ? 'YOU OFFERED' : 'OFFERED TO YOU') + '</span></div></div>' +
           '<div class="trs"><div><span class="mono">YOU GIVE</span><ul>' + li(you) + fli(meGive) + '</ul></div><div><span class="mono">YOU GET</span><ul>' + li(them) + fli(meGet) + '</ul></div></div>' +
           (D.futText(t.comments) ? '<p class="cm">\u201c' + esc(D.futText(t.comments)) + '\u201d</p>' : '') +
@@ -116,6 +117,24 @@
     propose();
   }
   D.future().then(function(x){ S.fut = D.futureCalc(x); if(S.tab === 'trades' && $('prop')) propose(); });
+  S.bb = {}; D.api('leagueStandings').then(function(j){ arr(j && j.leagueStandings && j.leagueStandings.franchise).forEach(function(f){ if(f.bbidbalance != null && f.bbidbalance !== '') S.bb[f.id] = num(String(f.bbidbalance).replace(/[^0-9.\-]/g, '')); }); if(S.tab === 'trades' && $('prop')) propose(); }).catch(function(){});
+  // trade bait: public league-wide block; you edit your own
+  function bait(){
+    D.api('tradeBait').then(function(j){
+      var B = arr(j && j.tradeBaits && j.tradeBaits.tradeBait), mine = B.filter(function(b){ return b.franchise_id === S.me; })[0] || {}, sel = {};
+      String(mine.willGiveUp || '').split(',').forEach(function(id){ if(id) sel[id] = 1; });
+      S.baitSel = S.baitSel || sel;
+      var ids = []; B.forEach(function(b){ String(b.willGiveUp || '').split(',').forEach(function(id){ if(id) ids.push(id); }); });
+      return D.players(ids.concat(S.R[S.me] || [])).then(function(){
+        var others = B.filter(function(b){ return b.franchise_id !== S.me && String(b.willGiveUp || '').replace(/,/g, ''); });
+        var pl = function(id){ var i = D.pinfo(id); return '<li><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + esc(i[2]) + '</i></span></li>'; };
+        $('bait').innerHTML = '<div class="bar mono"><span>THE TRADE BLOCK</span><span>EVERYONE CAN SEE THIS</span></div><div class="bt2">' +
+          '<div class="btm"><div class="sub mono">YOUR BLOCK \u00b7 TICK WHO YOU\u2019D MOVE</div>' + (S.R[S.me] || []).slice().sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); }).map(function(id){ var i = D.pinfo(id), on = S.baitSel[id]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-bait value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + '<i class="mono">' + esc(i[2]) + '</i></span></label>'; }).join('') +
+            '<input id="bwant" maxlength="200" placeholder="What you want back (e.g. RB help, 2027 $)" value="' + esc(mine.inExchangeFor || '') + '"><button class="btn" type="button" id="bsave">SAVE MY BLOCK</button></div>' +
+          '<div class="bto"><div class="sub mono">AROUND THE LEAGUE</div>' + (others.map(function(b){ return '<div class="btt"><div class="trh"><img src="' + helm(b.franchise_id) + '" alt=""><div><b>' + esc(D.NAME[b.franchise_id]) + '</b>' + (b.inExchangeFor ? '<span class="mono">WANTS: ' + esc(String(b.inExchangeFor).toUpperCase()) + '</span>' : '') + '</div><button type="button" class="btn sm ghost2" data-to="' + esc(b.franchise_id) + '">MAKE OFFER</button></div><ul>' + String(b.willGiveUp).split(',').filter(Boolean).map(pl).join('') + '</ul></div>'; }).join('') || '<div class="ld mono">NOBODY HAS ANYONE ON THE BLOCK YET.</div>') + '</div></div>';
+      });
+    }).catch(function(){ $('bait').innerHTML = '<div class="bar mono"><span>THE TRADE BLOCK</span></div><div class="ld mono">COULDN\u2019T LOAD THE TRADE BLOCK</div>'; });
+  }
   function propose(){
     var t = S.trade, others = D.IDS.filter(function(id){ return id !== S.me; });
     var h = '<div class="bar mono"><span>PROPOSE A TRADE</span><span>' + (t.to ? 'WITH ' + esc(D.SHORT[t.to]).toUpperCase() : 'PICK A TEAM') + '</span></div><div class="pick2">' +
@@ -123,13 +142,14 @@
     if(t.to){
       function list(f, side){ return (S.R[f] || []).slice().sort(function(a, b){ return (PO[D.pinfo(a)[1]] || 9) - (PO[D.pinfo(b)[1]] || 9); }).map(function(id){ var i = D.pinfo(id), on = t[side][id]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-side="' + side + '" value="' + esc(id) + '"' + (on ? ' checked' : '') + '><span class="pos ' + esc(i[1]) + '">' + esc(i[1]) + '</span>' + D.face(id, i[1], i[2]) + '<span>' + esc(i[0]) + D.ij(id) + '<i class="mono">' + D.tlogo(i[2]) + esc(i[2]) + '</i></span></label>'; }).join(''); }
       var N = D.NEXT, FT = S.fut || {}, mineF = FT[S.me] || { budget:N.base, picks:[S.me] }, theirF = FT[t.to] || { budget:N.base, picks:[t.to] };
-      t.gd = t.gd || 0; t.rd = t.rd || 0; t.gp = t.gp || {}; t.rp = t.rp || {};
+      t.gd = t.gd || 0; t.rd = t.rd || 0; t.gp = t.gp || {}; t.rp = t.rp || {}; t.gf = t.gf || 0; t.rf = t.rf || 0;
       function extra(side, owner, F){
-        var d = side === 'give' ? t.gd : t.rd, P2 = side === 'give' ? t.gp : t.rp;
-        return '<div class="tfx"><div class="sub mono">' + N.year + ' AUCTION $ \u00b7 ' + esc(D.SHORT[owner]).toUpperCase() + ' HAS $' + F.budget + '</div><div class="tfd"><button type="button" data-fd="' + side + '" data-n="-1">\u2212</button><input inputmode="numeric" data-fdv="' + side + '" value="' + d + '"><button type="button" data-fd="' + side + '" data-n="1">+</button></div>' +
+        var d = side === 'give' ? t.gd : t.rd, P2 = side === 'give' ? t.gp : t.rp, fb = side === 'give' ? t.gf : t.rf, bal = S.bb[owner];
+        var faab = '<div class="tfx"><div class="sub mono">' + D.Y + ' FAAB \u00b7 ' + esc(D.SHORT[owner]).toUpperCase() + (bal != null ? ' HAS $' + bal : '') + '</div><div class="tfd"><button type="button" data-fb="' + side + '" data-n="-10">\u2212</button><input inputmode="numeric" data-fbv="' + side + '" value="' + fb + '"><button type="button" data-fb="' + side + '" data-n="10">+</button></div></div>';
+        return faab + '<div class="tfx"><div class="sub mono">' + N.year + ' AUCTION $ \u00b7 ' + esc(D.SHORT[owner]).toUpperCase() + ' HAS $' + F.budget + '</div><div class="tfd"><button type="button" data-fd="' + side + '" data-n="-1">\u2212</button><input inputmode="numeric" data-fdv="' + side + '" value="' + d + '"><button type="button" data-fd="' + side + '" data-n="1">+</button></div>' +
           (F.picks.length ? F.picks.map(function(p){ var on = P2[p]; return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox" data-fp="' + side + '" value="' + p + '"' + (on ? ' checked' : '') + '><span class="pos FX">R</span><img class="fxh" src="' + helm(p) + '" alt=""><span>' + (p === owner ? 'Own' : esc(D.SHORT[p]) + '\u2019s') + ' ' + N.year + ' rookie pick<i class="mono">ROOKIE DRAFT</i></span></label>'; }).join('') : '<div class="sub mono" style="color:#c8282d">NO ' + N.year + ' ROOKIE PICK TO TRADE</div>') + '</div>';
       }
-      var ng = Object.keys(t.give).length + (t.gd > 0 ? 1 : 0) + Object.keys(t.gp).length, nr = Object.keys(t.get).length + (t.rd > 0 ? 1 : 0) + Object.keys(t.rp).length;
+      var ng = Object.keys(t.give).length + (t.gd > 0 ? 1 : 0) + (t.gf > 0 ? 1 : 0) + Object.keys(t.gp).length, nr = Object.keys(t.get).length + (t.rd > 0 ? 1 : 0) + (t.rf > 0 ? 1 : 0) + Object.keys(t.rp).length;
       var after = function(b, d){ return b + d; }, mb = after(mineF.budget, t.rd - t.gd), tb = after(theirF.budget, t.gd - t.rd);
       var warn = function(v){ return v > N.max || v < N.min; };
       h += '<div class="trs2"><div><div class="sub mono">YOU GIVE · ' + ng + '</div>' + list(S.me, 'give') + extra('give', S.me, mineF) + '</div><div><div class="sub mono">YOU GET · ' + nr + '</div>' + list(t.to, 'get') + extra('get', t.to, theirF) + '</div></div>' +
@@ -169,12 +189,18 @@
       return;
     }
     var to = e.target.closest('[data-to]');
-    if(to){ S.trade = { to:to.getAttribute('data-to'), give:{}, get:{}, gd:0, rd:0, gp:{}, rp:{} }; propose(); return; }
+    if(to){ S.trade = { to:to.getAttribute('data-to'), give:{}, get:{}, gd:0, rd:0, gp:{}, rp:{}, gf:0, rf:0 }; propose(); if(to.closest('#bait')){ var pr = $('prop'); window.scrollTo(0, pr.getBoundingClientRect().top + window.scrollY - 90); } return; }
+    var fbb = e.target.closest('[data-fb]'); if(fbb){ var sf = fbb.getAttribute('data-fb') === 'give' ? 'gf' : 'rf', own0 = sf === 'gf' ? S.me : S.trade.to, cmz = $('tcm') ? $('tcm').value : ''; S.trade[sf] = Math.max(0, Math.min(S.bb[own0] != null ? S.bb[own0] : 1000, (S.trade[sf] || 0) + +fbb.getAttribute('data-n'))); propose(); if($('tcm')) $('tcm').value = cmz; return; }
     var fd = e.target.closest('[data-fd]'); if(fd){ var sd = fd.getAttribute('data-fd') === 'give' ? 'gd' : 'rd', cm0 = $('tcm') ? $('tcm').value : ''; S.trade[sd] = Math.max(0, Math.min(D.NEXT.max, (S.trade[sd] || 0) + +fd.getAttribute('data-n'))); propose(); if($('tcm')) $('tcm').value = cm0; return; }
     var rsp = e.target.closest('[data-resp]');
     if(rsp){
       var kind = rsp.getAttribute('data-resp'); rsp.disabled = true;
       D.act('tradeResponse', { TRADE_ID:rsp.getAttribute('data-id'), RESPONSE:kind }).then(function(r){ toast(r && r.ok ? (r.demo ? 'PREVIEW ONLY \u2014 NOT SENT' : kind === 'accept' ? 'TRADE ACCEPTED' : kind === 'reject' ? 'TRADE DECLINED' : 'OFFER WITHDRAWN') : ((r && r.error) || 'MFL REJECTED THAT'), !(r && r.ok)); if(r && r.ok && !r.demo) trades(); else rsp.disabled = false; });
+      return;
+    }
+    if(e.target.id === 'bsave'){
+      var bs = e.target; bs.disabled = true;
+      D.act('tradeBait', { WILL_GIVE_UP:Object.keys(S.baitSel || {}).join(','), IN_EXCHANGE_FOR:($('bwant').value || '').trim() }).then(function(r){ bs.disabled = false; toast(r && r.ok ? (r.demo ? 'PREVIEW ONLY \u2014 NOT SAVED' : 'TRADE BLOCK SAVED') : ((r && r.error) || 'MFL DIDN\u2019T SAVE THAT'), !(r && r.ok)); if(r && r.ok && !r.demo){ S.baitSel = null; bait(); } });
       return;
     }
     if(e.target.id === 'tsend'){
@@ -184,15 +210,19 @@
       if(t.rd > 0 || Object.keys(t.rp || {}).length) Object.keys(t.rp).concat(Object.keys(t.rp).length ? [] : ['']).forEach(function(p, i){ parts.push({ from:t.to, to:S.me, amt:i === 0 ? t.rd : 0, pick:p }); });
       var human = parts.filter(function(x){ return x.amt || x.pick; }).map(function(x){ return D.SHORT[x.from] + ' sends ' + D.SHORT[x.to] + ' ' + [x.amt ? '$' + x.amt + ' in ' + D.NEXT.year + ' auction' : '', x.pick ? (x.pick === x.from ? '' : D.SHORT[x.pick] + '\u2019s ') + D.NEXT.year + ' rookie pick' : ''].filter(Boolean).join(' + '); }).join('. ');
       var note = ($('tcm').value || '').trim(), cm = [note, human ? human + '.' : '', D.futTag(parts)].filter(Boolean).join(' ');
-      var noPlayers = !Object.keys(t.give).length || !Object.keys(t.get).length;
-      if(noPlayers){ toast('MFL NEEDS AT LEAST ONE PLAYER ON EACH SIDE', true); sb.disabled = false; return; }
-      D.act('tradeProposal', { OFFEREDTO:t.to, WILL_GIVE_UP:Object.keys(t.give).join(','), WILL_RECEIVE:Object.keys(t.get).join(','), COMMENTS:cm }).then(function(r){
+      var noPlayers = !(Object.keys(t.give).length || t.gf > 0) || !(Object.keys(t.get).length || t.rf > 0);
+      if(noPlayers){ toast('MFL NEEDS A PLAYER OR FAAB ON EACH SIDE', true); sb.disabled = false; return; }
+      if(t.gf > (S.bb[S.me] || 0)){ toast('YOU ONLY HAVE $' + (S.bb[S.me] || 0) + ' FAAB', true); sb.disabled = false; return; }
+      var gu = Object.keys(t.give).concat(t.gf > 0 ? ['BB_' + Number(t.gf).toFixed(2)] : []), wr = Object.keys(t.get).concat(t.rf > 0 ? ['BB_' + Number(t.rf).toFixed(2)] : []);
+      D.act('tradeProposal', { OFFEREDTO:t.to, WILL_GIVE_UP:gu.join(','), WILL_RECEIVE:wr.join(','), COMMENTS:cm }).then(function(r){
         if(r && r.ok){ toast(r.demo ? 'PREVIEW ONLY \u2014 OFFER NOT SENT' : 'OFFER SENT TO ' + D.SHORT[t.to].toUpperCase()); if(!r.demo){ S.trade = { to:'', give:{}, get:{} }; trades(); } else sb.disabled = false; }
         else { toast((r && r.error) || 'MFL REJECTED THE OFFER', true); sb.disabled = false; }
       });
     }
   });
   document.addEventListener('change', function(e){
+    var bc = e.target.closest('input[data-bait]'); if(bc){ S.baitSel = S.baitSel || {}; if(bc.checked) S.baitSel[bc.value] = 1; else delete S.baitSel[bc.value]; bc.closest('label').classList.toggle('on', bc.checked); return; }
+    var fbv = e.target.closest('input[data-fbv]'); if(fbv){ var kf = fbv.getAttribute('data-fbv') === 'give' ? 'gf' : 'rf', own1 = kf === 'gf' ? S.me : S.trade.to, cmy = $('tcm') ? $('tcm').value : ''; S.trade[kf] = Math.max(0, Math.min(S.bb[own1] != null ? S.bb[own1] : 1000, Math.round(num(fbv.value)))); propose(); if($('tcm')) $('tcm').value = cmy; return; }
     var fv = e.target.closest('input[data-fdv]'); if(fv){ var k2 = fv.getAttribute('data-fdv') === 'give' ? 'gd' : 'rd', cm1 = $('tcm') ? $('tcm').value : ''; S.trade[k2] = Math.max(0, Math.min(D.NEXT.max, Math.round(num(fv.value)))); propose(); if($('tcm')) $('tcm').value = cm1; return; }
     var fp = e.target.closest('input[data-fp]'); if(fp){ var o = S.trade[fp.getAttribute('data-fp') === 'give' ? 'gp' : 'rp'], cm2 = $('tcm') ? $('tcm').value : ''; if(fp.checked) o[fp.value] = 1; else delete o[fp.value]; propose(); if($('tcm')) $('tcm').value = cm2; return; }
     var c = e.target.closest('input[data-side]'); if(!c) return;

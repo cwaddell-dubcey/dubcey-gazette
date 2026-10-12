@@ -1,5 +1,5 @@
 (function(){
-  var D = DC, $ = D.$, esc = D.esc, arr = D.arr, helm = D.helm;
+  var D = DC, num = D.num, $ = D.$, esc = D.esc, arr = D.arr, helm = D.helm;
   var AWID = { "Team of the Week":"0004", "Biggest Bust":"0012", "Luckiest Win":"0005" };
   var C = null, w = new URLSearchParams(location.search).get('w');
   D.shell('dispatch');
@@ -7,6 +7,13 @@
     var c = e.target.closest('.st,.tk'); if(c){ c.classList.toggle('open'); return; }
     var b = e.target.closest('[data-w]'); if(b){ e.preventDefault(); w = b.getAttribute('data-w'); draw(); history.replaceState(null, '', D.href('dispatch', 'w=' + w)); window.scrollTo(0, 0); }
   });
+  D.api('liveScoring').then(function(j){
+    var cw = num(j && j.liveScoring && j.liveScoring.week) || 1;
+    D.previews(cw).then(function(P){ if(!P.length) return; $('prevH').textContent = 'Week ' + cw + ' Previews'; $('prev').innerHTML = P.map(D.previewCard).join(''); $('prevSec').hidden = false; }).catch(function(){});
+    D.power(cw).then(function(PR){ if(!PR.week) return; var s = D.powerStory(PR);
+      $('powS').innerHTML = '<div class="card pwst"><div class="pwsh"><img src="' + helm(s.id) + '" alt=""><div><div class="kick mono">' + s.kick + '</div><h2>' + s.head + '</h2><p>' + s.body + '</p></div></div><ol>' + s.top5.map(function(t){ return '<li><b class="mono">' + t.rk + '</b><img src="' + helm(t.id) + '" alt=""><span>' + esc(D.SHORT[t.id]) + '</span><i class="mono ' + (t.mv > 0 ? 'up' : t.mv < 0 ? 'dn' : '') + '">' + (t.mv > 0 ? '\u25b2' + t.mv : t.mv < 0 ? '\u25bc' + (-t.mv) : '\u2013') + '</i></li>'; }).join('') + '</ol></div>';
+      $('powSec').hidden = false; }).catch(function(){});
+  }).catch(function(){});
   D.column().then(function(c){ C = c; draw(); }).catch(function(){ $('disp').innerHTML = '<div class="ld mono">THE DISPATCH IS ON ITS WAY.</div>'; });
 
   function draw(){

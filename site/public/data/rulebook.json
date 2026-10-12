@@ -16,6 +16,11 @@
         "h": "Best single week.",
         "t": "The last quarter of the pool goes to the team with the highest single-week score from Weeks 1 through 13. The current record holder is shown on the home page, and every new record is announced.",
         "v": "25%"
+      },
+      {
+        "h": "Tiebreaker.",
+        "t": "A tied score in any weekly result (a head-to-head game, the weekly low score, the Week 14 Free-For-All or a playoff game) is broken by bench points that week. More bench points wins, except for the low score, where the team with fewer bench points pays.",
+        "v": "Bench pts"
       }
     ],
     "lineups": [],
@@ -39,6 +44,16 @@
         "h": "Blind-bid waivers.",
         "t": "Waivers run every Wednesday at 8 p.m. ET. Each claim includes a bid from the team’s budget, and the highest bid wins the player. The site prompts for a bid whenever an add falls inside the lock.",
         "v": "Wed 8 p.m."
+      },
+      {
+        "h": "FAAB budget.",
+        "t": "Each team gets $1,000 in blind-bid dollars for the season. FAAB is separate from auction dollars. Once a team’s FAAB runs out, it can only add players through free agency for the rest of the season.",
+        "v": "$1,000"
+      },
+      {
+        "h": "Trading FAAB.",
+        "t": "FAAB dollars can be included in trades, but only during the current season. They never carry over to the next year.",
+        "v": "This season"
       }
     ],
     "playoffs": [
@@ -69,8 +84,8 @@
       },
       {
         "h": "Last two spots.",
-        "t": "The two highest Free-For-All scores, head start included, take the 7 and 8 seeds. Whichever of the two scores higher is the 7 seed.",
-        "v": "Seeds 7–8"
+        "t": "The two highest Free-For-All scores, head start included, earn the last two playoff spots. Between them, the team ranked higher after Week 13 is listed first. The final seeds aren’t set until the division winners pick their opponents.",
+        "v": "2 spots"
       },
       {
         "h": "Pick your opponent.",
@@ -110,9 +125,39 @@
         "v": "$200"
       },
       {
+        "h": "Keepers.",
+        "t": "This is a keeper league. Before each auction, a team may keep any players from its roster at the end of the previous season. Kept players’ salaries count against that year’s auction budget. Plan keepers on any team page with Plan Keepers.",
+        "v": "Any number"
+      },
+      {
+        "h": "Keeper inflation.",
+        "t": "Every kept player’s salary goes up, and the raise depends on how many players a team keeps. Each kept player goes up by one dollar more than the number kept. Keeping 1 player adds $2 to his salary. Keeping 2 adds $3 to each, keeping 3 adds $4 to each, and so on.",
+        "v": "+$(N+1) each"
+      },
+      {
+        "h": "Keeper salary.",
+        "t": "Players picked up during the season, through FAAB or free agency, carry a $0 salary for the rest of that season. A kept pickup costs $10 if the team keeps 3 or fewer players. Above that, he costs $1 more for each extra keeper: $11 with 4 keepers, $12 with 5, and so on. Every other kept player’s raise is added to his salary on MFL at the end of the season.",
+        "v": "$10+"
+      },
+      {
         "h": "Trading budget.",
         "t": "Auction dollars for next year’s draft can be traded. A team’s budget can rise or fall by up to $30 through trades, so every team enters the auction with between $170 and $230.",
         "v": "$170–$230"
+      },
+      {
+        "h": "Luxury tax.",
+        "t": "Right before each auction, a team may pay extra dues to add up to $20 to its auction budget. The budget, including traded dollars, still can’t go over the $230 cap.",
+        "v": "Up to +$20"
+      },
+      {
+        "h": "Luxury pricing.",
+        "t": "Each of the first 10 added dollars costs one-tenth of annual dues ($25 at $250 dues). Each dollar from the 11th through the 20th costs one-fifth of annual dues ($50). Adding $10 costs $250, and adding the full $20 costs $750.",
+        "v": "$25 / $50"
+      },
+      {
+        "h": "Luxury money.",
+        "t": "80% of luxury tax collected is invested in bitcoin. The other 20% is invested at Bloodfeast’s discretion. The pool is added to league dues, so the yearly awards rise or fall with its value.",
+        "v": "80 / 20"
       },
       {
         "h": "In-season trades.",

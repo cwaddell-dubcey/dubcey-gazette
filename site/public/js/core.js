@@ -155,18 +155,101 @@
     });
   };
   D.usd = function(v){ return '$' + Math.round(D.num(v)).toLocaleString('en-US'); };
+  // one week of results: score, bench points (non-starters), opponent
+  var WKR = {};
+  D.week = function(w){
+    WKR[w] = WKR[w] || D.api('weeklyResults', 'W=' + w).then(function(j){
+      var out = [];
+      D.arr(j && j.weeklyResults && j.weeklyResults.matchup).forEach(function(m){
+        var F = D.arr(m.franchise);
+        F.forEach(function(f, i){
+          var pl = D.arr((f.players && f.players.player) || f.player), bench = pl.reduce(function(a, p){ return p.status === 'starter' ? a : a + D.num(p.score); }, 0);
+          if(D.NAME[f.id]) out.push({ id:f.id, s:D.num(f.score), bench:bench, opp:F[1 - i] ? F[1 - i].id : '', res:f.result || '' });
+        });
+      });
+      return out;
+    }).catch(function(){ return []; });
+    return WKR[w];
+  };
+  D.weeks = function(upTo){ var a = []; for(var w = 1; w <= upTo; w++) a.push(w); return Promise.all(a.map(D.week)); };
+  // $50 low scorer: commish pick wins; otherwise lowest score, tie broken by fewer bench points
   D.lowScores = function(upTo){
     var ws = []; for(var i = 1; i <= upTo; i++) ws.push(i);
-    return Promise.all([D.content('finance').catch(function(){ return null; })].concat(ws.map(function(w){ return D.api('weeklyResults', 'W=' + w).catch(function(){ return null; }); }))).then(function(r){
+    return Promise.all([D.content('finance').catch(function(){ return null; }), D.weeks(upTo)]).then(function(r){
       var pen = {}; D.arr(r[0] && r[0].penalties).forEach(function(p, i){ if(p.fid) pen[p.week || i + 1] = p.fid; });
       return ws.map(function(w, k){
-        var all = []; D.arr(r[k + 1] && r[k + 1].weeklyResults && r[k + 1].weeklyResults.matchup).forEach(function(m){ D.arr(m.franchise).forEach(function(f){ all.push({ id:f.id, s:D.num(f.score) }); }); });
-        all = all.filter(function(x){ return D.NAME[x.id]; }).sort(function(a, b){ return a.s - b.s; });
+        var all = (r[1][k] || []).slice().sort(function(a, b){ return a.s - b.s || a.bench - b.bench; });
         if(!all.length || !all.some(function(x){ return x.s > 0; })) return pen[w] ? { w:w, id:pen[w], s:null } : null;
-        var id = pen[w] || all[0].id, me = all.filter(function(x){ return x.id === id; })[0], top = all[all.length - 1];
-        return { w:w, id:id, s:me ? me.s : null, gap:all[1] && id === all[0].id ? all[1].s - all[0].s : null, top:{ id:top.id, s:top.s } };
+        var id = pen[w] || all[0].id, me = all.filter(function(x){ return x.id === id; })[0], hi = all.slice().sort(function(a, b){ return b.s - a.s || b.bench - a.bench; })[0];
+        var tie = all[1] && all[1].s === all[0].s && !pen[w];
+        return { w:w, id:id, s:me ? me.s : null, gap:all[1] && id === all[0].id ? all[1].s - all[0].s : null, tie:tie ? { other:all[1].id, bench:all[0].bench, obench:all[1].bench } : null, top:{ id:hi.id, s:hi.s } };
       }).filter(Boolean);
     });
+  };
+  // power rankings: 40% season points, 40% all-play win %, 20% last-3-weeks scoring
+  D.power = function(upTo){
+    return D.weeks(upTo).then(function(W){
+      W = W.filter(function(x){ return x.length && x.some(function(y){ return y.s > 0; }); });
+      if(!W.length) return { week:0, list:[] };
+      function rank(L){
+        var T = {}; D.IDS.forEach(function(id){ T[id] = { id:id, pf:0, apw:0, apl:0, last:[], w:0, l:0 }; });
+        L.forEach(function(wk){ wk.forEach(function(x){ var t = T[x.id]; if(!t) return; t.pf += x.s; t.last.push(x.s); if(x.res === 'W') t.w++; else if(x.res === 'L') t.l++;
+          wk.forEach(function(y){ if(y.id === x.id) return; if(x.s > y.s) t.apw++; else if(x.s < y.s) t.apl++; }); }); });
+        var A = D.IDS.map(function(id){ var t = T[id], r3 = t.last.slice(-3); t.r3 = r3.length ? r3.reduce(function(a, b){ return a + b; }, 0) / r3.length : 0; t.ap = t.apw + t.apl ? t.apw / (t.apw + t.apl) : 0; return t; });
+        var nm = function(k){ var v = A.map(function(t){ return t[k]; }), lo = Math.min.apply(null, v), hi = Math.max.apply(null, v); A.forEach(function(t){ t[k + 'n'] = hi > lo ? (t[k] - lo) / (hi - lo) : .5; }); };
+        nm('pf'); nm('r3');
+        A.forEach(function(t){ t.score = Math.round((.4 * t.pfn + .4 * t.ap + .2 * t.r3n) * 1000) / 10; });
+        A.sort(function(a, b){ return b.score - a.score; }); A.forEach(function(t, i){ t.rk = i + 1; });
+        return A;
+      }
+      var now = rank(W), prev = W.length > 1 ? rank(W.slice(0, -1)) : null, P = {};
+      if(prev) prev.forEach(function(t){ P[t.id] = t.rk; });
+      now.forEach(function(t){ t.prev = P[t.id] || t.rk; t.mv = t.prev - t.rk; });
+      return { week:W.length, list:now };
+    });
+  };
+
+  // matchup previews for week w: best projected lineup per team (league starter rules), records, key players
+  D.previews = function(w){
+    var no = function(){ return null; };
+    return Promise.all([D.api('schedule', 'W=' + w).catch(no), D.api('rosters').catch(no), D.api('projectedScores', 'W=' + w).catch(no), D.api('league').catch(no), D.records(), D.power(Math.max(1, w - 1)).catch(no)]).then(function(r){
+      var wk = D.arr(r[0] && r[0].schedule && r[0].schedule.weeklySchedule).filter(function(x){ return +x.week === +w; })[0] || D.arr(r[0] && r[0].schedule && r[0].schedule.weeklySchedule)[0];
+      var M = D.arr(wk && wk.matchup); if(!M.length) return [];
+      var PJ = {}; D.arr(r[2] && r[2].projectedScores && r[2].projectedScores.playerScore).forEach(function(x){ if(x.score !== '') PJ[x.id] = D.num(x.score); });
+      var RO = {}, ids = []; D.arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ RO[f.id] = D.arr(f.player).map(function(p){ ids.push(p.id); return p.id; }); });
+      var st = (r[3] && r[3].league && r[3].league.starters) || {}, slots = D.arr(st.position).filter(function(p){ return D.OURPOS[p.name]; }).map(function(p){ var a = String(p.limit || '1').split('-'); return { pos:p.name, min:+a[0] || 0, max:+(a[1] || a[0]) || 0 }; }), tot = D.num(st.count) || 9;
+      var PW = {}; if(r[5] && r[5].week) r[5].list.forEach(function(t){ PW[t.id] = t.rk; });
+      return D.players(ids).then(function(){
+        function best(fid){
+          var pool = (RO[fid] || []).map(function(id){ return { id:id, pos:D.pinfo(id)[1], p:PJ[id] || 0 }; }).filter(function(x){ return D.OURPOS[x.pos]; }).sort(function(a, b){ return b.p - a.p; });
+          var pick = [], used = {}, cnt = {};
+          slots.forEach(function(s){ pool.filter(function(x){ return x.pos === s.pos; }).slice(0, s.min).forEach(function(x){ pick.push(x); used[x.id] = 1; cnt[s.pos] = (cnt[s.pos] || 0) + 1; }); });
+          pool.forEach(function(x){ if(pick.length >= tot || used[x.id]) return; var s = slots.filter(function(y){ return y.pos === x.pos; })[0]; if(s && (cnt[x.pos] || 0) >= s.max) return; pick.push(x); used[x.id] = 1; cnt[x.pos] = (cnt[x.pos] || 0) + 1; });
+          return { proj:pick.reduce(function(a, x){ return a + x.p; }, 0), key:pick[0] || null };
+        }
+        return M.map(function(m){
+          var F = D.arr(m.franchise); if(F.length !== 2) return null;
+          var a = F.filter(function(x){ return x.isHome !== '1'; })[0] || F[0], h = F.filter(function(x){ return x !== a; })[0];
+          var A = best(a.id), H = best(h.id), da = D.div(a.id), dh = D.div(h.id);
+          return { a:a.id, h:h.id, pa:A.proj, ph:H.proj, ka:A.key, kh:H.key, ra:r[4].rec[a.id] || '', rh:r[4].rec[h.id] || '', pwa:PW[a.id], pwh:PW[h.id], div:!!(da && dh && da.k === dh.k), gap:Math.abs(A.proj - H.proj) };
+        }).filter(Boolean).sort(function(x, y){ return (x.gap - y.gap); });
+      });
+    });
+  };
+
+  // auto-written Dispatch pieces: preview cards and the power rankings story
+  D.previewCard = function(p){
+    var side = function(id, pj, k, rec, pw){ var i = k ? D.pinfo(k.id) : null; return '<div class="pvt"><img src="' + D.helm(id) + '" alt=""><b>' + D.esc(D.SHORT[id]) + '</b><span class="mono">' + D.esc(rec) + (pw ? ' \u00b7 PWR ' + pw : '') + '</span><em>' + (pj ? D.pts(Math.round(pj * 100) / 100) : '\u2013') + '</em>' + (i ? '<i class="mono">KEY: ' + D.esc(i[0]) + ' (' + D.esc(i[1]) + ') ' + (k.p ? D.pts(k.p) : '') + '</i>' : '') + '</div>'; };
+    var fav = p.pa === p.ph ? '' : (p.pa > p.ph ? p.a : p.h);
+    return '<div class="pv' + (p.div ? ' dv' : '') + '"><div class="pvk mono">' + (p.div ? 'DIVISION GAME' : 'MATCHUP') + (fav ? ' \u00b7 ' + D.esc(D.SHORT[fav]).toUpperCase() + ' BY ' + D.pts(Math.round(p.gap * 100) / 100) : '') + '</div><div class="pvg">' + side(p.a, p.pa, p.ka, p.ra, p.pwa) + '<span class="pvat mono">@</span>' + side(p.h, p.ph, p.kh, p.rh, p.pwh) + '</div></div>';
+  };
+  D.powerStory = function(PR){
+    var L = PR.list, t = L[0], up = L.slice().sort(function(a, b){ return b.mv - a.mv; })[0], dn = L.slice().sort(function(a, b){ return a.mv - b.mv; })[0], last = L[L.length - 1];
+    var txt = D.esc(D.NAME[t.id]) + ' sits at No. 1 after Week ' + PR.week + ', going ' + t.apw + '-' + t.apl + ' against the whole league.';
+    if(up && up.mv > 0) txt += ' ' + D.esc(D.SHORT[up.id]) + ' climbed ' + up.mv + ' spot' + (up.mv > 1 ? 's' : '') + ' to No. ' + up.rk + '.';
+    if(dn && dn.mv < 0) txt += ' ' + D.esc(D.SHORT[dn.id]) + ' fell ' + (-dn.mv) + ' to No. ' + dn.rk + '.';
+    txt += ' ' + D.esc(D.SHORT[last.id]) + ' brings up the rear.';
+    return { id:t.id, kick:'POWER RANKINGS \u00b7 WEEK ' + PR.week, head:D.esc(D.SHORT[t.id]) + ' on top', body:txt, top5:L.slice(0, 5) };
   };
 
   // player names, cached in the browser for a day
