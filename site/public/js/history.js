@@ -13,7 +13,7 @@
     var c = /league champion/i.test(n) ? 'ch' : /runner|finalist|2nd/i.test(n) ? 'ru' : /division/i.test(n) ? 'dv' : /toilet|last|sacko/i.test(n) ? 'lo' : '';
     return '<span class="nchip mono ' + c + '">' + esc(n.replace(/ Division Champion$/i, ' Div. Champ').replace(/^League Champion$/i, '\u2605 League Champion')) + '</span>'; }).join(''); }
   function idOf(n){ return H.n2id[n] || ''; }
-  function hl(n){ var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
