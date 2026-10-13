@@ -2076,3 +2076,7 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 .pvw{padding:12px 16px 16px;border-top:1.5px solid #102542}
 .pvw h4{margin:0 0 6px;font:400 17px/1.15 'Alfa Slab One',serif;text-transform:uppercase;text-wrap:balance}
 .pvw p{margin:0;font-size:14.5px;line-height:1.5;color:#2A3442;text-wrap:pretty}
+.wcr{display:flex;align-items:center;gap:14px}
+.wcx{padding:7px 10px;border:1.5px solid #102542;background:none;color:#102542;font-size:9px;letter-spacing:.12em;cursor:pointer}
+.wcx:hover{background:#c8282d;border-color:#c8282d;color:#F7EFDB}
+.wcx:disabled{opacity:.5;cursor:default}

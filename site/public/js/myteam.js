@@ -198,11 +198,11 @@
     $('mtb').innerHTML = '<article class="card" id="pw" style="max-width:760px"><div class="bar mono"><span>MY WAIVER CLAIMS</span></div><div class="ld mono">LOADING…</div></article>';
     Promise.all([D.api('pendingWaivers').catch(function(){ return null; }), D.api('transactions', 'ME=1').catch(function(){ return null; })]).then(function(r){
       var W = pendList(r[0]); if(!W.length) W = reqList(r[1]);
-      var ids = []; W.forEach(function(w){ ids.push(w.player, w.drop); });
+      S.wv = W; var ids = []; W.forEach(function(w){ ids.push(w.player, w.drop); });
       return D.players(ids.filter(Boolean)).then(function(){
         $('pw').innerHTML = '<div class="bar mono"><span>MY WAIVER CLAIMS</span><span>' + W.length + ' PENDING</span></div>' + (W.map(function(w){
           var a = D.pinfo(w.player), d = w.drop ? D.pinfo(w.drop) : null;
-          return '<div class="wc"><span class="pos ' + esc(a[1]) + '">' + esc(a[1]) + '</span>' + D.face(w.player, a[1], a[2]) + '<div><b>' + esc(a[0]) + D.ij(w.player) + '</b><span class="mono">' + D.tlogo(a[2]) + esc(a[2]) + (d ? ' · DROP ' + esc(d[0]) : '') + '</span></div>' + (w.amount ? '<em>$' + esc(w.amount) + '</em>' : '') + '</div>';
+          return '<div class="wc"><span class="pos ' + esc(a[1]) + '">' + esc(a[1]) + '</span>' + D.face(w.player, a[1], a[2]) + '<div><b>' + esc(a[0]) + D.ij(w.player) + '</b><span class="mono">' + D.tlogo(a[2]) + esc(a[2]) + (d ? ' · DROP ' + esc(d[0]) : '') + '</span></div>' + '<div class="wcr">' + (w.amount ? '<em>$' + esc(w.amount) + '</em>' : '') + '<button type="button" class="wcx mono" data-wdel="' + esc(w.player) + '">REMOVE</button></div></div>';
         }).join('') || '<div class="ld mono">NO CLAIMS IN</div>') + '<div class="wcf"><a class="btn" href="' + D.href('players') + '">FIND PLAYERS \u2192</a></div>';
       });
     }).catch(function(){ $('pw').innerHTML = '<div class="bar mono"><span>MY WAIVER CLAIMS</span></div><div class="ld mono">COULDN\u2019T LOAD CLAIMS</div><div class="wcf"><a class="btn" href="' + D.href('players') + '">FIND PLAYERS \u2192</a></div>'; });
@@ -211,6 +211,18 @@
   /* ---------- events ---------- */
   window.addEventListener('hashchange', function(){ S.tab = (location.hash || '#lineup').slice(1); if(S.me) draw(); });
   document.addEventListener('click', function(e){
+    var wd = e.target.closest('[data-wdel]');
+    if(wd){
+      var pid = wd.getAttribute('data-wdel'), nm = D.pinfo(pid)[0];
+      if(!confirm('Remove your claim on ' + nm + '?')) return;
+      wd.disabled = true; wd.textContent = '\u2026';
+      var rest = (S.wv || []).filter(function(w){ return w.player !== pid; }).map(function(w){ return w.player + '_' + (w.amount || 0) + '_' + (w.drop || '0000'); }).join(',');
+      D.act('blindBidWaiverRequest', { PICKS:rest }).then(function(r){
+        if(r && r.ok){ toast(r.demo ? 'PREVIEW ONLY \u2014 NOT SENT' : 'CLAIM ON ' + nm.toUpperCase() + ' REMOVED'); waivers(); }
+        else { toast((r && r.error) || 'MFL DIDN\u2019T ACCEPT THAT', true); wd.disabled = false; wd.textContent = 'REMOVE'; }
+      }).catch(function(){ toast('COULDN\u2019T REACH MFL', true); wd.disabled = false; wd.textContent = 'REMOVE'; });
+      return;
+    }
     var p = e.target.closest('[data-p]');
     if(p && !p.disabled){ var id = p.getAttribute('data-p'); S.start[id] = !S.start[id]; S.dirty = true; lineup(); return; }
     if(e.target.id === 'save'){
