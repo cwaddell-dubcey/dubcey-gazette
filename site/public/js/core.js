@@ -179,6 +179,15 @@
     }).catch(function(){ return []; });
     return WKR[w];
   };
+  // latest finished week: the live week once its last game is over (kickoff + 4h), otherwise the week before
+  var DONE = null;
+  D.doneWeek = function(){
+    DONE = DONE || D.api('liveScoring').then(function(j){
+      var lw = D.num(j && j.liveScoring && j.liveScoring.week); if(!lw) return { w:0, end:0 };
+      return D.api('nflSchedule', 'W=' + lw).then(function(s){ var k = 0; D.arr(s && s.nflSchedule && s.nflSchedule.matchup).forEach(function(g){ k = Math.max(k, D.num(g.kickoff) * 1000); }); var end = k ? k + 4 * 3600000 : 0; return end && end <= Date.now() ? { w:lw, end:end } : { w:lw - 1, end:0 }; }).catch(function(){ return { w:lw - 1, end:0 }; });
+    }).catch(function(){ return { w:0, end:0 }; });
+    return DONE;
+  };
   D.weeks = function(upTo){ var a = []; for(var w = 1; w <= upTo; w++) a.push(w); return Promise.all(a.map(D.week)); };
   // $50 low scorer: commish pick wins; otherwise lowest score, tie broken by fewer bench points
   D.lowScores = function(upTo){

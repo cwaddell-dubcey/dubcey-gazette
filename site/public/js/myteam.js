@@ -166,10 +166,38 @@
   }
 
   /* ---------- waivers ---------- */
+  // MFL's pendingWaivers shape varies; read any "ADD_BID_DROP" strings or {player/amount/drop}-style objects anywhere in it
+  function parsePicks(s){ return String(s || '').replace(/^\|/, '').split(',').map(function(x){ var m = /^(\d+)_([\d.]+)_(\d*)$/.exec(x.trim()); return m ? { player:m[1], amount:String(+m[2]), drop:m[3] && !/^0+$/.test(m[3]) ? m[3] : '' } : null; }).filter(Boolean); }
+  function pendList(j){
+    var out = [];
+    (function walk(o){
+      if(o == null) return;
+      if(typeof o === 'string'){ if(/\d+_[\d.]+_\d*/.test(o)) out = out.concat(parsePicks(o)); return; }
+      if(Array.isArray(o)){ o.forEach(walk); return; }
+      if(typeof o === 'object'){
+        var p = o.player || o.add || o.player_id;
+        if(p && /^\d+$/.test(p)){ out.push({ player:p, amount:o.amount || o.bid || '', drop:/^0*$/.test(o.drop || '') ? '' : o.drop }); return; }
+        Object.keys(o).forEach(function(k){ walk(o[k]); });
+      }
+    })(j && j.pendingWaivers);
+    return out;
+  }
+  // fallback: my newest blind-bid request since waivers last ran (the transaction log keeps the whole list on each change)
+  function reqList(j){
+    var T = arr(j && j.transactions && j.transactions.transaction), ran = 0, best = null, del = 0;
+    T.forEach(function(t){ if(t.type === 'BBID_AUTO_PROCESS_WAIVERS') ran = Math.max(ran, num(t.timestamp)); });
+    T.forEach(function(t){
+      if(t.type !== 'BBID_WAIVER_REQUEST' || t.franchise !== S.me || num(t.timestamp) <= ran) return;
+      if(t.action === 'DEL'){ del = Math.max(del, num(t.timestamp)); return; }
+      var L = parsePicks(t.transaction), ts = num(t.timestamp);
+      if(!best || ts > best.ts || (ts === best.ts && L.length > best.L.length)) best = { ts:ts, L:L };
+    });
+    return best && best.ts >= del ? best.L : [];
+  }
   function waivers(){
     $('mtb').innerHTML = '<article class="card" id="pw" style="max-width:760px"><div class="bar mono"><span>MY WAIVER CLAIMS</span></div><div class="ld mono">LOADING…</div></article>';
-    D.api('pendingWaivers').then(function(j){
-      var W = arr(j && j.pendingWaivers && (j.pendingWaivers.pendingWaiver || j.pendingWaivers.waiverRequest));
+    Promise.all([D.api('pendingWaivers').catch(function(){ return null; }), D.api('transactions', 'ME=1').catch(function(){ return null; })]).then(function(r){
+      var W = pendList(r[0]); if(!W.length) W = reqList(r[1]);
       var ids = []; W.forEach(function(w){ ids.push(w.player, w.drop); });
       return D.players(ids.filter(Boolean)).then(function(){
         $('pw').innerHTML = '<div class="bar mono"><span>MY WAIVER CLAIMS</span><span>' + W.length + ' PENDING</span></div>' + (W.map(function(w){

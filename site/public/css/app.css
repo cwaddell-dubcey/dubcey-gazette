@@ -2066,7 +2066,7 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 .lowban{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;margin:0 0 18px;padding:12px 20px;background:#c8282d;color:#F7EFDB;border:2px solid #102542;box-shadow:6px 6px 0 #102542;text-decoration:none}
 .lowban[hidden]{display:none}
 .lowban:hover{background:#a91f24;color:#F7EFDB}
-.lowban img{width:64px;height:48px;object-fit:contain}
+.lowban img{width:64px;height:48px;object-fit:contain;transform:scaleX(-1)}
 .lbt{display:flex;flex-direction:column;gap:4px;min-width:0}
 .lbt span{font-size:10px;color:#F7EFDB;letter-spacing:.14em}
 .lbt b{font:400 26px/1.05 'Alfa Slab One',serif;text-transform:uppercase;text-wrap:balance}

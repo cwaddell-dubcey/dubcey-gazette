@@ -355,13 +355,15 @@ export default {
       if (!PUB[type] && !PRIV[type]) return json({ error: 'unknown' }, 404);
       if (PRIV[type] && !s) return json({ error: 'sign in' }, 401);
       const q = new URLSearchParams(u.search);
-      ['TYPE', 'L', 'JSON', 'APIKEY'].forEach(k => q.delete(k));
+      // ME=1 on transactions: fetch with the owner's login so their own pending blind-bid requests are included
+      const asMe = type === 'transactions' && q.get('ME') === '1' && !!s;
+      ['TYPE', 'L', 'JSON', 'APIKEY', 'ME'].forEach(k => q.delete(k));
       const extra = q.toString();
       // NFL-wide data lives on MFL's API host and must not carry the league id
       const NFLWIDE = { injuries:1, nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
       const scoped = q.get('LG') === '1' && /^top(Owns|Adds|Drops)$/.test(type); q.delete('LG'); const extra2 = q.toString();
       const target = scoped ? `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra2 ? '&' + extra2 : ''}` : NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
-      if (PRIV[type]) {
+      if (PRIV[type] || asMe) {
         const r = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + s.t } });
         return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }

@@ -61,6 +61,7 @@
         return '<div class="st"><img src="' + helm(s.id) + '" alt=""><div><div class="kick mono">' + esc(s.kick) + '</div><h2>' + esc(s.head) + '</h2><p>' + esc(s.dek) + '</p></div></div>';
       }).join('') + '</div>';
     $('shk').textContent = 'THE STANDINGS · AFTER WEEK ' + w;
+    D.doneWeek().then(function(d){ if(d.w > num(w)) $('shk').textContent = 'THE STANDINGS · AFTER WEEK ' + d.w; });
     var T = W.takes || {}, order = Object.keys(T);
     if(order.length){
       TAKES = T;
@@ -80,7 +81,7 @@
     }
     return num(w);
   }).catch(function(){ $('disp').innerHTML = '<div class="bar mono"><span>THE DISPATCH</span></div><div class="ld mono">THE DISPATCH IS ON ITS WAY.</div>'; return null; }).then(function(w){
-    return D.api('liveScoring').then(function(j){ return Math.max(num(w), num(j && j.liveScoring && j.liveScoring.week) - 1); }).catch(function(){ return num(w); });
+    return D.doneWeek().then(function(d){ return Math.max(num(w), d.w); });
   }).then(function(w){
     w = num(w); if(!w) return;
     return Promise.all([D.lowScores(Math.min(w, 13)), D.penPool()]).then(function(X){
@@ -125,10 +126,12 @@
   }).catch(function(){});
 
   // banner at the top of the page for 24 hours after a week's last game ends: who took the low score
-  D.api('liveScoring').then(function(j){
-    var lw = num(j && j.liveScoring && j.liveScoring.week), now = Date.now(), cand = [lw, lw - 1].filter(function(x){ return x > 0 && x <= 13; });
-    return Promise.all(cand.map(function(w){ return D.api('nflSchedule', 'W=' + w).then(function(s){ var k = 0; arr(s && s.nflSchedule && s.nflSchedule.matchup).forEach(function(g){ k = Math.max(k, num(g.kickoff) * 1000); }); return { w:w, end:k ? k + 4 * 3600000 : 0 }; }).catch(function(){ return { w:w, end:0 }; }); })).then(function(E){
-      var e = E.filter(function(x){ return x.end && x.end <= now && now - x.end < 24 * 3600000; })[0]; if(!e) return;
+  D.doneWeek().then(function(d){
+    var now = Date.now(), e = d;
+    if(!e.end){ return D.api('nflSchedule', 'W=' + d.w).then(function(s){ var k = 0; arr(s && s.nflSchedule && s.nflSchedule.matchup).forEach(function(g){ k = Math.max(k, num(g.kickoff) * 1000); }); return { w:d.w, end:k ? k + 4 * 3600000 : 0 }; }); }
+    return e;
+  }).then(function(e){
+    var now = Date.now(); if(!e || !e.w || e.w > 13 || !e.end || now - e.end >= 24 * 3600000) return;
       return D.lowScores(e.w).then(function(L){
         var c = L.filter(function(x){ return x.w === e.w; })[0]; if(!c) return;
         var n = L.filter(function(x){ return x.id === c.id; }).length, b = $('lowban');
@@ -136,7 +139,6 @@
         b.innerHTML = '<img src="' + helm(c.id) + '" alt=""><div class="lbt"><span class="mono">WEEK ' + e.w + ' LOW SCORE \u00b7 $' + D.LOW_FINE + ' PENALTY</span><b>' + esc(D.NAME[c.id]) + '</b><i class="mono">' + (c.s != null ? D.pts(c.s) + ' PTS' : '') + (c.gap != null ? ' \u00b7 LOW BY ' + D.pts(c.gap) : '') + (n > 1 ? ' \u00b7 ' + n + ' TIMES THIS SEASON' : '') + '</i></div><em class="mono">\u2212$' + D.LOW_FINE + '</em>';
         b.hidden = false;
       });
-    });
   }).catch(function(){});
 
   D.api('transactions', 'COUNT=40').then(function(j){
