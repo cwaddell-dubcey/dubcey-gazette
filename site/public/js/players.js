@@ -185,7 +185,7 @@
     var f = v.querySelector('form'), err = v.querySelector('.err');
     f.addEventListener('submit', function(e){
       e.preventDefault(); var b = f.querySelector('button[type=submit]'); b.disabled = true; err.hidden = true;
-      var go = fa ? D.act('fcfsWaiver', f.drop.value ? { ADD:id, DROP:f.drop.value } : { ADD:id }) : D.act('blindBidWaiverRequest', { PICKS:id + ',' + num(f.bid.value) + ',' + (f.drop.value || '') });
+      var go = fa ? D.act('fcfsWaiver', f.drop.value ? { ADD:id, DROP:f.drop.value } : { ADD:id }) : D.act('blindBidWaiverRequest', { PICKS:id + '_' + num(f.bid.value) + '_' + (f.drop.value || '0000') });
       go.then(function(r){
         if(r && r.ok){ v.remove(); toast(r.demo ? 'PREVIEW ONLY \u2014 NOT SENT' : fa ? i[0].toUpperCase() + ' ADDED' : 'BID IN FOR ' + i[0].toUpperCase()); }
         else { err.textContent = (r && r.error) || 'MFL didn\u2019t accept that.'; err.hidden = false; b.disabled = false; }

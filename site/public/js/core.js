@@ -249,7 +249,7 @@
   D.previewCard = function(p){
     var side = function(id, pj, k, rec, pw){ var i = k ? D.pinfo(k.id) : null; return '<div class="pvt"><img src="' + D.helm(id) + '" alt=""><b>' + D.esc(D.SHORT[id]) + '</b><span class="mono">' + D.esc(rec) + (pw ? ' \u00b7 PWR ' + pw : '') + '</span><em>' + (pj ? D.pts(Math.round(pj * 100) / 100) : '\u2013') + '</em>' + (i ? '<i class="mono">KEY: ' + D.esc(i[0]) + ' (' + D.esc(i[1]) + ') ' + (k.p ? D.pts(k.p) : '') + '</i>' : '') + '</div>'; };
     var fav = p.pa === p.ph ? '' : (p.pa > p.ph ? p.a : p.h);
-    return '<div class="pv' + (p.div ? ' dv' : '') + '"><div class="pvk mono">' + (p.div ? 'DIVISION GAME' : 'MATCHUP') + (fav ? ' \u00b7 ' + D.esc(D.SHORT[fav]).toUpperCase() + ' BY ' + D.pts(Math.round(p.gap * 100) / 100) : '') + '</div><div class="pvg">' + side(p.a, p.pa, p.ka, p.ra, p.pwa) + '<span class="pvat mono">@</span>' + side(p.h, p.ph, p.kh, p.rh, p.pwh) + '</div></div>';
+    return '<div class="pv' + (p.div ? ' dv' : '') + '"><div class="pvk mono">' + (p.div ? 'DIVISION GAME' : 'MATCHUP') + (fav ? ' \u00b7 ' + D.esc(D.SHORT[fav]).toUpperCase() + ' BY ' + D.pts(Math.round(p.gap * 100) / 100) : '') + '</div><div class="pvg">' + side(p.a, p.pa, p.ka, p.ra, p.pwa) + '<span class="pvat mono">@</span>' + side(p.h, p.ph, p.kh, p.rh, p.pwh) + '</div>' + (p.txt ? '<div class="pvw"><h4>' + D.esc(p.txt.head) + '</h4><p>' + D.esc(p.txt.text) + '</p></div>' : '') + '</div>';
   };
   D.powerStory = function(PR){
     var L = PR.list, t = L[0], up = L.slice().sort(function(a, b){ return b.mv - a.mv; })[0], dn = L.slice().sort(function(a, b){ return a.mv - b.mv; })[0], last = L[L.length - 1];

@@ -923,8 +923,8 @@ a.sg2:hover{background:#faf0cb;color:#102542}
 .pcd,.pcg{display:grid;grid-template-columns:40px repeat(7,minmax(0,1fr));gap:0 6px}
 .pcd span{padding:0 0 8px;font-size:9.5px;color:#102542;text-align:center}
 .pcg{position:relative;height:360px}
-.pch{grid-column:1;grid-row:1;position:relative}
-.pch span{position:absolute;left:0;font-size:8.5px;color:#8a8573;transform:translateY(-50%)}
+.pcg .pch{grid-column:1;grid-row:1;position:relative}
+.pcg .pch span{position:absolute;left:0;font-size:8.5px;color:#8a8573;transform:translateY(-50%)}
 .pcc{grid-row:1;background:repeating-linear-gradient(180deg,#E8DFC6 0 1px,transparent 1px 12.5%),#F1E9D2;border:1px solid #E0D6B8}
 .pb{grid-row:1;position:relative;align-self:start;margin:0 2px;padding:4px 6px;overflow:hidden;border-left:4px solid #102542;background:#102542;color:#F7EFDB;min-height:18px}
 .pb.kW{background:#c8282d;border-left-color:#E0A72B}
@@ -2061,3 +2061,18 @@ a,button{-webkit-tap-highlight-color:rgba(224,167,43,.18)}
 .talt button{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:0;background:#c8282d;border:0;border-radius:50%;color:#fff;font-size:12px;line-height:1;cursor:pointer}
 .taltadd{display:flex;align-items:center;justify-content:center;width:64px;height:48px;border:1.5px dashed #9a917c;font-size:9px;color:#43526A;cursor:pointer}
 .taltadd:hover{border-color:#102542;color:#102542}
+
+/* ---------- 24-hour low-score banner ---------- */
+.lowban{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;margin:0 0 18px;padding:12px 20px;background:#c8282d;color:#F7EFDB;border:2px solid #102542;box-shadow:6px 6px 0 #102542;text-decoration:none}
+.lowban[hidden]{display:none}
+.lowban:hover{background:#a91f24;color:#F7EFDB}
+.lowban img{width:64px;height:48px;object-fit:contain}
+.lbt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lbt span{font-size:10px;color:#F7EFDB;letter-spacing:.14em}
+.lbt b{font:400 26px/1.05 'Alfa Slab One',serif;text-transform:uppercase;text-wrap:balance}
+.lbt i{font-style:normal;font-size:10px;color:#F7EFDB}
+.lowban em{font:400 28px/1 'Alfa Slab One',serif;font-style:normal;color:#F7EFDB}
+@media (max-width:760px){ .lowban{gap:10px;padding:10px 12px;margin:0 0 12px} .lowban img{width:46px;height:34px} .lbt b{font-size:18px} .lowban em{font-size:20px} }
+.pvw{padding:12px 16px 16px;border-top:1.5px solid #102542}
+.pvw h4{margin:0 0 6px;font:400 17px/1.15 'Alfa Slab One',serif;text-transform:uppercase;text-wrap:balance}
+.pvw p{margin:0;font-size:14.5px;line-height:1.5;color:#2A3442;text-wrap:pretty}

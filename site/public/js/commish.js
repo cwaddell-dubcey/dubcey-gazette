@@ -17,7 +17,11 @@
 
   /* ---------- the Dispatch ---------- */
   function dispatch(){
-    if(!S.C){ $('cb').innerHTML = '<div class="ld mono">LOADING THE DISPATCH\u2026</div>'; D.column().then(function(c){ S.C = c && c.weeks ? c : { weeks:{} }; dispatch(); }); return; }
+    if(!S.C){ $('cb').innerHTML = '<div class="ld mono">LOADING THE DISPATCH\u2026</div>'; Promise.all([D.column(), fetch('data/dispatch-draft.json', { cache:'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })]).then(function(r){
+      var c = r[0], d = r[1]; S.C = c && c.weeks ? c : { weeks:{} };
+      // a prepared draft for a week that isn't published yet loads into the editor; nothing goes live until Publish
+      if(d && d.week && d.data && !S.C.weeks[d.week]){ S.C.weeks[d.week] = d.data; if(d.threads) S.C.threads = d.threads; if(d.previews){ S.C.previews = S.C.previews || {}; Object.keys(d.previews).forEach(function(k){ if(!S.C.previews[k]) S.C.previews[k] = d.previews[k]; }); } S.w = String(d.week); setTimeout(function(){ toast('WEEK ' + d.week + ' DRAFT LOADED \u2014 REVIEW, THEN PUBLISH'); }, 50); }
+      dispatch(); }); return; }
     var ks = Object.keys(S.C.weeks).sort(function(a, b){ return a - b; }), next = String((+ks[ks.length - 1] || 0) + 1);
     if(!S.w) S.w = ks[ks.length - 1] || '1';
     var W = S.C.weeks[S.w] || { dispatch:[], takes:{}, awards:{} }, Dp = arr(W.dispatch);

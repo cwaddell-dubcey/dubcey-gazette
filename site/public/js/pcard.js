@@ -173,7 +173,7 @@
           p.innerHTML = '<form class="pclaim"><div class="awin mono ' + w.mode + '">' + D.addWhy(w) + '</div>' + (fa ? '' : '<label class="mono">BID' + (bal ? ' \u00b7 ' + esc(String(bal).replace('.00', '')) + ' LEFT' : '') + '<input name="bid" type="number" min="0" step="1" value="1" inputmode="numeric" required></label>') + '<label class="mono">DROP<select name="drop"><option value="">Nobody</option>' +
             mine.map(function(id){ var i = D.pinfo(id); return '<option value="' + esc(id) + '">' + esc(i[1] + ' \u00b7 ' + i[0]) + '</option>'; }).join('') + '</select></label><button class="btn sm" type="submit">' + (fa ? 'ADD NOW' : 'SUBMIT BID') + '</button></form>';
           p.querySelector('form').addEventListener('submit', function(e){ e.preventDefault(); var f = this, bt = f.querySelector('button'); bt.disabled = true;
-            var go = fa ? D.act('fcfsWaiver', f.drop.value ? { ADD:d.id, DROP:f.drop.value } : { ADD:d.id }) : D.act('blindBidWaiverRequest', { PICKS:d.id + ',' + num(f.bid.value) + ',' + (f.drop.value || '') });
+            var go = fa ? D.act('fcfsWaiver', f.drop.value ? { ADD:d.id, DROP:f.drop.value } : { ADD:d.id }) : D.act('blindBidWaiverRequest', { PICKS:d.id + '_' + num(f.bid.value) + '_' + (f.drop.value || '0000') });
             go.then(function(r){ toast(r && r.ok ? (r.demo ? 'PREVIEW ONLY \u2014 NOT SENT' : fa ? d.name.toUpperCase() + ' ADDED' : 'BID IN FOR ' + d.name.toUpperCase()) : ((r && r.error) || 'MFL DIDN\u2019T ACCEPT THAT'), !(r && r.ok)); bt.disabled = false; if(r && r.ok) p.innerHTML = acts(); }); });
         });
       });

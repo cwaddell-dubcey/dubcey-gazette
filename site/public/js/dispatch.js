@@ -9,7 +9,7 @@
   });
   D.api('liveScoring').then(function(j){
     var cw = num(j && j.liveScoring && j.liveScoring.week) || 1;
-    D.previews(cw).then(function(P){ if(!P.length) return; $('prevH').textContent = 'Week ' + cw + ' Previews'; $('prev').innerHTML = P.map(D.previewCard).join(''); $('prevSec').hidden = false; }).catch(function(){});
+    Promise.all([D.previews(cw), D.column().catch(function(){ return null; })]).then(function(R){ var P = R[0], WP = (R[1] && R[1].previews && R[1].previews[cw]) || {}; if(!P.length) return; P.forEach(function(p){ p.txt = WP[p.a + '-' + p.h] || null; }); P.sort(function(x, y){ return (y.txt ? 1 : 0) - (x.txt ? 1 : 0); }); $('prevH').textContent = 'Week ' + cw + ' Previews'; $('prev').innerHTML = P.map(D.previewCard).join(''); $('prevSec').hidden = false; }).catch(function(){});
     D.power(cw).then(function(PR){ if(!PR.week) return; var s = D.powerStory(PR);
       $('powS').innerHTML = '<div class="card pwst"><div class="pwsh"><img src="' + helm(s.id) + '" alt=""><div><div class="kick mono">' + s.kick + '</div><h2>' + s.head + '</h2><p>' + s.body + '</p></div></div><ol>' + s.top5.map(function(t){ return '<li><b class="mono">' + t.rk + '</b><img src="' + helm(t.id) + '" alt=""><span>' + esc(D.SHORT[t.id]) + '</span><i class="mono ' + (t.mv > 0 ? 'up' : t.mv < 0 ? 'dn' : '') + '">' + (t.mv > 0 ? '\u25b2' + t.mv : t.mv < 0 ? '\u25bc' + (-t.mv) : '\u2013') + '</i></li>'; }).join('') + '</ol></div>';
       $('powSec').hidden = false; }).catch(function(){});

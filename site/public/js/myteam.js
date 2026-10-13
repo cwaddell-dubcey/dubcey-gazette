@@ -35,7 +35,13 @@
       (S.R[S.me] || []).forEach(function(id){ if(!(id in S.start)) S.start[id] = false; });
       var ids = Object.keys(S.start); Object.keys(S.R).forEach(function(k){ ids = ids.concat(S.R[k]); });
       return Promise.all([D.players(ids), extras()]);
-    }).then(draw).catch(function(){ $('mtb').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD YOUR TEAM. TRY AGAIN IN A MINUTE.</div>'; });
+    }).then(function(){ kickLock(); draw(); }).catch(function(){ $('mtb').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD YOUR TEAM. TRY AGAIN IN A MINUTE.</div>'; });
+  }
+  // a player locks (starter or bench) once his NFL game kicks off
+  function kickLock(){
+    if(D.LOCAL) return; var now = Date.now();
+    Object.keys(S.start).forEach(function(id){ var g = S.nfl[D.pinfo(id)[2]]; if(g && ((g.kick && g.kick <= now) || (g.sec > 0 && g.sec < 3600))) S.lock[id] = true; });
+    if(!S.lkT) S.lkT = setInterval(function(){ var n = Object.keys(S.lock).filter(function(k){ return S.lock[k]; }).length; kickLock(); if(S.tab === 'lineup' && Object.keys(S.lock).filter(function(k){ return S.lock[k]; }).length !== n) lineup(); }, 60000);
   }
   // matchup, kickoff, projection and season average for every player on my roster
   S.nfl = {}; S.pj = {}; S.avg = {};
