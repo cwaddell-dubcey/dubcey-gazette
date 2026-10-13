@@ -20,11 +20,19 @@
     }).filter(function(m){ return m.length === 2; }) };
   }
 
+  var LAST = 13;
   function load(first){
+    if(first) return D.api('liveScoring', 'DETAILS=1').then(function(j){ var d = norm(j); S.cur = d ? +d.week : 0; }).catch(function(){}).then(function(){
+      if(!S.w) S.w = Math.min(LAST, D.ffWeek()); if(!S.cur) S.cur = S.w; return route();
+    });
+    return route();
+  }
+  // weeks MFL hasn't reached yet get the preview view; everything else is a scoreboard
+  function route(){ S.pv = null; if(S.w > S.cur) return preview(); return scores(); }
+  function scores(){
     var q = 'DETAILS=1' + (S.w && S.w !== S.cur ? '&W=' + S.w : '');
     return D.api('liveScoring', q).then(function(j){
       var d = norm(j); if(!d || !d.ms.length) throw 0;
-      if(first){ S.cur = +d.week; if(!S.w) S.w = S.cur; }
       var ids = []; d.ms.forEach(function(m){ m.forEach(function(f){ f.pl.forEach(function(p){ ids.push(p.id); }); }); });
       return Promise.all([D.players(ids), nfl(S.w), S.w === S.cur ? projs(S.w, ids) : null]).then(function(){ S.data = d; draw(); schedule(); });
     }).catch(function(){
@@ -86,12 +94,13 @@
   function stamp(){ var el = $('upd'); if(!el) return; el.hidden = !isLive(); el.textContent = 'UPDATED ' + new Date(S.at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit' }).toUpperCase(); }
 
   function weeks(){
-    var h = ''; for(var i = 1; i <= Math.max(S.cur, 1); i++) h += '<a class="' + (i === S.w ? 'on' : '') + '" href="' + D.href('scores', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
+    var h = ''; for(var i = 1; i <= Math.max(S.cur, LAST); i++) h += '<a class="' + (i === S.w ? 'on' : i > S.cur ? 'wfut' : '') + '" href="' + D.href('scores', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
     $('weeks').innerHTML = h;
   }
 
   function draw(){
     var d = S.data; if(!d) return;
+    if(!S.H) hist();
     weeks();
     var live = isLive(), started = d.ms.some(function(m){ return m.some(function(f){ return f.score > 0; }); });
     var status = live ? 'LIVE' : (started ? 'FINAL' : 'UPCOMING');
@@ -137,15 +146,77 @@
       '</div><div class="sb"><div class="nums"><b class="' + (started && a.score >= b.score ? 'w' : '') + '">' + D.pts(a.score) + '</b><i></i><b class="' + (started && b.score >= a.score ? 'w' : '') + '">' + D.pts(b.score) + '</b></div>' +
       (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), sd = Math.max(25, Math.sqrt(pa + pb) * 2.2), z = (pa - pb) / sd, wa = Math.round(100 / (1 + Math.exp(-1.7 * z))); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + wa + '% \u2013 ' + (100 - wa) + '%</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a.id]) + '</b><span class="mono">' + esc(meta(a)) + '</span></div><div><b>' + esc(D.NAME[b.id]) + '</b><span class="mono">' + esc(meta(b)) + '</span></div></div>' +
+      (started ? '' : histHTML(a.id, b.id, null)) +
       '<div class="cols mir">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
     wantStats(m);
   }
 
+  // ---------- upcoming weeks: matchup graphics, projections and series history ----------
+  var HP = null;
+  function hist(){ HP = HP || fetch('data/history.json').then(function(r){ return r.json(); }).then(function(h){ S.H = h; if(S.pv) drawPv(); else if(S.data) draw(); return h; }).catch(function(){ return null; }); return HP; }
+  function h2h(a, b){
+    var G = (S.H && S.H.games || []).filter(function(g){ return (g[2] === a && g[3] === b) || (g[2] === b && g[3] === a); }).map(function(g){ var sa = g[2] === a ? g[4] : g[5], sb = g[2] === a ? g[5] : g[4]; return { y:g[0], w:g[1], sa:sa, sb:sb, win:sa > sb ? a : sb > sa ? b : '' }; });
+    var wa = G.filter(function(g){ return g.win === a; }).length, wb = G.filter(function(g){ return g.win === b; }).length, st = 0, sw = '';
+    for(var i = G.length - 1; i >= 0; i--){ if(!G[i].win) break; if(!sw) sw = G[i].win; if(G[i].win !== sw) break; st++; }
+    var big = G.slice().sort(function(x, y){ return Math.abs(y.sa - y.sb) - Math.abs(x.sa - x.sb); })[0], close = G.filter(function(g){ return g.win; }).sort(function(x, y){ return Math.abs(x.sa - x.sb) - Math.abs(y.sa - y.sb); })[0];
+    return { G:G, wa:wa, wb:wb, st:st, sw:sw, big:big, close:close };
+  }
+  function sn(id){ return esc(D.SHORT[id] || D.NAME[id] || id); }
+  function gl(g, a, b){ var w = g.win || a, l = w === a ? b : a, ws = w === a ? g.sa : g.sb, ls = w === a ? g.sb : g.sa; return sn(w) + ' <u>' + D.pts(ws) + '\u2013' + D.pts(ls) + '</u>'; }
+  function histHTML(a, b, txt, keys){
+    if(!S.H){ hist(); return '<div class="hx"><div class="ld mono">LOADING THE SERIES HISTORY\u2026</div></div>'; }
+    var H = h2h(a, b), G = H.G, last = G[G.length - 1];
+    var nw = function(t){ return '<u>' + t + '</u>'; }, lead = H.wa === H.wb ? 'Tied ' + nw(H.wa + '\u2013' + H.wb) : (H.wa > H.wb ? sn(a) + ' ' + nw(H.wa + '\u2013' + H.wb) : sn(b) + ' ' + nw(H.wb + '\u2013' + H.wa));
+    var tiles = G.length ? [
+      ['ALL-TIME SERIES', lead, G.length + ' MEETINGS SINCE ' + G[0].y],
+      ['LAST MEETING', gl(last, a, b), last.y + ' \u00b7 WEEK ' + last.w],
+      ['STREAK', H.sw ? sn(H.sw) + ' W' + H.st : '\u2014', H.sw ? (H.st > 1 ? H.st + ' STRAIGHT' : 'WON THE LAST ONE') : ''],
+      ['BIGGEST BLOWOUT', gl(H.big, a, b), H.big.y + ' \u00b7 WEEK ' + H.big.w + ' \u00b7 BY ' + D.pts(Math.round(Math.abs(H.big.sa - H.big.sb) * 100) / 100)],
+      H.close ? ['CLOSEST GAME', gl(H.close, a, b), H.close.y + ' \u00b7 WEEK ' + H.close.w + ' \u00b7 BY ' + D.pts(Math.round(Math.abs(H.close.sa - H.close.sb) * 100) / 100)] : null
+    ].filter(Boolean) : [['ALL-TIME SERIES', 'First meeting', 'THESE TWO HAVE NEVER PLAYED']];
+    var key = keys ? keys.map(function(k){ if(!k.k) return ''; var i = D.pinfo(k.k.id); return '<div class="hxp">' + D.face(k.k.id, i[1], i[2]) + '<div><span class="mono">' + sn(k.f) + ' \u00b7 KEY PLAYER</span><b>' + esc(i[0]) + '</b><i class="mono">' + esc(i[1] + ' \u00b7 ' + i[2]) + (k.k.p ? ' \u00b7 PROJ ' + D.pts(k.k.p) : '') + '</i></div></div>'; }).join('') : '';
+    var pvw = txt ? '<div class="hxw"><span class="hxk mono">THE PREVIEW</span><h3>' + esc(txt.head) + '</h3><p>' + esc(txt.text) + '</p></div>' : '';
+    var ser = '<div><span class="hxk mono">THE SERIES</span><div class="hxg">' + tiles.map(function(t){ return '<div><span class="mono">' + t[0] + '</span><b>' + t[1] + '</b><i class="mono">' + t[2] + '</i></div>'; }).join('') + '</div></div>';
+    var rec = G.length ? '<div><span class="hxk mono">RECENT MEETINGS</span><div class="hxl">' + G.slice(-5).reverse().map(function(g){ var w = g.win || a; return '<div><span class="mono">' + g.y + ' \u00b7 WK ' + g.w + '</span><img src="' + helm(w) + '" alt=""><b>' + sn(w) + '</b><i class="mono">' + D.pts(w === a ? g.sa : g.sb) + ' \u2013 ' + D.pts(w === a ? g.sb : g.sa) + '</i></div>'; }).join('') + '</div></div>' : '';
+    var ply = key ? '<div><span class="hxk mono">PLAYERS TO WATCH</span><div class="hxps">' + key + '</div></div>' : '';
+    return '<div class="hx' + (pvw ? '' : ' one') + '"><div class="hxa">' + pvw + ply + '</div><div class="hxb">' + ser + rec + '</div>' +
+      '</div>';
+  }
+  function preview(){
+    clearTimeout(S.timer); S.data = null; $('upd').hidden = true;
+    $('wkK').textContent = 'SCOREBOARD \u00b7 UPCOMING'; $('wkH').textContent = 'Week ' + S.w; weeks();
+    hist();
+    return Promise.all([D.previews(S.w).catch(function(){ return []; }), D.column().catch(function(){ return null; })]).then(function(r){
+      if(!r[0].length) throw 0;
+      S.pv = r[0].sort(function(x, y){ return x.a < y.a ? -1 : 1; }); S.pvT = (r[1] && r[1].previews && r[1].previews[S.w]) || {}; drawPv();
+    }).catch(function(){ $('slate').innerHTML = ''; $('mu').innerHTML = '<div class="ld mono">WEEK ' + S.w + ' MATCHUPS AREN\u2019T SET YET.</div>'; });
+  }
+  function drawPv(){
+    var P = S.pv; if(!P) return; weeks();
+    $('stat').innerHTML = 'MATCHUP PREVIEWS';
+    if(S.sel < 0 || S.sel >= P.length){ S.sel = 0; if(S.me) P.forEach(function(p, k){ if(p.a === S.me || p.h === S.me) S.sel = k; }); }
+    var pj = function(x){ return x ? D.pts(Math.round(x * 10) / 10) : ''; };
+    $('slate').innerHTML = P.map(function(p, k){
+      return '<button type="button" class="bug' + (k === S.sel ? ' on' : '') + '" data-m="' + k + '">' + [[p.a, p.pa], [p.h, p.ph]].map(function(x){ return '<div class="s"><img src="' + helm(x[0]) + '" alt=""><b title="' + esc(D.NAME[x[0]]) + '">' + sn(x[0]) + (x[1] ? '<u class="mono">PROJ ' + pj(x[1]) + '</u>' : '') + '</b><i>' + esc(S.rec[x[0]] || '') + '</i></div>'; }).join('') + '</button>';
+    }).join('');
+    var p = P[S.sel], a = p.a, b = p.h, has = p.pa > 0 && p.ph > 0;
+    var wp = has ? (function(){ var sd = Math.max(25, Math.sqrt(p.pa + p.ph) * 2.2), z = (p.pa - p.ph) / sd; return Math.round(100 / (1 + Math.exp(-1.7 * z))); })() : 0;
+    $('mu').innerHTML =
+      '<div class="ph"><img class="hl a" src="' + helm(a) + '" alt=""><img class="hl b" src="' + helm(b) + '" alt="">' +
+      '<span class="plate a">' + esc(S.rec[a] || p.ra || '') + '</span><span class="plate b">' + esc(S.rec[b] || p.rh || '') + '</span></div>' +
+      '<div class="sb"><div class="nums">' + (has ? '<b>' + pj(p.pa) + '</b><i></i><b>' + pj(p.ph) + '</b>' : '<b>VS</b>') + '</div>' +
+      (has ? '<div class="pjl mono"><span>PROJECTED</span><b>' + wp + '% \u2013 ' + (100 - wp) + '%</b><span>PROJECTED</span></div>' : '') +
+      '<span class="st2 mono">WEEK ' + S.w + ' PREVIEW</span>' + (p.div ? D.divTag(a, 'Divisional Matchup') : '') + '</div>' +
+      '<div class="names"><div><b>' + esc(D.NAME[a]) + '</b><span class="mono">' + esc((S.rec[a] || p.ra) ? (S.rec[a] || p.ra) + ' RECORD' : '') + (p.pwa ? ' \u00b7 POWER NO. ' + p.pwa : '') + '</span></div><div><b>' + esc(D.NAME[b]) + '</b><span class="mono">' + esc((S.rec[b] || p.rh) ? (S.rec[b] || p.rh) + ' RECORD' : '') + (p.pwh ? ' \u00b7 POWER NO. ' + p.pwh : '') + '</span></div></div>' +
+      histHTML(a, b, S.pvT[a + '-' + b] || S.pvT[b + '-' + a] || null, [{ f:a, k:p.ka }, { f:b, k:p.kh }]);
+  }
+
   document.addEventListener('click', function(e){
     var g = e.target.closest('[data-m]');
+    if(g && S.pv){ S.sel = +g.getAttribute('data-m'); drawPv(); history.replaceState(null, '', D.href('scores', 'w=' + S.w + '&m=' + S.sel)); return; }
     if(g){ S.sel = +g.getAttribute('data-m'); draw(); history.replaceState(null, '', D.href('scores', 'w=' + S.w + '&m=' + S.sel)); return; }
     var w = e.target.closest('[data-w]');
-    if(w){ e.preventDefault(); S.w = +w.getAttribute('data-w'); S.sel = -1; S.data = null; $('mu').innerHTML = '<div class="ld mono">LOADING WEEK ' + S.w + '\u2026</div>'; weeks(); history.replaceState(null, '', D.href('scores', 'w=' + S.w)); load(); return; }
+    if(w){ e.preventDefault(); S.w = +w.getAttribute('data-w'); S.sel = -1; S.data = null; S.pv = null; $('mu').innerHTML = '<div class="ld mono">LOADING WEEK ' + S.w + '\u2026</div>'; weeks(); history.replaceState(null, '', D.href('scores', 'w=' + S.w)); load(); return; }
     if(e.target.closest('[data-bench]')){ S.benchOpen = !S.benchOpen; draw(); }
   });
   document.addEventListener('visibilitychange', function(){ if(!document.hidden && isLive() && Date.now() - (S.at || 0) > 10000) load(); });

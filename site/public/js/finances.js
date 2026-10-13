@@ -72,7 +72,7 @@
       '<div class="fcrt"><div><span class="mono">COST BASIS</span><b>' + money(c.luxCost) + '</b><i class="mono">' + (c.costSum > 0 ? 'ENTERED PER ASSET' : 'FROM LUXURY TAX COLLECTED') + '</i></div>' +
       '<div class="hi"><span class="mono">POOL VALUE TODAY</span><b>' + money(c.luxNow) + '</b><i class="mono ' + tone(c.luxNow - c.luxCost) + '">' + signed(c.luxNow - c.luxCost) + ' (' + pctOf(c.luxNow - c.luxCost, c.luxCost) + ')</i></div></div>' +
       '<div class="fas">' + c.A.map(function(x){ var g = x.value - x.cost;
-        return '<div class="fcx"><div class="fah"><span class="fmk ' + x.k + '">' + x.mark + '</span><b>' + x.sym + '</b><i class="mono">' + esc(x.name) + '</i><em class="mono">' + (x.live > 0 ? price(x.live) : 'NO FEED') + '</em></div>' +
+        return '<div class="fcx"><div class="fah"><span class="fmk ' + x.k + '">' + (x.logo ? '<img src="' + x.logo + '" alt="">' : '') + x.mark + '</span><b>' + x.sym + '</b><i class="mono">' + esc(x.name) + '</i><em class="mono">' + (x.live > 0 ? price(x.live) : 'NO FEED') + '</em></div>' +
           '<div class="fag"><label class="mono">HELD' + inp(x.k + 'Qty', F[x.k + 'Qty'], { num:1, ph:'0', show:x.qty ? x.qty.toLocaleString('en-US', { maximumFractionDigits:x.qty >= 1000 ? 0 : x.dp }) + ' ' + x.sym : '\u2014' }) + '</label>' +
           '<label class="mono">COST BASIS' + inp(x.k + 'Cost', F[x.k + 'Cost'], { num:1, ph:'0', show:money(x.cost) }) + '</label></div>' +
           '<div class="fav"><b>' + money(x.value) + '</b><span class="mono ' + tone(g) + '">' + signed(g) + ' (' + pctOf(g, x.cost) + ')</span><span class="mono">' + (c.luxNow > 0 ? (x.value / c.luxNow * 100).toFixed(1) : '0.0') + '% OF POOL</span></div></div>';
@@ -84,14 +84,16 @@
     h += '<div class="duo fduo"><section class="card"><div class="bar mono"><span>\u20bf WEEKLY LOW-SCORE PENALTIES</span><span>$' + PENALTY + ' EACH \u00b7 SEPARATE POOL</span></div>' +
       '<table class="ft"><thead><tr><th class="l mono">WK</th><th class="l mono">LOW SCORER</th><th class="mono">BTC BOUGHT</th><th class="mono">BUY</th></tr></thead><tbody>' +
       F.penalties.map(function(p, i){ var on = p.fid || String(p.name || '').trim();
-        return '<tr class="' + (on ? '' : 'off') + '"><td class="l mono">' + (p.week || i + 1) + '</td><td class="l">' + (S.edit ? '<select class="fin" data-f="penalties.' + i + '.fid">' + opts(p.fid) + '</select>' : team(p.fid, p.name)) + '</td><td>' + inp('penalties.' + i + '.btc', p.btc, { num:1, ph:'0.0000', cls:'r', show:p.btc ? '\u20bf' + p.btc : '\u2014' }) + '</td><td class="amt">' + (on ? '$' + PENALTY : '\u2014') + '</td></tr>';
+        // a week with both a team and a BTC amount locks; the commish taps EDIT to reopen it
+        var lock = on && num(p.btc) > 0 && !(S.unl && S.unl[i]), ed = S.edit && !lock;
+        return '<tr class="' + (on ? '' : 'off') + (lock ? ' lkd' : '') + '"><td class="l mono">' + (p.week || i + 1) + '</td><td class="l">' + (ed ? '<select class="fin" data-f="penalties.' + i + '.fid">' + opts(p.fid) + '</select>' : team(p.fid, p.name)) + '</td><td class="r">' + (ed ? inp('penalties.' + i + '.btc', p.btc, { num:1, ph:'0.0000', cls:'r' }) : '<span class="fbtc mono">' + (num(p.btc) > 0 ? '\u20bf' + esc(String(p.btc).replace(/^\./, '0.')) : '\u2014') + '</span>') + '</td><td class="amt">' + (on ? '$' + PENALTY : '\u2014') + (lock && S.edit ? '<button type="button" class="funl mono" data-punl="' + i + '" title="Unlock to edit">EDIT</button>' : '') + '</td></tr>';
       }).join('') + '</tbody><tfoot><tr><td colspan="2" class="l mono">POOL \u00b7 ' + c.penN + ' OF ' + F.penalties.length + ' WEEKS</td><td class="mono">\u20bf' + c.penBtc.toFixed(8).replace(/0+$/, '').replace(/\.$/, '') + '</td><td class="amt">' + money0(c.penCost) + '</td></tr></tfoot></table>' +
       '<div class="fnote mono"><span>INVESTED ' + money(c.penCost) + ' \u00b7 WORTH ' + money(c.penNow) + '</span><span class="' + tone(c.penNow - c.penCost) + '">' + signed(c.penNow - c.penCost) + ' (' + pctOf(c.penNow - c.penCost, c.penCost) + ')</span></div></section>';
 
     var off = Math.abs(c.pctSum - 100) >= 0.01;
     h += '<section class="card"><div class="bar mono"><span>PAYOUT SCHEDULE</span><span>OF NET POOL ' + money(c.net) + '</span></div>' +
       '<table class="ft"><thead><tr><th class="l mono">PLACEMENT</th><th class="mono">SHARE</th><th class="mono">PAYOUT</th></tr></thead><tbody>' +
-      F.payouts.map(function(p, i){ return '<tr><td class="l">' + inp('payouts.' + i + '.label', p.label, { cls:'nm' }) + '</td><td>' + inp('payouts.' + i + '.pct', p.pct, { num:1, cls:'r sm', show:num(p.pct) + '%' }) + '</td><td class="amt">' + money(c.net * num(p.pct) / 100) + '</td></tr>'; }).join('') +
+      F.payouts.map(function(p, i){ return '<tr><td class="l"><b class="fpl">' + esc(p.label) + '</b></td><td class="mono">' + num(p.pct) + '%</td><td class="amt">' + money(c.net * num(p.pct) / 100) + '</td></tr>'; }).join('') +
       '</tbody><tfoot><tr><td class="l mono">TOTAL</td><td class="mono ' + (off ? 'warn' : '') + '">' + c.pctSum.toFixed(2).replace(/\.00$/, '') + '%</td><td class="amt">' + money(c.net) + '</td></tr></tfoot></table>' +
       (off ? '<div class="fnote warn mono">SHARES ADD UP TO ' + c.pctSum.toFixed(2) + '% \u2014 THEY SHOULD TOTAL 100%</div>' : '') + '</section></div>';
 
@@ -102,8 +104,8 @@
         '<div class="fppc hi"><span class="mono">CURRENT WEEKLY HIGH SCORE \u00b7 WEEKS 1\u201313</span>' +
           (R ? '<a class="fpph" href="' + D.href('teams', 'f=' + R.id) + '"><img src="' + D.helm(R.id) + '" alt=""><div><b>' + esc(D.NAME[R.id]) + '</b><i class="mono">' + D.pts(R.s) + ' PTS \u00b7 WEEK ' + R.w + '</i></div></a>' : '<div class="fpph"><span class="ph2"></span><div><b>To be decided</b><i class="mono">' + (S.hiErr ? 'COULDN\u2019T LOAD SCORES' : 'WAITING ON WEEK 1') + '</i></div></div>') +
           '<div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
-        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 HIGHEST SCORE IN THE LEAGUE</span><div class="fppa"><b>' + money(pp * .5) + '</b><i class="mono">50% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
-        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 SECOND-HIGHEST SCORE</span><div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 HIGHEST SCORE IN THE LEAGUE</span><div class="fpph"><span class="ph2 pct mono">50%</span><div><b>Week 14 winner</b><i class="mono">DECIDED AFTER WEEK 14</i></div></div><div class="fppa"><b>' + money(pp * .5) + '</b><i class="mono">50% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
+        '<div class="fppc"><span class="mono">WEEK 14 \u00b7 SECOND-HIGHEST SCORE</span><div class="fpph"><span class="ph2 pct mono">25%</span><div><b>Week 14 runner-up</b><i class="mono">DECIDED AFTER WEEK 14</i></div></div><div class="fppa"><b>' + money(pp * .25) + '</b><i class="mono">25% OF POOL \u00b7 AT TODAY\u2019S BTC PRICE</i></div></div>' +
       '</div>' +
       '<div class="fnote mono"><span>THE LOW SCORER IN EACH OF WEEKS 1\u201313 PAYS $' + PENALTY + '. THE POOL IS HELD IN BITCOIN, SO PAYOUTS MOVE WITH THE PRICE.</span><a href="' + D.href('rules') + '#a-league">BYLAWS \u2192</a></div></section>';
 
@@ -160,6 +162,7 @@
   document.addEventListener('click', function(e){
     if(e.target.closest('[data-rf]')){ prices(); return; }
     if(!S.edit) return;
+    var ul = e.target.closest('[data-punl]'); if(ul){ S.unl = S.unl || {}; S.unl[+ul.getAttribute('data-punl')] = 1; draw(); return; }
     var d = e.target.closest('[data-due]'); if(d){ var id = d.getAttribute('data-due'); S.F.dues[id] = !S.F.dues[id]; draw(); save(); return; }
     if(e.target.closest('[data-addx]')){ S.F.expenses.push({ id:'ex' + Date.now(), label:'', amount:'' }); draw(); save(); var ins = document.querySelectorAll('[data-f$=".label"][data-f^="expenses"]'); if(ins.length) ins[ins.length - 1].focus(); return; }
     if(e.target.closest('[data-fadd]')){ S.F.future.push({ date:new Date().toISOString().slice(0, 10), from:'', to:'', amt:0, pick:'', note:'' }); draw(); save(); return; }

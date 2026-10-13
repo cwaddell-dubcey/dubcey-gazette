@@ -179,6 +179,11 @@
     }).catch(function(){ return []; });
     return WKR[w];
   };
+  // the week fans should see by default: last week until Tuesday 8 p.m. ET, then the coming week (Week 1 opens Tue Sep 8, 2026)
+  D.ffWeek = function(){
+    var et = new Date(new Date().toLocaleString('en-US', { timeZone:'America/New_York' })), start = new Date(2026, 8, 8, 20, 0);
+    return Math.max(1, Math.min(18, Math.floor((et - start) / 604800000) + 1));
+  };
   // latest finished week: the live week once its last game is over (kickoff + 4h), otherwise the week before
   var DONE = null;
   D.doneWeek = function(){

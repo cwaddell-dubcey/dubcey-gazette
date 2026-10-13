@@ -15,11 +15,17 @@
     });
   }).catch(function(){});
 
+  // default week: last week's results until Tuesday 8 p.m. ET, then the upcoming week (Week 1 opens Tue Sep 8, 2026)
+  function defWeek(){
+    var et = new Date(new Date().toLocaleString('en-US', { timeZone:'America/New_York' })), start = new Date(2026, 8, 8, 20, 0);
+    return Math.max(1, Math.min(18, Math.floor((et - start) / 604800000) + 1));
+  }
+  if(!S.w) S.w = defWeek(); S.cur = defWeek();
   function load(){
     $('games').innerHTML = '<div class="ld mono">LOADING GAMES\u2026</div>';
     fetch('/data/nflgames' + (S.w ? '?W=' + S.w : '')).then(function(r){ return r.json(); }).then(function(d){
       if(!d || !d.games || !d.games.length) throw 0;
-      S.data = d; if(!S.cur) S.cur = d.week; if(!S.w) S.w = d.week;
+      S.data = d;
       weeks(); draw();
     }).catch(function(){ $('games').innerHTML = '<div class="ld mono">NFL GAMES AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
   }
