@@ -21,7 +21,8 @@ function session(req) {
 const cookie = (v, age) => `dc_s=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o || o === u.origin; };
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
-const CONTENT = { column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1 };
+const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
+const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1 };
 const txt = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
 // MFL's per-player weekly box ("detailed") page → short stat line, e.g. "245 PASS YDS · 2 PASS TD"
@@ -183,7 +184,7 @@ export default {
       const v = encodeURIComponent(btoa(JSON.stringify({ t: tok, f: fid, u: String(b.username).slice(0, 60) })));
       return json({ ok: true, franchise: fid }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
     }
-    if (p === '/auth/me') { const s = session(req); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env) } : {}); }
+    if (p === '/auth/me') { const s = session(req); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env), clerk: isClerk(s, env) } : {}); }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
     // ---- suggestion box: any signed-in owner files bugs/ideas; commish sets status ----
@@ -229,7 +230,7 @@ export default {
       }
       if (!CONTENT[key]) return json({ error: 'unknown' }, 404);
       if (req.method === 'PUT') {
-        const s = session(req); if (!isCommish(s, env) || !sameOrigin(req, u)) return json({ ok: false, error: 'Commissioner only.' }, 403);
+        const s = session(req), may = key === 'clerk' ? isClerk(s, env) : isCommish(s, env); if (!may || !sameOrigin(req, u)) return json({ ok: false, error: key === 'clerk' ? 'Clerk only.' : 'Commissioner only.' }, 403);
         if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
         const t = await req.text(); try { JSON.parse(t); } catch (e) { return json({ ok: false, error: 'Bad data.' }, 400); }
         await env.DC.put('c:' + key, t);

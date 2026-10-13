@@ -2136,3 +2136,37 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
 .hxl i{font-size:10.5px}
 .hxps{grid-template-columns:1fr}
 @media (max-width:980px){ .hx,.hx.one{grid-template-columns:1fr;gap:22px} }
+
+/* ---------- Clerk's Office: sticky notes on a desk ---------- */
+.ckdesk{position:relative;margin:6px 0 48px;padding:44px 34px 56px;border-radius:6px;min-height:420px;
+  background:repeating-linear-gradient(92deg,rgba(0,0,0,.05) 0 2px,transparent 2px 9px),repeating-linear-gradient(88deg,rgba(255,255,255,.04) 0 1px,transparent 1px 23px),linear-gradient(180deg,#7A4E2D,#5E3A20);
+  box-shadow:inset 0 0 0 6px #4A2C17,inset 0 0 60px rgba(0,0,0,.35),0 14px 30px rgba(0,0,0,.35);
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px 34px;align-items:start}
+.ckdesk>.ld{color:#F7EFDB;grid-column:1/-1;text-align:center}
+.ckn{position:relative;padding:34px 24px 26px;color:#22201A;font-family:'Kalam',cursive;font-size:18px;line-height:1.35;
+  box-shadow:0 1px 1px rgba(0,0,0,.15),0 12px 18px -6px rgba(0,0,0,.45);transform:rotate(var(--r,0deg));transition:transform .2s}
+.ckn:hover{transform:rotate(0deg) scale(1.015)}
+.ckn::before{content:'';position:absolute;top:-12px;left:50%;width:96px;height:26px;margin-left:-48px;background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.15);transform:rotate(calc(var(--r,0deg) * -1.6))}
+.ckn::after{content:'';position:absolute;right:0;bottom:0;width:34px;height:34px;background:linear-gradient(135deg,transparent 50%,rgba(0,0,0,.12) 50%)}
+.ckn h2{font-family:'Permanent Marker',cursive;font-size:25px;line-height:1.1;margin:0 0 14px;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.ckn ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.ckn li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;text-wrap:pretty}
+.ckn li .dash{width:42px;text-align:center;font-weight:700}
+.ckn li img{width:42px;height:31px;object-fit:contain;margin-top:-2px}
+.ckn .ckt{font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.08em;margin-top:16px;opacity:.6;text-align:right}
+.ckempty{grid-column:1/-1;text-align:center;color:#F7EFDB;font-family:'Permanent Marker',cursive;font-size:24px;opacity:.75;padding:60px 0}
+.ckbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* edit mode */
+.ckn input,.ckn textarea,.ckn select{font:inherit;color:inherit;background:rgba(255,255,255,.35);border:1px dashed rgba(0,0,0,.3);border-radius:3px;padding:3px 6px;width:100%;box-sizing:border-box}
+.ckn input.ckh{font-family:'Permanent Marker',cursive;font-size:22px;text-transform:uppercase;margin-bottom:12px}
+.ckn textarea{resize:vertical;min-height:32px}
+.ckn .cke{display:grid;grid-template-columns:96px minmax(0,1fr) 26px;gap:6px;align-items:start}
+.ckn .cke select{font-family:'Courier Prime',monospace;font-size:11px;padding:6px 2px}
+.ckn button.x{background:none;border:0;font-size:20px;line-height:1;cursor:pointer;color:#22201A;padding:4px 0}
+.ckn .ckf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px;font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.06em}
+.ckn .ckf button{font:inherit;background:rgba(0,0,0,.08);border:0;border-radius:3px;padding:6px 9px;cursor:pointer;color:#22201A}
+.ckn .ckf button:hover{background:rgba(0,0,0,.16)}
+.ckn .ckc{display:flex;gap:6px}
+.ckn .ckc button{width:18px;height:18px;border-radius:50%;padding:0;border:2px solid rgba(0,0,0,.25)}
+.ckn .ckc button.on{border-color:#22201A}
+@media (max-width:640px){ .ckdesk{padding:34px 18px 44px;gap:34px} }

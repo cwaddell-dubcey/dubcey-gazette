@@ -8,8 +8,8 @@
     "html_handling": "drop-trailing-slash",
     "run_worker_first": ["/api/*", "/auth/*", "/act/*", "/content/*", "/data/*"]
   },
-  // commissioner's MFL franchise number (comma-separate to add a co-commish)
-  "vars": { "COMMISH": "0001" },
+  // commissioner's MFL franchise number (comma-separate to add a co-commish); CLERK = who can edit the Clerk's Office notes
+  "vars": { "COMMISH": "0001", "CLERK": "0005" },
   // storage for the Dispatch, team names, helmets, calendar, by-laws, finances and the suggestion box
   "kv_namespaces": [{ "binding": "DC", "id": "7a954825f712428fbcb0c6e05cfae1da" }],
   "routes": [{ "pattern": "dubcey.party", "custom_domain": true }]

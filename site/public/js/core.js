@@ -19,6 +19,7 @@
     return P[(h >>> 0) % P.length];
   };
   D.COMMISH = ['0001'];
+  D.CLERK = ['0005'];
   // divisions: full banner for section headers, badge crop for inline tags
   D.DIVS = [
     { k:'malort', name:'Mal\u00f6rt', crest:'img/div-malort-crest.webp', ids:['0009','0012','0011','0010'] },
@@ -330,7 +331,7 @@
   var ME = null;
   D.me = function(){
     if(ME) return ME;
-    if(D.LOCAL){ var f = ''; try{ f = localStorage.getItem('dcDemoMe') || ''; }catch(e){} ME = Promise.resolve(f ? { user:'demo', franchise:f, commish:D.COMMISH.indexOf(f) > -1 } : {}); return ME; }
+    if(D.LOCAL){ var f = ''; try{ f = localStorage.getItem('dcDemoMe') || ''; }catch(e){} ME = Promise.resolve(f ? { user:'demo', franchise:f, commish:D.COMMISH.indexOf(f) > -1, clerk:D.CLERK.indexOf(f) > -1 || D.COMMISH.indexOf(f) > -1 } : {}); return ME; }
     ME = fetch('/auth/me', { credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return {}; });
     return ME;
   };
@@ -367,7 +368,7 @@
   }
 
   // ---------- header ----------
-  var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['myteam', 'MY TEAM'], ['ideas', 'SUGGESTION BOX']];
+  var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['myteam', 'MY TEAM'], ['ideas', 'SUGGESTION BOX'], ['clerk', 'CLERK\u2019S OFFICE']];
   D.shell = function(active){
     var top = D.$('top');
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
