@@ -2180,3 +2180,20 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
   .kps{top:77px}
   html{scroll-padding-top:90px}
 }
+
+.luwk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px;font-size:9.5px;color:#9FB4CC}
+.luwk>div{display:flex;gap:6px;flex-wrap:wrap}
+.luwk button{font:inherit;letter-spacing:.12em;padding:8px 12px;background:#16304F;border:1.5px solid #2C4C78;color:#F7EFDB;cursor:pointer}
+.luwk button:hover{border-color:#E0A72B}
+.luwk button.on{background:#E0A72B;border-color:#E0A72B;color:#102542}
+.tka{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;background:#102542;color:#E0A72B;font-size:10px;letter-spacing:.1em;vertical-align:1px}
+.tka i{font-style:normal;color:#9FB4CC}
+.tcm{margin-top:8px;font-style:italic;font-size:14px;color:#4A5566;text-wrap:pretty}
+/* the wire sidebar: bigger, higher-contrast type */
+#big .bb b,#big .bb .pk{display:block;font:600 16px/1.2 'Zilla Slab',Georgia,serif;color:#F7EFDB;letter-spacing:0;text-transform:none}
+#big .bb span{font-size:10.5px;color:#9FB4CC;margin-top:4px}
+#big .bb em{font-size:22px}
+#teams .bt{padding:9px 14px}
+#teams .bt b{font-size:14px}
+#teams .bt span{font-size:11px;color:#C9D6E5}
+.bar.mono{font-size:10.5px}

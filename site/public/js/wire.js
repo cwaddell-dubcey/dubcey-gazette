@@ -11,11 +11,20 @@
       var p = String(t.transaction || '').split('|'), bb = t.type === 'BBID_WAIVER';
       return { k:KIND[t.type], f:t.franchise, add:p[0].split(',').filter(Boolean), bid:bb ? num(p[1]) : 0, drop:String(bb ? p[2] || '' : p[1] || '').split(',').filter(Boolean), ts:num(t.timestamp) };
     });
-    var ids = []; S.rows.forEach(function(r){ ids = ids.concat(r.add || [], r.drop || [], r.give || [], r.get || []); });
+    var ids = []; S.rows.forEach(function(r){ ids = ids.concat(r.add || [], r.drop || [], r.give || [], r.get || []); }); ids = ids.filter(function(x){ return /^\d+$/.test(x); });
     return D.players(ids);
   }).then(function(){ draw(); side(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WIRE IS QUIET RIGHT NOW.</div>'; });
 
-  function nm(l){ return l.map(function(id){ return '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>' + D.ij(id); }).join(', '); }
+  var ORD = function(n){ n = +n; return n + (['th','st','nd','rd'][(n % 100 - 20) % 10] || ['th','st','nd','rd'][n % 100] || 'th'); };
+  // MFL trade tokens: player ids, BB_x (blind-bid dollars), FP_franchise_year_round (future pick), DP_round_pick (this year's pick, 0-based)
+  function asset(t){
+    var m;
+    if((m = /^BB_([\d.]+)$/.exec(t))) return '<span class="tka mono">$' + D.pts(+m[1]) + ' FAAB</span>';
+    if((m = /^FP_(\d{4})_(\d{4})_(\d+)$/.exec(t))) return '<span class="tka mono">' + m[2] + ' ' + ORD(m[3]) + '-ROUND PICK' + (m[1] ? ' <i>(' + esc(D.SHORT[m[1]] || D.NAME[m[1]] || m[1]) + ')</i>' : '') + '</span>';
+    if((m = /^DP_(\d+)_(\d+)$/.exec(t))) return '<span class="tka mono">PICK ' + (+m[1] + 1) + '.' + ('0' + (+m[2] + 1)).slice(-2) + '</span>';
+    return null;
+  }
+  function nm(l){ return l.map(function(id){ var a = asset(id); return a || '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>' + D.ij(id); }).join(', '); }
   function report(){
     if(!S.wm){ $('feed').innerHTML = '<div class="ld mono">LOADING THE WAIVER REPORT\u2026</div>'; D.waiverReport(S.run).then(function(m){ S.wm = m; if(S.f === 'REPORT') report(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WAIVER REPORT ISN\u2019T AVAILABLE RIGHT NOW.</div>'; }); return; }
     var m = S.wm;
@@ -31,7 +40,7 @@
       var d = new Date(r.ts * 1000), dl = d.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
       if(dl !== day){ day = dl; h += '<div class="day mono">' + esc(dl) + '</div>'; }
       var body = r.k === 'TRADE'
-        ? '<b>' + esc(D.NAME[r.f]) + '</b> and <b>' + esc(D.NAME[r.f2] || '') + '</b> made a trade.<div class="tl2"><span><img src="' + helm(r.f) + '" alt="">gets ' + (nm(r.get) || 'nothing') + '</span><span><img src="' + helm(r.f2) + '" alt="">gets ' + (nm(r.give) || 'nothing') + '</span></div>'
+        ? '<b>' + esc(D.NAME[r.f]) + '</b> and <b>' + esc(D.NAME[r.f2] || '') + '</b> made a trade.<div class="tl2"><span><img src="' + helm(r.f) + '" alt="">gets ' + (nm(r.get) || 'nothing') + '</span><span><img src="' + helm(r.f2) + '" alt="">gets ' + (nm(r.give) || 'nothing') + '</span></div>' + (r.cm ? '<div class="tcm">\u201c' + esc(r.cm) + '\u201d</div>' : '')
         : '<b>' + esc(D.NAME[r.f]) + '</b>' + (r.add.length ? ' added <span class="add">' + nm(r.add) + '</span>' : '') + (r.bid ? ' for <em>$' + r.bid + '</em>' : '') + (r.drop.length ? (r.add.length ? ' and dropped ' : ' dropped ') + '<span class="drop">' + nm(r.drop) + '</span>' : '') + '.';
       h += '<div class="wr"><img src="' + helm(r.f) + '" alt=""><div>' + body + '</div><span class="tag mono k' + r.k.charAt(0) + '">' + r.k + '</span></div>';
     });

@@ -23,9 +23,14 @@
     tabs(); boot();
   });
 
-  function boot(){
-    Promise.all([D.api('liveScoring'), D.api('league').catch(function(){ return null; }), D.api('rosters').catch(function(){ return null; }), D.records()]).then(function(r){
-      var L = r[0] && r[0].liveScoring; S.week = num(L && L.week);
+  function boot(w){
+    S.start = {}; S.lock = {}; S.live = null; S.opp = ''; S.nfl = {}; S.pj = {}; S.dirty = false;
+    Promise.all([w ? D.api('liveScoring', 'W=' + w) : D.api('liveScoring').then(function(j){
+      // default week rolls forward Tuesday 8 p.m. ET, so owners can set next week's lineup early
+      var cur = num(j && j.liveScoring && j.liveScoring.week), want = Math.max(cur, D.ffWeek ? num(D.ffWeek()) : 0); S.cur = cur;
+      return want > cur ? D.api('liveScoring', 'W=' + want) : j;
+    }), D.api('league').catch(function(){ return null; }), D.api('rosters').catch(function(){ return null; }), D.records()]).then(function(r){
+      var L = r[0] && r[0].liveScoring; S.week = w || num(L && L.week);
       S.rules = r[1] && r[1].league && r[1].league.starters;
       arr(r[2] && r[2].rosters && r[2].rosters.franchise).forEach(function(f){ S.R[f.id] = arr(f.player).map(function(p){ return p.id; }); });
       S.rec = r[3].rec;
@@ -94,7 +99,8 @@
     var opp = S.opp ? '<a class="vs2" href="' + D.href('scores') + '"><span class="mono">WEEK ' + S.week + ' VS</span><img src="' + helm(S.opp) + '" alt=""><b>' + esc(D.NAME[S.opp]) + '</b><span class="mono">' + esc(S.rec[S.opp] || '') + '</span></a>' : '';
     var chips = Object.keys(v.lim.pos).map(function(p){ var l = v.lim.pos[p], k = v.c[p] || 0, ok = k >= l[0] && k <= l[1]; return '<span class="chip mono' + (ok ? '' : ' no') + '">' + p + ' ' + k + '<em>/' + (l[0] === l[1] ? l[0] : l[0] + '\u2013' + l[1]) + '</em></span>'; }).join('') +
       (v.lim.count ? '<span class="chip mono' + (v.n === v.lim.count ? '' : ' no') + '">TOTAL ' + v.n + '<em>/' + v.lim.count + '</em></span>' : '');
-    $('mtb').innerHTML = opp +
+    var wp = '', w0 = S.cur || S.week; for(var k = w0; k <= Math.min(17, w0 + 4); k++) wp += '<button type="button" class="' + (k === S.week ? 'on' : '') + '" data-lw="' + k + '">WK ' + k + (k === S.cur ? ' \u00b7 NOW' : '') + '</button>';
+    $('mtb').innerHTML = '<div class="luwk mono"><span>SET LINEUP FOR</span><div>' + wp + '</div></div>' + opp +
       '<div class="lugrid"><article class="card"><div class="bar mono"><span>STARTERS' + (Object.keys(S.pj).length ? ' \u00b7 PROJ ' + D.pts(Math.round(st.reduce(function(a, id){ return a + (S.pj[id] || 0); }, 0) * 10) / 10) : '') + '</span><span>TAP TO BENCH</span></div>' + (st.map(function(id){ return prow(id, true); }).join('') || '<div class="ld mono">NO STARTERS SET</div>') + '</article>' +
       '<article class="card"><div class="bar mono"><span>BENCH</span><span>TAP TO START</span></div>' + (bn.map(function(id){ return prow(id, false); }).join('') || '<div class="ld mono">BENCH IS EMPTY</div>') + '</article></div>' +
       '<div class="savebar"><div class="chips">' + chips + '</div><div class="sv">' + (v.bad.length ? '<span class="why">' + esc(v.bad[0]) + '</span>' : (S.dirty ? '<span class="why ok mono">UNSAVED CHANGES</span>' : '')) +
@@ -211,6 +217,8 @@
   /* ---------- events ---------- */
   window.addEventListener('hashchange', function(){ S.tab = (location.hash || '#lineup').slice(1); if(S.me) draw(); });
   document.addEventListener('click', function(e){
+    var lw = e.target.closest('[data-lw]');
+    if(lw){ var nw = +lw.getAttribute('data-lw'); if(nw === S.week) return; if(S.dirty && !confirm('Discard unsaved lineup changes for Week ' + S.week + '?')) return; $('mtb').innerHTML = '<div class="ld mono">LOADING WEEK ' + nw + '\u2026</div>'; boot(nw); return; }
     var wd = e.target.closest('[data-wdel]');
     if(wd){
       var pid = wd.getAttribute('data-wdel'), nm = D.pinfo(pid)[0];
