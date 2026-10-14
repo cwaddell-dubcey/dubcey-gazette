@@ -629,7 +629,7 @@ button{font:inherit;color:inherit}
 .rt .bar span{color:#E0A72B}
 .hyrs{margin-bottom:20px}
 @media (max-width:1100px){
-  .cmain{grid-template-columns:1fr}
+  .cmain{grid-template-columns:minmax(0,1fr)}
   .case{grid-template-columns:1fr}
   .cpnl{border-right:0;border-bottom:2px solid #0D1F38}
   .hrail{grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -648,8 +648,8 @@ button{font:inherit;color:inherit}
   .cw .yr{font-size:54px}
   .cw .cn{font-size:22px}
   .row6{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .wall .wrow .row6{grid-template-columns:repeat(6,96px);width:max-content}
-  .wall .wrow{overflow-x:auto;margin:0 -14px;padding:0 6px;scrollbar-width:none}
+  .wall .wrow .row6{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .wall .wrow{margin:0 -6px}
   .hrail{display:flex;overflow-x:auto;margin:0 -14px 16px;padding:0 14px;scrollbar-width:none}
   .hrail button{flex:none;width:82px}
   .h2pick .hrail{display:flex}
@@ -2170,3 +2170,13 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
 .ckn .ckc button{width:18px;height:18px;border-radius:50%;padding:0;border:2px solid rgba(0,0,0,.25)}
 .ckn .ckc button.on{border-color:#22201A}
 @media (max-width:640px){ .ckdesk{padding:34px 18px 44px;gap:34px} }
+
+/* ---------- desktop: header stays pinned while scrolling ---------- */
+@media (min-width:761px){
+  html,body{overflow-x:clip}
+  #top{position:sticky;top:0;z-index:40;background-color:#0D1F38;box-shadow:0 6px 16px -10px rgba(0,0,0,.6)}
+  .rail,.edgrid aside{top:93px}
+  .toc{top:100px}
+  .kps{top:77px}
+  html{scroll-padding-top:90px}
+}

@@ -263,12 +263,17 @@ export default {
         const tok = env.DC && await env.DC.get('svc'), H = tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA;
         const get = async path => { const r = await fetch(`${HOST}/${Y}/${path}`, { headers: H }); return r.ok ? r.text() : ''; };
         // find the report link by its menu label, so a changed option code doesn't break it
-        const home = await get(`home/${L}`), m = /href="([^"]+)"[^>]*>\s*Complete Free Agent Listing\s*</i.exec(home);
-        let path = m ? m[1].replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+\/\d{4}\//, '').replace(/^\/\d{4}\//, '') : '';
-        if (!path) throw new Error('report link not found');
-        const sep = path.includes('?') ? '&' : '?';
-        const html = await get(path + sep + 'POSITION=QB|RB|WR|TE');
-        const t = (html.match(/<table[\s\S]*?<\/table>/gi) || []).find(x => /OWN\s*PCT/i.test(x)) || '';
+        const home = await get(`home/${L}`), norm = h => h.replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+\/\d{4}\//, '').replace(/^\/\d{4}\//, '');
+        // every menu link that mentions free agents, best match first, then MFL's usual report codes as a fallback
+        const links = [...home.matchAll(/href="([^"]+)"[^>]*>([^<]*free\s*agent[^<]*)</gi)].sort((x, y) => (/complete/i.test(y[2]) ? 1 : 0) - (/complete/i.test(x[2]) ? 1 : 0)).map(x => norm(x[1]));
+        ['options?L=' + L + '&O=08', 'options?L=' + L + '&O=40', 'options?L=' + L + '&O=24'].forEach(x => { if (!links.includes(x)) links.push(x); });
+        let t = '';
+        for (const path of links.slice(0, 8)) {
+          const html = await get(path + (path.includes('?') ? '&' : '?') + 'POSITION=QB|RB|WR|TE');
+          t = (html.match(/<table[\s\S]*?<\/table>/gi) || []).find(x => /OWN\s*(PCT|%)|%\s*OWN/i.test(x)) || '';
+          if (t) break;
+        }
+        if (!t) throw new Error('report not found; tried ' + links.slice(0, 8).join(' , '));
         const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
         const head = ((t.match(/<tr[^>]*>[\s\S]*?<\/tr>/i) || [''])[0].match(/<th[\s\S]*?<\/th>/gi) || []).map(x => clean(x).toUpperCase());
         const ix = re => head.findIndex(h => re.test(h));

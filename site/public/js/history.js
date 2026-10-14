@@ -30,7 +30,8 @@
   /* ---------- champions ---------- */
   function champions(){
     var top = H.champs[0], c = cnt(), rows = [];
-    for(var i = 1; i < H.champs.length; i += 6) rows.push(H.champs.slice(i, i + 6));
+    var per = window.matchMedia('(max-width:760px)').matches ? 3 : 6;
+    for(var i = 1; i < H.champs.length; i += per) rows.push(H.champs.slice(i, i + per));
     var lb = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; });
     $('hb').innerHTML =
       '<article class="card champ"><div class="ph"><img src="' + hl(top[1]) + '" alt=""><div class="cw"><div class="kick mono">DEFENDING CHAMPIONS</div><b class="yr">' + top[0] + '</b><b class="cn">' + esc(top[1]) + '</b><span class="mono">' + (idOf(top[1]) ? (c[idOf(top[1])] || 1) + ' TITLES ALL-TIME' : '') + '</span></div></div></article>' +
