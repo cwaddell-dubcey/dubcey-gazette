@@ -11,7 +11,11 @@
     arr(r[3] && r[3].leagueStandings && r[3].leagueStandings.franchise).forEach(function(f){ if(f.id === S.me) S.faab = f.bbidbalance || ''; S['b' + f.id] = f.bbidbalance; });
     S.fas = fa;
     var ids = fa.concat(Object.keys(S.own));
-    return D.players(ids).then(function(){
+    // league salary list also covers free agents (e.g. dropped players keep their price)
+    return D.api('salaries').catch(function(){ return null; }).then(function(sj){
+      arr(sj && sj.salaries && sj.salaries.leagueUnit && sj.salaries.leagueUnit.player).forEach(function(p){ var v = num(p.salary); if(v && !S.salary[p.id]) S.salary[p.id] = v; });
+      return D.players(ids);
+    }).then(function(){
       return D.scores('YTD', ids);
     }).then(function(ps){
       S.pts = ps || {};
@@ -63,7 +67,7 @@
     }).then(function(r){
       arr(r[0] && r[0].topOwns && r[0].topOwns.player).forEach(function(x){ S.pown[x.id] = num(x.percent); });
       arr(r[1] && r[1].topAdds && r[1].topAdds.player).forEach(function(x){ S.padd[x.id] = num(x.percent); });
-      var F = r[2] || {}; Object.keys(F).forEach(function(id){ var v = F[id]; if(v[0] != null) S.pown[id] = v[0]; if(v[1] != null) S.padd[id] = v[1]; if(v[2] != null) S.proj[id] = v[2]; });
+      var F = r[2] || {}; Object.keys(F).forEach(function(id){ var v = F[id]; if(v[0] != null) S.pown[id] = v[0]; if(v[1] != null) S.padd[id] = v[1]; if(v[2] != null) S.proj[id] = v[2]; if(v[3] && !S.salary[id]){ S.salary[id] = v[3]; S.rows.forEach(function(r){ if(r.id === id) r.sal = v[3]; }); } });
       arr(r[3] && r[3].nflByeWeeks && r[3].nflByeWeeks.team).forEach(function(t){ S.bye[t.id] = num(t.bye_week); });
       arr(r[4] && r[4].nflSchedule && r[4].nflSchedule.matchup).forEach(function(m){ var T = arr(m.team), k = num(m.kickoff) * 1000; if(T.length !== 2) return;
         var when = k ? new Date(k).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', hour:'numeric', minute:'2-digit' }).replace(':00', '') : '';

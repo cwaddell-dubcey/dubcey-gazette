@@ -3,7 +3,7 @@
 const L = '18919', Y = '2026', HOST = 'https://www45.myfantasyleague.com', API = 'https://api.myfantasyleague.com';
 
 // public league data: cached at the edge for N seconds
-const PUB = { liveScoring:12, leagueStandings:300, schedule:900, league:3600, rosters:120, players:86400, playerScores:60, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:20, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
+const PUB = { salaries:300, liveScoring:12, leagueStandings:300, schedule:900, league:3600, rosters:120, players:86400, playerScores:60, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:20, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
 // owner-specific data: needs sign-in, never cached
 const PRIV = { myleagues:1, pendingWaivers:1, pendingTrades:1, myWatchList:1, tradeBait:1, assets:1, myDraftList:1, lineup:1 };
 // write actions passed through to MFL with the owner's own login
@@ -266,22 +266,23 @@ export default {
         const home = await get(`home/${L}`), norm = h => h.replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+\/\d{4}\//, '').replace(/^\/\d{4}\//, '');
         // every menu link that mentions free agents, best match first, then MFL's usual report codes as a fallback
         const links = [...home.matchAll(/href="([^"]+)"[^>]*>([^<]*free\s*agent[^<]*)</gi)].sort((x, y) => (/complete/i.test(y[2]) ? 1 : 0) - (/complete/i.test(x[2]) ? 1 : 0)).map(x => norm(x[1]));
-        ['options?L=' + L + '&O=08', 'options?L=' + L + '&O=40', 'options?L=' + L + '&O=24'].forEach(x => { if (!links.includes(x)) links.push(x); });
+        links.unshift('reports?L=' + L + '&R=FULLFA&PROJSRC=mfl&SORT=own&PAGE=ALL');
         let t = '';
         for (const path of links.slice(0, 8)) {
-          const html = await get(path + (path.includes('?') ? '&' : '?') + 'POSITION=QB|RB|WR|TE');
+          const html = await get(path);
           t = (html.match(/<table[\s\S]*?<\/table>/gi) || []).find(x => /OWN\s*(PCT|%)|%\s*OWN/i.test(x)) || '';
           if (t) break;
         }
         if (!t) throw new Error('report not found; tried ' + links.slice(0, 8).join(' , '));
         const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-        const head = ((t.match(/<tr[^>]*>[\s\S]*?<\/tr>/i) || [''])[0].match(/<th[\s\S]*?<\/th>/gi) || []).map(x => clean(x).toUpperCase());
+        const hrow = (t.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).find(x => /OWN/i.test(x)) || '';
+        const head = (hrow.match(/<t[hd][\s\S]*?<\/t[hd]>/gi) || []).map(x => clean(x).toUpperCase());
         const ix = re => head.findIndex(h => re.test(h));
-        const cA = ix(/ADD/), cO = ix(/OWN/), cP = ix(/PROJ/), out = {};
+        const cA = ix(/ADD/), cO = ix(/OWN/), cP = ix(/PROJ/), cS = ix(/SALARY/), out = {};
         (t.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).slice(1).forEach(row => {
           const id = (/[?&;]P=(\d+)/.exec(row) || [])[1]; if (!id) return;
           const td = (row.match(/<td[\s\S]*?<\/td>/gi) || []).map(clean), n = i => i > -1 && td[i] != null && td[i] !== '' ? +String(td[i]).replace(/[^0-9.\-]/g, '') : null;
-          out[id] = [n(cO), n(cA), n(cP)];
+          out[id] = [n(cO), n(cA), n(cP), n(cS)];
         });
         if (!Object.keys(out).length) throw new Error('no rows parsed');
         const body = JSON.stringify(out);
