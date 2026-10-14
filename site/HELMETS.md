@@ -3,6 +3,8 @@
 Drop the image in `assets/` on GitHub, tick the box, and send Claude the file name.
 
 ## Done
+- [x] The Shaved Beavers (2001–03) — `ShavedBeavers.png`
+- [x] Little Executive Rough Riders (2004–06; was The Roman Eagles 2003) — `LERR.png`
 - [x] Big Pimpin Pirates / BPP / BPP (I'm on a Boat!) (2004–09, 2012) — `BPP.png`
 - [x] Naptown Ryderz (defunct; was The Little Asian Kids) — `nr.png`
 - [x] God's Little Miracles (2004–14) — `GLM.png`
@@ -30,9 +32,6 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 **The Ligers**
 - [ ] The Fighting Moose (2003)
 
-**Full Blown Trash**
-- [ ] The Shaved Beavers (2001–03)
-
 **Nuts on Your Drumset**
 - [ ] The Medieval Midgets (2001–03)
 
@@ -56,7 +55,6 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 
 ## Defunct franchises
 - [ ] Bath Salt Zombies (2014–15; was Wishard Gun & Knife Club 2008–13)
-- [ ] Little Executive Rough Riders (2004–06; was The Roman Eagles 2003)
 - [ ] Radioactive Rats (2003)
 - [ ] Pigskin Pussycats (2003)
 - [ ] Alcoholic All-Stars (2003)
