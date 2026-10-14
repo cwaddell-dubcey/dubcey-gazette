@@ -13,7 +13,8 @@
     var c = /league champion/i.test(n) ? 'ch' : /runner|finalist|2nd/i.test(n) ? 'ru' : /division/i.test(n) ? 'dv' : /toilet|last|sacko/i.test(n) ? 'lo' : '';
     return '<span class="nchip mono ' + c + '">' + esc(n.replace(/ Division Champion$/i, ' Div. Champ').replace(/^League Champion$/i, '\u2605 League Champion')) + '</span>'; }).join(''); }
   function idOf(n){ return H.n2id[n] || ''; }
-  function hl(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.png'; return hl0(n); }
+  function hl0(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
@@ -34,10 +35,10 @@
     for(var i = 1; i < H.champs.length; i += per) rows.push(H.champs.slice(i, i + per));
     var lb = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; });
     $('hb').innerHTML =
-      '<article class="card champ"><div class="ph"><img src="' + hl(top[1]) + '" alt=""><div class="cw"><div class="kick mono">DEFENDING CHAMPIONS</div><b class="yr">' + top[0] + '</b><b class="cn">' + esc(top[1]) + '</b><span class="mono">' + (idOf(top[1]) ? (c[idOf(top[1])] || 1) + ' TITLES ALL-TIME' : '') + '</span></div></div></article>' +
+      '<article class="card champ"><div class="ph"><img src="' + hl(top[1], top[0]) + '" alt=""><div class="cw"><div class="kick mono">DEFENDING CHAMPIONS</div><b class="yr">' + top[0] + '</b><b class="cn">' + esc(top[1]) + '</b><span class="mono">' + (idOf(top[1]) ? (c[idOf(top[1])] || 1) + ' TITLES ALL-TIME' : '') + '</span></div></div></article>' +
       '<div class="cmain"><div class="wall">' + rows.map(function(r){
         return '<div class="wrow"><div class="row6">' + r.map(function(x){ var id = idOf(x[1]), n2 = now(x[1]);
-          return '<a class="trophy" href="' + (id ? '#teams/' + id : '#champions') + '" title="' + esc(x[1]) + '"><img src="' + hl(x[1]) + '" alt=""><span class="nm3">' + esc(x[1]) + '</span>' + (n2 ? '<span class="now mono">NOW ' + esc(D.SHORT[id]) + '</span>' : '') + '</a>';
+          return '<a class="trophy" href="' + (id ? '#teams/' + id : '#champions') + '" title="' + esc(x[1]) + '"><img src="' + hl(x[1], x[0]) + '" alt=""><span class="nm3">' + esc(x[1]) + '</span>' + (n2 ? '<span class="now mono">NOW ' + esc(D.SHORT[id]) + '</span>' : '') + '</a>';
         }).join('') + '</div><div class="plank"><div class="row6">' + r.map(function(x){ return '<span class="plate">' + x[0] + '</span>'; }).join('') + '</div></div></div>';
       }).join('') + '</div>' +
       '<aside class="box lb"><div class="bar mono"><span>MOST TITLES</span><span>SINCE 2001</span></div>' + lb.map(function(k, i){
@@ -94,13 +95,15 @@
 
   /* ---------- records / standings tables ---------- */
   function table(t, wide){
+    var yc = -1; t.c.forEach(function(c, i){ if(yc < 0 && /^(year|season|yr)$/i.test(String(c).trim())) yc = i; });
+    var ty = (/\b(19|20)\d{2}\b/.exec(t.t || '') || [''])[0];
     var ti = t.team, cols = t.c, vi = cols.indexOf('W') > -1 ? cols.indexOf('W') : (cols[0] === '#' ? 1 : ti + 1);
     // MFL milestone tables put the clinching game on its own row ("vs X, score" + "year, wk n"): fold it into the team row above
     var R = [];
     t.r.forEach(function(r){ var v = String(r[ti] || ''); if(/^vs\.? /i.test(v) && R.length){ var p = R[R.length - 1]; p._sub = v.replace(/^vs\.? /i, 'vs ') + (r[vi] ? ' \u00b7 ' + r[vi] : ''); } else R.push(r.slice()); });
     return '<article class="card rt' + (wide ? ' wide' : '') + '"><div class="bar mono"><span>' + esc(t.t) + '</span></div><div class="sx"><table class="ht"><thead><tr>' + cols.map(function(c, i){ return '<th class="' + (i === ti ? 'l' : '') + '">' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       R.map(function(r, k){ return '<tr class="' + (k === 0 && /^1/.test(String(r[0])) ? 'gold' : '') + '">' + r.map(function(v, i){
-        if(i === ti){ var n2 = now(v); return '<td class="l"><span class="tn3"><img src="' + hl(v) + '" alt=""><b>' + esc(v) + (n2 ? '<i class="mono">NOW ' + esc(D.SHORT[idOf(v)]) + '</i>' : '') + (r._sub ? '<i class="mono sub">' + esc(r._sub) + '</i>' : '') + '</b></span></td>'; }
+        if(i === ti){ var n2 = now(v); return '<td class="l"><span class="tn3"><img src="' + hl(v, yc > -1 ? r[yc] : ty) + '" alt=""><b>' + esc(v) + (n2 ? '<i class="mono">NOW ' + esc(D.SHORT[idOf(v)]) + '</i>' : '') + (r._sub ? '<i class="mono sub">' + esc(r._sub) + '</i>' : '') + '</b></span></td>'; }
         return '<td class="' + (i === vi ? 'b' : '') + '">' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div></article>';
   }
