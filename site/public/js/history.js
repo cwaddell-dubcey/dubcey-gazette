@@ -7,14 +7,16 @@
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
-  fetch('data/history.json').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
+  fetch('data/history.json?v=20261014i').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
 
   function notes(s){ return String(s || '').split(/\s*,\s*/).filter(Boolean).map(function(n){
     var c = /league champion/i.test(n) ? 'ch' : /runner|finalist|2nd/i.test(n) ? 'ru' : /division/i.test(n) ? 'dv' : /toilet|last|sacko/i.test(n) ? 'lo' : '';
     return '<span class="nchip mono ' + c + '">' + esc(n.replace(/ Division Champion$/i, ' Div. Champ').replace(/^League Champion$/i, '\u2605 League Champion')) + '</span>'; }).join(''); }
   function idOf(n){ return H.n2id[n] || ''; }
+  var RTTAG = '<span class="rtag mono" title="Season hosted on RT Sports">RT SPORTS YEARS</span>';
+  function isRT(y){ return (H.rt || []).indexOf(+y) > -1; }
   function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.png'; return hl0(n); }
-  function hl0(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl0(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.png'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
@@ -25,7 +27,7 @@
 
   function draw(){
     [].forEach.call(document.querySelectorAll('#htabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings }[S.tab] || champions)();
+    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct }[S.tab] || champions)();
   }
 
   /* ---------- champions ---------- */
@@ -64,7 +66,7 @@
       '<div class="tled"><div class="lh"><span class="t">Season by Season</span><a class="btn ghost2" href="#h2h/' + id + '">HEAD-TO-HEAD \u2192</a></div><div class="sx">' +
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]);
-        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
+        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
       }).join('') + '</tbody></table></div></div></div>';
   }
 
@@ -112,11 +114,80 @@
     $('hb').innerHTML = '<div class="seg mono hseg">' + CATS.map(function(c){ return '<a href="#records/' + c[0] + '" class="' + (c[0] === S.rc ? 'on' : '') + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       '<div class="rgrid">' + L.map(function(t){ return table(t, t.c.length > 6); }).join('') + '</div>';
   }
+  function alltime(){
+    var n = function(v){ return parseFloat(String(v).replace(/,/g, '')) || 0; };
+    var r = D.IDS.map(function(id){ var g = H.team[id] && H.team[id].reg; if(!g) return null; var w = String(g[0]).split('-').map(Number), a = [w[0] || 0, w[1] || 0, w[2] || 0];
+      return [D.NAME[id], a[0], a[1], a[2], pct(a), Math.round(n(g[2])).toLocaleString('en-US'), Math.round(n(g[3])).toLocaleString('en-US')]; }).filter(Boolean)
+      .sort(function(x, y){ return parseFloat(y[4]) - parseFloat(x[4]) || y[1] - x[1]; });
+    return { t:'All-Time Standings \u00b7 Active Franchises', c:['Team', 'W', 'L', 'T', 'Pct', 'PF', 'PA'], team:0, r:r };
+  }
+  // franchises that never carried into a current MFL team, built from the season standings
+  // defunct franchises that changed names: alias -> final name
+  var DEFLINK = { 'Wishard Gun & Knife Club':'Bath Salt Zombies', "Swinging G-String":"F.I.G.A.", "The Little Asian Kids":"Naptown Ryderz", "The Roman Eagles":"Little Executive Rough Riders" };
+  function defunctList(){
+    var M = {}, n = function(v){ return parseFloat(String(v).replace(/,/g, '')) || 0; };
+    Object.keys(H.standings).forEach(function(y){ (H.standings[y] || []).forEach(function(t){ var c = t.c, ix = function(k){ return c.indexOf(k); };
+      t.r.forEach(function(r){ var raw = String(r[t.team] || ''); if(!raw || idOf(raw) || /^vs\.? /i.test(raw)) return; var nm = DEFLINK[raw] || raw;
+        var o = M[nm] || (M[nm] = { n:nm, y:[], w:0, l:0, t:0, pf:0, pa:0, best:null, aka:{} }); if(raw !== nm) (o.aka[raw] = o.aka[raw] || []).push(+y);
+        var w = +r[ix('W')] || 0, l = +r[ix('L')] || 0, tt = +r[ix('T')] || 0; o.y.push(+y); o.w += w; o.l += l; o.t += tt; o.pf += n(r[ix('PF')]); o.pa += n(r[ix('PA')]);
+        var p = (w + tt / 2) / Math.max(1, w + l + tt); if(!o.best || p > o.best.p) o.best = { y:+y, p:p, rec:w + '-' + l + (tt ? '-' + tt : '') };
+      }); }); });
+    H.champs.forEach(function(x){ var k = DEFLINK[x[1]] || x[1]; if(M[k]) (M[k].ti = M[k].ti || []).push(x[0]); });
+    return Object.keys(M).map(function(k){ var o = M[k]; o.y = o.y.filter(function(y, i, a){ return a.indexOf(y) === i; }).sort(); return o; }).sort(function(a, b){ return (b.ti || []).length - (a.ti || []).length || b.y.length - a.y.length || a.y[0] - b.y[0]; });
+  }
+  function span(ys){ var a = ys[0], b = ys[ys.length - 1]; return a === b ? String(a) : a + '\u2013' + b; }
+  function defunct(){
+    var L = defunctList();
+    $('hb').innerHTML = '<div class="dfh mono"><span>' + L.length + ' FRANCHISES</span><span>GONE BUT NOT FORGOTTEN</span></div><div class="dfg">' + L.map(function(o){
+      var img = hl(o.n, o.y[0]), none = /logo\.webp$/.test(img);
+      return '<article class="dfc"><div class="dfi' + (none ? ' none' : '') + '">' + (none ? '<span class="mono">HELMET WANTED</span>' : '<img src="' + img + '" alt="">') + '</div><div class="dfb">' +
+        '<div class="mono dfy">' + span(o.y) + ' \u00b7 ' + o.y.length + (o.y.length === 1 ? ' SEASON' : ' SEASONS') + '</div><h3>' + esc(o.n) + '</h3>' +
+        (o.ti ? '<div class="dft">' + o.ti.map(function(y){ return '<span class="mono">\u2605 ' + y + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="dfs"><div><b>' + rec([o.w, o.l, o.t]) + '</b><span class="mono">RECORD</span></div><div><b>' + pct([o.w, o.l, o.t]) + '</b><span class="mono">PCT</span></div><div><b>' + Math.round(o.pf).toLocaleString('en-US') + '</b><span class="mono">PF</span></div></div>' +
+        (Object.keys(o.aka).length ? '<div class="dfa"><span class="mono">ALSO KNOWN AS</span>' + Object.keys(o.aka).map(function(a){ var ys = o.aka[a].filter(function(y, i, l){ return l.indexOf(y) === i; }).sort(); return '<div><b>' + esc(a) + '</b><i class="mono">' + span(ys) + '</i></div>'; }).join('') + '</div>' : '') +
+        (o.y.length > 1 && o.best ? '<div class="mono dfx">BEST \u00b7 ' + o.best.y + ' \u00b7 ' + o.best.rec + '</div>' : '') + '</div></article>';
+    }).join('') + '</div>';
+  }
+  // season standings drawn like the main Standings page (division banners + grid rows)
+  var SGT = '46px minmax(0,1fr) 84px 54px 92px 92px 80px 56px';
+  function nf(v, whole){ return (whole ? Math.round(v) : Math.round(v * 100) / 100).toLocaleString('en-US', { maximumFractionDigits:2 }); }
+  function nn(v){ return parseFloat(String(v).replace(/,/g, '')) || 0; }
+  function divOf(t){ var k = String(t).toLowerCase().replace(/[^a-z]/g, ''); return D.DIVS.filter(function(d){ return k.indexOf(d.k) === 0 || k.indexOf(d.k.slice(0, 4)) > -1; })[0]; }
+  function srow(o){
+    var d = o.pf - o.pa, id = idOf(o.n), n2 = now(o.n);
+    return '<a class="sr" href="' + (id ? '#teams/' + id : '#defunct') + '"><span class="rk">' + esc(o.rk) + '</span><span class="tn2"><img src="' + hl(o.n, o.y) + '" alt=""><span class="nm4"><b>' + esc(o.n) + '</b>' +
+      ((o.tags || n2) ? '<span class="tg4">' + (o.tags || '') + (n2 ? '<i class="dvr mono">NOW ' + esc(D.SHORT[id] || n2) + '</i>' : '') + '</span>' : '') + '</span></span>' +
+      '<span class="wl">' + o.w + '-' + o.l + (o.t ? '-' + o.t : '') + '</span><span>' + pct([o.w, o.l, o.t]) + '</span><span>' + nf(o.pf, o.whole) + '</span><span>' + nf(o.pa, o.whole) + '</span>' +
+      '<span class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d >= 0 ? '+' : '\u2212') + nf(Math.abs(d), o.whole) + '</span><span>' + esc(o.x == null ? '\u2013' : o.x) + '</span></a>';
+  }
+  function seasonCard(y){
+    var L = H.standings[y] || [];
+    return '<article class="card stand" style="--gt:' + SGT + '"><div class="bar mono"><span>' + y + ' REGULAR SEASON</span><span>SEED \u00b7 X = DIVISION CHAMP \u00b7 Y = PLAYOFFS</span></div>' + L.map(function(t){
+      var c = t.c, ix = function(k){ return c.indexOf(k); }, dv = divOf(t.t), si = ix('Seed');
+      var rows = t.r.filter(function(r){ return !/^vs\.? /i.test(String(r[t.team] || '')); }).map(function(r){
+        var sd = String(si > -1 ? r[si] : ''), m = /\((\d+)\)/.exec(sd), tg = /^x/i.test(sd) ? '<i class="dlead mono">DIV CHAMP</i>' : /^y/i.test(sd) ? '<i class="dvr mono">PLAYOFFS</i>' : '';
+        return srow({ n:r[t.team], y:y, rk:m ? m[1] : '\u2013', w:+r[ix('W')] || 0, l:+r[ix('L')] || 0, t:+r[ix('T')] || 0, pf:nn(r[ix('PF')]), pa:nn(r[ix('PA')]), x:ix('Div W-L') > -1 ? r[ix('Div W-L')] : null, tags:tg });
+      }).join('');
+      var lead = t.r[0], head = dv ? D.divBanner(dv, lead ? '<span class="mono">' + (/^x/i.test(String(lead[si])) ? 'CHAMP' : 'LEADER') + '</span><img src="' + hl(lead[t.team], y) + '" alt=""><b>' + esc(lead[t.team]) + '</b><i class="mono">' + lead[ix('W')] + '-' + lead[ix('L')] + '</i>' : '')
+        : '<div class="sdh mono">' + esc(t.t) + '</div>';
+      return head + '<div class="sr hd mono"><span>SEED</span><span>TEAM</span><span>W-L</span><span>PCT</span><span>PF</span><span>PA</span><span>DIFF</span><span>DIV</span></div>' + rows;
+    }).join('') + '</article>';
+  }
+  function allCard(){
+    var c = cnt();
+    var R = D.IDS.map(function(id){ var g = H.team[id] && H.team[id].reg; if(!g) return null; var w = String(g[0]).split('-').map(Number);
+      return { id:id, whole:true, n:D.NAME[id], w:w[0] || 0, l:w[1] || 0, t:w[2] || 0, pf:nn(g[2]), pa:nn(g[3]), x:c[id] || 0 }; }).filter(Boolean)
+      .sort(function(a, b){ return parseFloat(pct([b.w, b.l, b.t])) - parseFloat(pct([a.w, a.l, a.t])) || b.w - a.w; });
+    return '<article class="card stand" style="--gt:' + SGT + '"><div class="bar mono"><span>ALL-TIME \u00b7 ACTIVE FRANCHISES</span><span>REGULAR SEASON \u00b7 EVERY NAME COUNTED</span></div>' +
+      '<div class="sr hd mono"><span>#</span><span>TEAM</span><span>W-L</span><span>PCT</span><span>PF</span><span>PA</span><span>DIFF</span><span>TITLES</span></div>' +
+      R.map(function(o, i){ o.rk = i + 1; o.tags = o.x ? '<i class="dlead mono">' + o.x + (o.x > 1 ? ' TITLES' : ' TITLE') + '</i>' : ''; o.x = o.x || '\u2013'; return srow(o); }).join('') + '</article>';
+  }
   function standings(){
     var ys = Object.keys(H.standings).sort(function(a, b){ return b - a; }); if(!S.yr) S.yr = ys[0];
-    var L = S.yr === 'all' ? [H.alltime] : (H.standings[S.yr] || []);
-    $('hb').innerHTML = '<div class="weeks hyrs"><a href="#standings/all" class="' + (S.yr === 'all' ? 'on' : '') + '">ALL-TIME</a>' + ys.map(function(y){ return '<a href="#standings/' + y + '" class="' + (y === S.yr ? 'on' : '') + '">' + y + '</a>'; }).join('') + '</div>' +
-      '<div class="rgrid one">' + L.map(function(t){ return table(t, true); }).join('') + '</div>';
+    var L = S.yr === 'all' ? [alltime()] : (H.standings[S.yr] || []);
+    $('hb').innerHTML = '<div class="weeks hyrs"><a href="#standings/all" class="' + (S.yr === 'all' ? 'on' : '') + '">ALL-TIME</a>' + ys.map(function(y){ return '<a href="#standings/' + y + '" class="' + (y === S.yr ? 'on' : '') + (isRT(y) ? ' rty' : '') + '">' + y + '</a>'; }).join('') + '</div>' +
+      (isRT(S.yr) ? '<div class="rtban">' + RTTAG + '<span>This season was played on RT Sports. Standings come from RT\u2019s final report.</span></div>' : '') +
+      (S.yr === 'all' ? allCard() : seasonCard(S.yr));
   }
 
   window.addEventListener('hashchange', function(){ hash(); if(H){ draw(); window.scrollTo(0, 0); } });

@@ -3,8 +3,10 @@
 Drop the image in `assets/` on GitHub, tick the box, and send Claude the file name.
 
 ## Done
+- [x] Big Pimpin Pirates / BPP / BPP (I'm on a Boat!) (2004–09, 2012) — `BPP.png`
+- [x] Naptown Ryderz (defunct; was The Little Asian Kids) — `nr.png`
 - [x] God's Little Miracles (2004–14) — `GLM.png`
-- [x] F.I.G.A. (2005, defunct) — `figa.png`
+- [x] F.I.G.A. (2005, defunct; was Swinging G-String 2003) — `figa.png`
 - [x] Cascadia Wet Bandidos (2021) — `cascadia`
 - [x] High Octane Bohemoths (2001–08) — `hob.png`
 - [x] Super Hero Rescue Squadron United (2004–09) — `superhero`
@@ -20,10 +22,8 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] dubcey's dominators (2001–02)
 
 **Entertainment 720**
-- [ ] Big Pimpin Pirates / BPP (2004–08, 2012)
 - [ ] Gotham Rogues (2011)
 - [ ] Boats 'n Hoes (2010)
-- [ ] BPP (I'm on a Boat!) (2009)
 - [ ] Bojangles Jive Turkeys (2003)
 - [ ] Narcoleptic Nazis (2001–02)
 
@@ -55,16 +55,11 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] 10.5 Inch (2002–03)
 
 ## Defunct franchises
-- [ ] Bath Salt Zombies (2010–14)
-- [ ] Little Executive Rough Riders (2003–06)
-- [ ] Naptown Ryderz (2003–04)
+- [ ] Bath Salt Zombies (2014–15; was Wishard Gun & Knife Club 2008–13)
+- [ ] Little Executive Rough Riders (2004–06; was The Roman Eagles 2003)
 - [ ] Radioactive Rats (2003)
 - [ ] Pigskin Pussycats (2003)
 - [ ] Alcoholic All-Stars (2003)
-- [ ] Swinging G-String (2003)
 - [ ] Outlaws (2003)
 - [ ] The Box Socials (2003)
-- [ ] The Roman Eagles (year unknown)
 - [ ] Team Remix (year unknown)
-- [ ] The Little Asian Kids (year unknown)
-- [ ] Wishard Gun & Knife Club (year unknown)
