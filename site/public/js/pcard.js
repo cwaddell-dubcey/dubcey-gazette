@@ -56,17 +56,29 @@
       var me = r[0] || {}, d = S.d, i = D.pinfo(id);
       d.name = i[0]; d.pos = i[1]; d.team = i[2]; d.me = me.franchise || ''; d.load = 0;
       arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ if(p.id === id){ d.own = f.id; d.sal = p.salary; d.rst = p.status; } }); });
-      var L = r[2] && r[2].liveScoring; d.week = num(L && L.week);
+      var L = r[2] && r[2].liveScoring, NS = r[5] && r[5].nflSchedule; d.week = num(L && L.week) || num(NS && NS.week);
       arr(L && L.matchup).forEach(function(m){ arr(m.franchise).forEach(function(f){ arr((f.players && f.players.player) || f.player).forEach(function(p){ if(p.id === id){ d.wk = num(p.score); d.sec = num(p.gameSecondsRemaining); } }); }); });
       arr(r[3] && r[3].injuries && r[3].injuries.injury).forEach(function(x){ if(x.id === id) d.inj = D.injCode(x.status); }); if(!d.inj && D.INJ[id]) d.inj = D.INJ[id].k;
       arr(r[5] && r[5].nflSchedule && r[5].nflSchedule.matchup).forEach(function(m){ var t = arr(m.team); t.forEach(function(x, k){ if(x.id === d.team){ d.opp = (x.isHome === '1' ? 'vs ' : '@ ') + t[1 - k].id; d.kick = num(m.kickoff) * 1000; } }); });
       draw();
-      return Promise.all([D.scores('YTD', [id]), D.scores('AVG', [id]), d.week ? D.api('projectedScores', 'W=' + d.week + '&PLAYERS=' + id).catch(no) : null, d.week ? D.stats(d.week, [id], d.sec > 0 && d.sec < 3600) : null]).then(function(s){
-        if(S.id !== id) return;
-        function sc(j, k){ var x = arr(j && j[k] && j[k].playerScore)[0]; return x && x.score !== '' ? num(x.score) : null; }
-        d.ytd = s[0][id] != null ? s[0][id] : null; d.avg = s[1][id] != null ? s[1][id] : null; d.proj = sc(s[2], 'projectedScores'); d.sx = d.week ? D.statOf(d.week, id) : '';
-        top();
-      });
+      // each number fills in on its own, so one slow or failed MFL call can't blank the whole row
+      function sc(j, k){ var x = arr(j && j[k] && j[k].playerScore)[0]; return x && x.score !== '' && x.score != null ? num(x.score) : null; }
+      function again(f){ return f().then(function(v){ return v; }, function(){ return new Promise(function(ok){ setTimeout(ok, 700); }).then(f); }).catch(no); }
+      function put(fn){ return function(v){ if(S.id !== id) return; fn(v); top(); }; }
+      var ws = []; for(var w = 1; w <= d.week; w++) ws.push(w);
+      var byWk = Promise.all(ws.map(function(w){ return again(function(){ return D.scores(w, [id]); }).then(function(o){ return o && o[id] != null ? o[id] : null; }); }));
+      var jobs = [
+        again(function(){ return D.scores('YTD', [id]); }).then(put(function(o){ if(o && o[id] != null) d.ytd = o[id]; })),
+        again(function(){ return D.scores('AVG', [id]); }).then(put(function(o){ if(o && o[id] != null) d.avg = o[id]; })),
+        // MFL leaves YTD/AVG empty for some players (free agents especially) — rebuild them from the weekly scores
+        byWk.then(put(function(L){ var g = L.filter(function(x, i){ return x != null && (x !== 0 || i < L.length - 1); }); if(d.wk == null && L.length && L[L.length - 1] != null) d.wk = L[L.length - 1];
+          if(g.length){ var t = g.reduce(function(a, b){ return a + b; }, 0); if(d.ytd == null) d.ytd = t; if(d.avg == null) d.avg = t / g.length; } }))
+      ];
+      if(d.week){
+        jobs.push(again(function(){ return D.api('projectedScores', 'W=' + d.week + '&PLAYERS=' + id); }).then(put(function(j){ d.proj = sc(j, 'projectedScores'); })));
+        jobs.push(Promise.resolve(D.stats(d.week, [id], d.sec > 0 && d.sec < 3600)).catch(no).then(put(function(){ d.sx = D.statOf(d.week, id); })));
+      }
+      return Promise.all(jobs);
     });
     page('page', id).then(function(doc){
       if(S.id !== id) return;

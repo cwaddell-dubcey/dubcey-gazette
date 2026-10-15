@@ -323,10 +323,20 @@ export default {
           const side = x => x ? { ab: x.team && x.team.abbreviation, name: x.team && x.team.shortDisplayName, logo: x.team && x.team.logo, score: x.score, rec: ((x.records || [])[0] || {}).summary || '' } : {};
           const T = c.competitors || [], g = { id: ev.id, kick: Date.parse(ev.date) || 0, state: st.state, detail: st.shortDetail || st.detail || '', away: side(T.find(x => x.homeAway === 'away')), home: side(T.find(x => x.homeAway === 'home')), box: {} };
           const od = (c.odds || [])[0];
-          if (od) { const ml = x => x && (x.moneyLine != null ? x.moneyLine : x.moneyline && x.moneyline.close && x.moneyline.close.odds); g.odds = { line: od.details || '', ou: od.overUnder != null ? od.overUnder : '', mlA: ml(od.awayTeamOdds), mlH: ml(od.homeTeamOdds), by: (od.provider && od.provider.name) || '' }; }
+          if (od) { // ESPN moved moneylines from awayTeamOdds/homeTeamOdds into od.moneyline.{away,home}.{close,open}.odds — read both shapes
+            const pick = (...v) => { for (const x of v) if (x != null && x !== '' && x !== 'OFF') return x; return null; };
+            const mlv = (t, side) => { const m = od.moneyline && od.moneyline[side]; return pick(t && t.moneyLine, t && t.moneyline && t.moneyline.close && t.moneyline.close.odds, m && m.close && m.close.odds, m && m.open && m.open.odds, m && m.current && m.current.odds); };
+            g.odds = { line: od.details || '', ou: od.overUnder != null ? od.overUnder : '', mlA: mlv(od.awayTeamOdds, 'away'), mlH: mlv(od.homeTeamOdds, 'home'), by: (od.provider && od.provider.name) || '' }; }
           const tv = []; (c.broadcasts || []).forEach(b => (b.names || []).forEach(n => tv.indexOf(n) < 0 && tv.push(n))); (c.geoBroadcasts || []).forEach(b => { const n = b.media && b.media.shortName; if (n && tv.indexOf(n) < 0) tv.push(n); });
           g.tv = tv.slice(0, 3).join(' / ');
-          if (st.state === 'pre') return g;
+          // scoreboard often ships spread/total without moneylines — fill them from the game summary's pickcenter
+          const noML = g.odds && g.odds.mlA == null && g.odds.mlH == null;
+          if (st.state === 'pre') {
+            if (noML) { try { const s0 = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, 900); const pc = ((s0.pickcenter || [])[0]) || ((s0.odds || [])[0]); if (pc) { const m = pc.moneyline || {}; const pk = (...v) => { for (const x of v) if (x != null && x !== '' && x !== 'OFF') return x; return null; };
+              g.odds.mlA = pk(pc.awayTeamOdds && pc.awayTeamOdds.moneyLine, m.away && m.away.close && m.away.close.odds, m.away && m.away.open && m.away.open.odds);
+              g.odds.mlH = pk(pc.homeTeamOdds && pc.homeTeamOdds.moneyLine, m.home && m.home.close && m.home.close.odds, m.home && m.home.open && m.home.open.odds); } } catch (e) {} }
+            return g;
+          }
           let s; try { s = await cachedJSON(ctx, `${ESPN}/summary?event=${ev.id}`, st.completed ? 86400 : 20); } catch (e) { return g; }
           ((s.boxscore && s.boxscore.players) || []).forEach(tm => {
             const ab = tm.team && tm.team.abbreviation, o = g.box[ab] = {};

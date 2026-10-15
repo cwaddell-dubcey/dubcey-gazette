@@ -634,7 +634,7 @@ button{font:inherit;color:inherit}
   .cpnl{border-right:0;border-bottom:2px solid #0D1F38}
   .hrail{grid-template-columns:repeat(6,minmax(0,1fr))}
   .h2pick{grid-template-columns:1fr}
-  .rgrid{grid-template-columns:1fr}
+  .rgrid{grid-template-columns:minmax(0,1fr)}
   .champ .ph>img{width:260px;height:190px}
   .cw{margin-left:calc(6% + 290px)}
 }
@@ -2226,3 +2226,33 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
 .dfa div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .dfa b{font:600 14px/1.2 'Zilla Slab',Georgia,serif}
 .dfa i{font-style:normal;font-size:10px;letter-spacing:.1em;color:#5A6577;white-space:nowrap}
+
+/* History records on phones: card stays inside the screen, table scrolls sideways if it must, names wrap instead of running off */
+.rgrid>.rt{min-width:0}
+.rt .sx{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+@media (max-width:760px){
+  .rgrid{gap:16px;margin-bottom:28px}
+  .rt .ht th{padding:9px 6px 7px;font-size:8px;letter-spacing:.1em}
+  .rt .ht td{padding:7px 6px}
+  .rt .ht th:first-child,.rt .ht td:first-child{padding-left:12px;width:1%}
+  .rt .ht th:last-child,.rt .ht td:last-child{padding-right:12px}
+  .rt .ht td.b,.rt .ht td.y{font-size:13px}
+  .rt .ht td.l{white-space:normal;min-width:130px}
+  .rt .tn3{gap:7px}
+  .rt .tn3 img{width:30px;height:22px}
+  .rt .tn3 b{white-space:normal;font-size:10.5px;line-height:1.15}
+  .rt .tn3 b i{font-size:7.5px}
+  .rt .ht td.nt{min-width:150px;font-size:12.5px}
+}
+
+/* division banner on phones: record and name stay on one line */
+.dvx{flex:none;white-space:nowrap}
+.dvx i{white-space:nowrap}
+@media (max-width:760px){
+  .dvt{min-width:0;flex:1 1 auto}
+  .dvn{white-space:nowrap}
+  .dvb.soup .dvn{font-size:19px;letter-spacing:.01em}
+  .dvb.soup .dvc{height:48px}
+  .dvb.soup{gap:10px}
+  .dvb.rumple .dvn{font-size:32px}
+}

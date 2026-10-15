@@ -42,7 +42,7 @@
       c.rows.map(function(r){ return '<tr><td>' + owner(r[0], ab) + '<span>' + esc(r[0]) + '</span></td>' + want.map(function(k){ return '<td class="mono">' + esc(r[2 + L.indexOf(k)]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
   }
   function side(t, win, live){ return '<div class="nsd' + (win ? ' w' : '') + '"><img src="' + esc(t.logo || D.nflLogo(t.ab)) + '" alt=""><b>' + esc(t.name || t.ab) + '</b><i class="mono">' + esc(t.rec || '') + '</i><em>' + (live ? esc(t.score) : '') + '</em></div>'; }
-  function ml(v){ if(v == null || v === '') return '\u2013'; var n = num(v); return (n > 0 ? '+' : '') + n; }
+  function ml(v){ if(v == null || v === '') return '\u2013'; var s = String(v).trim(); if(/^EVEN$/i.test(s)) return 'EVEN'; var n = parseFloat(s.replace(/[^\d.+-]/g, '')); if(isNaN(n)) return '\u2013'; return (n > 0 ? '+' : '') + n; }
   function lines(g){
     var o = g.odds;
     if(!o && !g.tv) return '';

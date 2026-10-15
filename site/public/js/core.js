@@ -428,7 +428,7 @@
     e.preventDefault(); e.stopPropagation();
     var id = c.getAttribute('data-card');
     if(D.openCard) return D.openCard(id);
-    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=s167z6m'; s.onload = res; document.head.appendChild(s); }); }
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=20261015a'; s.onload = res; document.head.appendChild(s); }); }
     PC.then(function(){ D.openCard(id); });
   }, true);
 })();
