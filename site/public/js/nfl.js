@@ -26,8 +26,22 @@
     fetch('/data/nflgames' + (S.w ? '?W=' + S.w : '')).then(function(r){ return r.json(); }).then(function(d){
       if(!d || !d.games || !d.games.length) throw 0;
       S.data = d;
-      weeks(); draw();
+      weeks(); draw(); fillML(d);
     }).catch(function(){ $('games').innerHTML = '<div class="ld mono">NFL GAMES AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+  }
+  // moneylines straight from ESPN in the browser, in case the server copy comes back without them
+  function fillML(d){
+    var miss = d.games.filter(function(g){ return g.state === 'pre' && (!g.odds || (g.odds.mlA == null && g.odds.mlH == null)); }); if(!miss.length) return;
+    fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=' + D.Y + '&seasontype=2&week=' + (d.week || S.w)).then(function(r){ return r.json(); }).then(function(sb){
+      if(S.data !== d) return; var hit = 0;
+      (sb.events || []).forEach(function(ev){ var g = miss.filter(function(x){ return String(x.id) === String(ev.id); })[0]; if(!g) return;
+        var od = (((ev.competitions || [])[0] || {}).odds || [])[0]; if(!od) return; var m = od.moneyline || {};
+        function pk(){ for(var i = 0; i < arguments.length; i++){ var x = arguments[i]; if(x != null && x !== '' && x !== 'OFF') return x; } return null; }
+        function sd(t, s){ var z = m[s] || {}; return pk(t && t.moneyLine, z.close && z.close.odds, z.open && z.open.odds); }
+        g.odds = g.odds || { line:od.details || '', ou:od.overUnder != null ? od.overUnder : '' };
+        g.odds.mlA = sd(od.awayTeamOdds, 'away'); g.odds.mlH = sd(od.homeTeamOdds, 'home'); if(g.odds.mlA != null || g.odds.mlH != null) hit = 1; });
+      if(hit) draw();
+    }).catch(function(){});
   }
   function weeks(){
     var h = ''; for(var i = 1; i <= Math.max(18, S.cur); i++) h += '<a class="' + (i === S.w ? 'on' : '') + '" href="' + D.href('nfl', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';

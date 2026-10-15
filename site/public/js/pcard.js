@@ -87,7 +87,7 @@
       d.log = grid(doc.getElementById('player_stats_table'), /^opp (avg|rank)|^status$/i);
       d.career = grid(doc.querySelector('table.biohistory'));
       if(d.career) d.career.rows.forEach(function(r){ if(/\*$/.test(r[0])) r[0] = r[0].replace(/\*$/, ' PROJ'); });
-      d.pageOk = true; draw();
+      fromLog(d, d.log, 'act'); d.pageOk = true; draw(); proj();
     }).catch(function(){ if(S.id === id){ S.d.pageOk = false; body(); } });
     page('news', id).then(function(doc){
       if(S.id !== id) return;
@@ -102,9 +102,21 @@
       S.d.news = out; S.d.newsOk = true; body();
     }).catch(function(){ if(S.id === id){ S.d.news = []; S.d.newsOk = true; body(); } });
   };
+  // MFL's export API returns blank scores for many players (free agents especially); the player's own MFL page always has them
+  function ptsCol(g){ for(var i = g.head.length - 1; i >= 0; i--) if(/^(fantasy\s*)?(pts|points|fpts)\.?$/i.test(g.head[i]) || /fantasy pts/i.test(g.head[i])) return i; return g.head.length - 1; }
+  function fromLog(d, g, kind){
+    if(!g || !g.rows || !g.rows.length) return; var c = ptsCol(g), wk = {};
+    g.rows.forEach(function(r){ var m = /^(\d{1,2})\b/.exec(r[0] || ''), v = parseFloat(String(r[c] || '').replace(/[^\d.-]/g, '')); if(m && !isNaN(v)) wk[+m[1]] = v; });
+    var ks = Object.keys(wk).map(Number).sort(function(a, b){ return a - b; }); if(!ks.length) return;
+    if(kind === 'proj'){ var w = d.week || ks[0]; if(d.proj == null && wk[w] != null) d.proj = wk[w]; return; }
+    if(!d.week) d.week = ks[ks.length - 1] + (d.kick && d.kick > Date.now() ? 1 : 0);
+    var done = ks.filter(function(k){ return k < d.week || !(d.kick && d.kick > Date.now()); }), t = done.reduce(function(a, k){ return a + wk[k]; }, 0);
+    if(d.ytd == null && done.length) d.ytd = t; if(d.avg == null && done.length) d.avg = t / done.length;
+    if(d.wk == null && wk[d.week] != null) d.wk = wk[d.week];
+  }
   function proj(){
     var d = S.d, id = d.id; if(d.projLog || d.projLoading) return; d.projLoading = 1;
-    page('proj', id).then(function(doc){ if(S.id !== id) return; d.projLog = grid(doc.getElementById('player_stats_table'), /^opp (avg|rank)|^status$/i) || { rows:[] }; body(); })
+    page('proj', id).then(function(doc){ if(S.id !== id) return; d.projLog = grid(doc.getElementById('player_stats_table'), /^opp (avg|rank)|^status$/i) || { rows:[] }; fromLog(d, d.projLog, 'proj'); top(); body(); })
       .catch(function(){ if(S.id === id){ d.projLog = { rows:[] }; body(); } });
   }
 
