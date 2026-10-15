@@ -16,6 +16,8 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [x] Prostate Playaz — `prostate`
 - [x] Grundle Lickers — `grundle`
 - [x] Bad Hombres (2017–2020) — `badhombres.png`
+- [x] 10.5 Inch (2002–03, 2003 champ) — `105inch.png`
+- [x] Radioactive Rats (2003, defunct) — `rats.png`
 - [x] DD Allstars (defunct) — already on Hall of Champions
 
 ## Old names of current teams
@@ -51,13 +53,12 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 **The Diamond Dogs**
 - [ ] Pick A Switch (2014–16)
 - [ ] Bad Newz Kennels (2007–13)
-- [ ] 10.5 Inch (2002–03)
 
 ## Defunct franchises
 - [ ] Bath Salt Zombies (2014–15; was Wishard Gun & Knife Club 2008–13)
-- [ ] Radioactive Rats (2003)
 - [ ] Pigskin Pussycats (2003)
 - [ ] Alcoholic All-Stars (2003)
 - [ ] Outlaws (2003)
 - [ ] The Box Socials (2003)
-- [ ] Team Remix (year unknown)
+- [ ] Team Remix (2003)
+- [ ] 18th Street Gangsters (2003)

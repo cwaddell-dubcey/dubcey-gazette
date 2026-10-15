@@ -7,7 +7,7 @@
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
-  fetch('data/history.json?v=20261014i').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
+  fetch('data/history.json?v=20261015a').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
 
   function notes(s){ return String(s || '').split(/\s*,\s*/).filter(Boolean).map(function(n){
     var c = /league champion/i.test(n) ? 'ch' : /runner|finalist|2nd/i.test(n) ? 'ru' : /division/i.test(n) ? 'dv' : /toilet|last|sacko/i.test(n) ? 'lo' : '';
@@ -15,8 +15,12 @@
   function idOf(n){ return H.n2id[n] || ''; }
   var RTTAG = '<span class="rtag mono" title="Season hosted on RT Sports">RT SPORTS YEARS</span>';
   function isRT(y){ return (H.rt || []).indexOf(+y) > -1; }
+  // MFL stores franchise 0012 as "Bad Hombres" in every year; show the name it actually carried that season
+  function yn(s, y){ y = parseInt(y, 10) || 0; s = String(s == null ? '' : s); if(!y || (y >= 2017 && y <= 2020) || s.indexOf('Bad Hombres') < 0) return s; var L = H.lineage['0012'] || [], nm = '';
+    L.forEach(function(e){ var r = String(e[1]).split('-'), a = +r[0], b = +(r[1] || r[0]); if(y >= a && y <= b) nm = e[0]; }); return nm ? s.replace(/Bad Hombres(?!\))/g, nm) : s; }
+  function rowYr(r, yc, ty){ if(yc > -1) return r[yc]; if(ty) return ty; for(var i = 0; i < r.length; i++){ var m = /^((19|20)\d{2})(,|$)/.exec(String(r[i])); if(m) return m[1]; } return ''; }
   function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.png'; return hl0(n); }
-  function hl0(n){ if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.png'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.png'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.png'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl0(n){ if(/^Radioactive Rats\b/i.test(n)) return 'h/helmet-rats.png'; if(/^10\.5 Inch\b/i.test(n)) return 'h/helmet-105inch.png?v=2'; if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.png'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.png'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.png'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
@@ -102,7 +106,7 @@
     var ti = t.team, cols = t.c, vi = cols.indexOf('W') > -1 ? cols.indexOf('W') : (cols[0] === '#' ? 1 : ti + 1);
     // MFL milestone tables put the clinching game on its own row ("vs X, score" + "year, wk n"): fold it into the team row above
     var R = [];
-    t.r.forEach(function(r){ var v = String(r[ti] || ''); if(/^vs\.? /i.test(v) && R.length){ var p = R[R.length - 1]; p._sub = v.replace(/^vs\.? /i, 'vs ') + (r[vi] ? ' \u00b7 ' + r[vi] : ''); } else R.push(r.slice()); });
+    t.r.forEach(function(r){ var yr = rowYr(r, yc, ty); r = r.map(function(c){ return typeof c === 'string' ? yn(c, yr) : c; }); var v = String(r[ti] || ''); if(/^vs\.? /i.test(v) && R.length){ var p = R[R.length - 1]; p._sub = v.replace(/^vs\.? /i, 'vs ') + (r[vi] ? ' \u00b7 ' + r[vi] : ''); } else { R.push(r.slice()); } });
     return '<article class="card rt' + (wide ? ' wide' : '') + '"><div class="bar mono"><span>' + esc(t.t) + '</span></div><div class="sx"><table class="ht"><thead><tr>' + cols.map(function(c, i){ return '<th class="' + (i === ti ? 'l' : '') + '">' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       R.map(function(r, k){ return '<tr class="' + (k === 0 && /^1/.test(String(r[0])) ? 'gold' : '') + '">' + r.map(function(v, i){
         if(i === ti){ var n2 = now(v); return '<td class="l"><span class="tn3"><img src="' + hl(v, yc > -1 ? r[yc] : ty) + '" alt=""><b>' + esc(v) + (n2 ? '<i class="mono">NOW ' + esc(D.SHORT[idOf(v)]) + '</i>' : '') + (r._sub ? '<i class="mono sub">' + esc(r._sub) + '</i>' : '') + '</b></span></td>'; }
@@ -166,9 +170,9 @@
       var c = t.c, ix = function(k){ return c.indexOf(k); }, dv = divOf(t.t), si = ix('Seed');
       var rows = t.r.filter(function(r){ return !/^vs\.? /i.test(String(r[t.team] || '')); }).map(function(r){
         var sd = String(si > -1 ? r[si] : ''), m = /\((\d+)\)/.exec(sd), tg = /^x/i.test(sd) ? '<i class="dlead mono">DIV CHAMP</i>' : /^y/i.test(sd) ? '<i class="dvr mono">PLAYOFFS</i>' : '';
-        return srow({ n:r[t.team], y:y, rk:m ? m[1] : '\u2013', w:+r[ix('W')] || 0, l:+r[ix('L')] || 0, t:+r[ix('T')] || 0, pf:nn(r[ix('PF')]), pa:nn(r[ix('PA')]), x:ix('Div W-L') > -1 ? r[ix('Div W-L')] : null, tags:tg });
+        return srow({ n:yn(r[t.team], y), y:y, rk:m ? m[1] : '\u2013', w:+r[ix('W')] || 0, l:+r[ix('L')] || 0, t:+r[ix('T')] || 0, pf:nn(r[ix('PF')]), pa:nn(r[ix('PA')]), x:ix('Div W-L') > -1 ? r[ix('Div W-L')] : null, tags:tg });
       }).join('');
-      var lead = t.r[0], head = dv ? D.divBanner(dv, lead ? '<span class="mono">' + (/^x/i.test(String(lead[si])) ? 'CHAMP' : 'LEADER') + '</span><img src="' + hl(lead[t.team], y) + '" alt=""><b>' + esc(lead[t.team]) + '</b><i class="mono">' + lead[ix('W')] + '-' + lead[ix('L')] + '</i>' : '')
+      var lead = t.r[0], head = dv ? D.divBanner(dv, lead ? '<span class="mono">' + (/^x/i.test(String(lead[si])) ? 'CHAMP' : 'LEADER') + '</span><img src="' + hl(yn(lead[t.team], y), y) + '" alt=""><b>' + esc(yn(lead[t.team], y)) + '</b><i class="mono">' + lead[ix('W')] + '-' + lead[ix('L')] + '</i>' : '')
         : '<div class="sdh mono">' + esc(t.t) + '</div>';
       return head + '<div class="sr hd mono"><span>SEED</span><span>TEAM</span><span>W-L</span><span>PCT</span><span>PF</span><span>PA</span><span>DIFF</span><span>DIV</span></div>' + rows;
     }).join('') + '</article>';
