@@ -34,12 +34,14 @@
     return D.api('liveScoring', q).then(function(j){
       var d = norm(j); if(!d || !d.ms.length) throw 0;
       var ids = []; d.ms.forEach(function(m){ m.forEach(function(f){ f.pl.forEach(function(p){ ids.push(p.id); }); }); });
-      return Promise.all([D.players(ids), nfl(S.w), S.w === S.cur ? projs(S.w, ids) : null]).then(function(){ S.data = d; draw(); schedule(); });
+      return Promise.all([D.players(ids), nfl(S.w), S.w === S.cur ? projs(S.w, ids) : null, S.w === S.cur ? pvText(S.w) : null]).then(function(){ S.data = d; draw(); schedule(); });
     }).catch(function(){
       if(S.w && S.w !== S.cur) return Promise.all([D.api('weeklyResults', 'W=' + S.w), nfl(S.w)]).then(function(x){ var d = norm(x[0]); if(!d) throw 0; S.data = d; draw(); });
       $('mu').innerHTML = '<div class="ld mono">SCORES AREN\u2019T AVAILABLE RIGHT NOW.</div>';
     });
   }
+  // the Dispatch's written preview for each matchup, shown on the current week until kickoff
+  function pvText(w){ if(S.pvTw === w) return Promise.resolve(); return D.column().then(function(c){ S.pvT = (c && c.previews && c.previews[w]) || {}; S.pvTw = w; }).catch(function(){ S.pvT = {}; }); }
   // MFL projections for the current week; live projection = points so far + the unplayed share of the projection
   function projs(w, ids){
     if(S.pj && S.pjw === w) return Promise.resolve();
@@ -146,7 +148,7 @@
       '</div><div class="sb"><div class="nums"><b class="' + (started && a.score >= b.score ? 'w' : '') + '">' + D.pts(a.score) + '</b><i></i><b class="' + (started && b.score >= a.score ? 'w' : '') + '">' + D.pts(b.score) + '</b></div>' +
       (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), sd = Math.max(25, Math.sqrt(pa + pb) * 2.2), z = (pa - pb) / sd, wa = Math.round(100 / (1 + Math.exp(-1.7 * z))); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + wa + '% \u2013 ' + (100 - wa) + '%</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a.id]) + '</b><span class="mono">' + esc(meta(a)) + '</span></div><div><b>' + esc(D.NAME[b.id]) + '</b><span class="mono">' + esc(meta(b)) + '</span></div></div>' +
-      (started ? '' : histHTML(a.id, b.id, null)) +
+      (started ? '' : histHTML(a.id, b.id, S.w === S.cur && S.pvT ? (S.pvT[a.id + '-' + b.id] || S.pvT[b.id + '-' + a.id] || null) : null)) +
       '<div class="cols mir">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
     wantStats(m);
   }
@@ -179,7 +181,7 @@
     var ser = '<div><span class="hxk mono">THE SERIES</span><div class="hxg">' + tiles.map(function(t){ return '<div><span class="mono">' + t[0] + '</span><b>' + t[1] + '</b><i class="mono">' + t[2] + '</i></div>'; }).join('') + '</div></div>';
     var rec = G.length ? '<div><span class="hxk mono">RECENT MEETINGS</span><div class="hxl">' + G.slice(-5).reverse().map(function(g){ var w = g.win || a; return '<div><span class="mono">' + g.y + ' \u00b7 WK ' + g.w + '</span><img src="' + helm(w) + '" alt=""><b>' + sn(w) + '</b><i class="mono">' + D.pts(w === a ? g.sa : g.sb) + ' \u2013 ' + D.pts(w === a ? g.sb : g.sa) + '</i></div>'; }).join('') + '</div></div>' : '';
     var ply = key ? '<div><span class="hxk mono">PLAYERS TO WATCH</span><div class="hxps">' + key + '</div></div>' : '';
-    return '<div class="hx' + (pvw ? '' : ' one') + '"><div class="hxa">' + pvw + ply + '</div><div class="hxb">' + ser + rec + '</div>' +
+    return '<div class="hx' + (pvw ? '' : ' one') + '">' + (pvw || ply ? '<div class="hxa">' + pvw + ply + '</div>' : '') + '<div class="hxb">' + ser + rec + '</div>' +
       '</div>';
   }
   function preview(){
@@ -188,7 +190,7 @@
     hist();
     return Promise.all([D.previews(S.w).catch(function(){ return []; }), D.column().catch(function(){ return null; })]).then(function(r){
       if(!r[0].length) throw 0;
-      S.pv = r[0].sort(function(x, y){ return x.a < y.a ? -1 : 1; }); S.pvT = (r[1] && r[1].previews && r[1].previews[S.w]) || {}; drawPv();
+      S.pv = r[0].sort(function(x, y){ return x.a < y.a ? -1 : 1; }); S.pvT = (r[1] && r[1].previews && r[1].previews[S.w]) || {}; S.pvTw = S.w; drawPv();
     }).catch(function(){ $('slate').innerHTML = ''; $('mu').innerHTML = '<div class="ld mono">WEEK ' + S.w + ' MATCHUPS AREN\u2019T SET YET.</div>'; });
   }
   function drawPv(){
