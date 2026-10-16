@@ -17,6 +17,10 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [x] Grundle Lickers — `grundle`
 - [x] Bad Hombres (2017–2020) — `badhombres.png`
 - [x] 10.5 Inch (2002–03, 2003 champ) — `105inch.png`
+- [x] Gnomes in Disguise (2001–03, now Viva La Resistance) — `gnomes.png`
+- [x] Bojangles Jive Turkeys (2003, now Entertainment 720) — `bojangles.png`
+- [x] Bushwhackers (2001–03, now Breaking My Back) — `bushwackers.png`
+- [x] Team Remix (2003, defunct) — `team remix.png`
 - [x] Radioactive Rats (2003, defunct) — `rats.png`
 - [x] DD Allstars (defunct) — already on Hall of Champions
 
@@ -28,7 +32,6 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 **Entertainment 720**
 - [ ] Gotham Rogues (2011)
 - [ ] Boats 'n Hoes (2010)
-- [ ] Bojangles Jive Turkeys (2003)
 - [ ] Narcoleptic Nazis (2001–02)
 
 **The Ligers**
@@ -38,7 +41,6 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] The Medieval Midgets (2001–03)
 
 **Viva La Resistance**
-- [ ] Gnomes in Disguise (2001–03)
 
 **Prestige Worldwide**
 - [ ] Luck/Wayne Enterprises (2012)
@@ -48,7 +50,6 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] Limp Dicks (2012)
 - [ ] The Jumping Drews (2011)
 - [ ] Corey's Nazi Justice (2010)
-- [ ] Bushwhackers (2001–03)
 
 **The Diamond Dogs**
 - [ ] Pick A Switch (2014–16)
@@ -60,5 +61,4 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] Alcoholic All-Stars (2003)
 - [ ] Outlaws (2003)
 - [ ] The Box Socials (2003)
-- [ ] Team Remix (2003)
 - [ ] 18th Street Gangsters (2003)
