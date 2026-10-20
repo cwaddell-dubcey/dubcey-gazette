@@ -106,7 +106,7 @@
     if(D.LOCAL) return Promise.resolve({ ok:true, demo:true });
     return fetch('/act/' + t, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) }).then(function(r){ return r.json(); });
   };
-  D.columnFile = function(){ return fetch(D.LOCAL ? 'demo/column.json' : D.RAW + 'column.json?t=' + Math.floor(Date.now() / 300000)).then(function(r){ return r.json(); }); };
+  D.columnFile = function(){ return fetch(D.LOCAL ? 'demo/column.json' : '/data/column.json?t=' + Math.floor(Date.now() / 300000)).then(function(r){ return r.json(); }); };
   D.column = function(){ return D.content('column').then(function(c){ return c && c.weeks ? c : D.columnFile(); }); };
   D.award = function(v){ return typeof v === 'string' ? { text:v, id:'' } : (v || { text:'', id:'' }); };
   // $50 weekly low scorer: commish's pick in Finances wins; otherwise the lowest MFL score that week

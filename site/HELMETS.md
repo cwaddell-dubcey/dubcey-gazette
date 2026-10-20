@@ -20,6 +20,8 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [x] Gnomes in Disguise (2001–03, now Viva La Resistance) — `gnomes.png`
 - [x] Bojangles Jive Turkeys (2003, now Entertainment 720) — `bojangles.png`
 - [x] Bushwhackers (2001–03, now Breaking My Back) — `bushwackers.png`
+- [x] Alcoholic All-Stars (2003, defunct) — `alcoholicallstars.png`
+- [x] The Box Socials (2003, defunct) — `box socials.png`
 - [x] 18th Street Gangsters (2003, defunct) — `18street.png`
 - [x] River Terrace Crew (2003, now Bloodfeast Islandmen) — `River Terrace Crew.png`
 - [x] The Fighting Moose (2003, now The Ligers) — `fightingmoose.png`
@@ -59,6 +61,4 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] The Roman Eagles (2003; later Little Executive Rough Riders)
 - [ ] The Little Asian Kids (later Naptown Ryderz)
 - [ ] Pigskin Pussycats (2003)
-- [ ] Alcoholic All-Stars (2003)
 - [ ] Outlaws (2003)
-- [ ] The Box Socials (2003)
