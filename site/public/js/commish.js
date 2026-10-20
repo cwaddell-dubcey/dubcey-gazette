@@ -47,12 +47,18 @@
   function keepWeek(){ if(document.getElementById('stories')) S.C.weeks[S.w] = readWeek(); }
 
   /* ---------- team names & helmets ---------- */
+  // typed week picks → S.T, so re-rendering (add/remove alternate) doesn't lose them
+  function keepWk(){ [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] = S.T[id] || {};
+    [].forEach.call(r.querySelectorAll('[data-wk]'), function(inp){ var v = D.weeksOf(inp.value).join(', '), k = inp.getAttribute('data-wk'); if(k === 'main'){ if(v) o.mainWk = v; else delete o.mainWk; } else if(o.alts && o.alts[+k]){ if(v) o.alts[+k].wk = v; else delete o.alts[+k].wk; } }); }); }
+  function applyPins(){ D.PIN = {}; D.IDS.forEach(function(id){ var o = S.T[id] || {}, pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; }); (o.alts || []).forEach(function(a, i){ D.weeksOf(a.wk).forEach(function(w){ pin[w] = i + 1; }); }); if(Object.keys(pin).length) D.PIN[id] = pin; }); }
   function teams(){
     if(!S.T){ D.content('teams').then(function(t){ S.T = t || {}; teams(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
     $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>TEAM NAMES & HELMETS</span><span>SHOWS EVERYWHERE ON THE SITE</span></div>' + D.IDS.map(function(id){ var o = S.T[id] || {};
       return '<div class="trow" data-id="' + id + '"><label class="hpick" title="Upload a new main helmet"><img src="' + D.helmPool(id)[0] + '" alt=""><input type="file" accept="image/*" hidden><span class="mono">CHANGE</span></label>' +
         '<label class="mono">FULL NAME<input name="name" value="' + esc(o.name || D.NAME[id]) + '"></label><label class="mono">SHORT NAME<input name="short" value="' + esc(o.short || D.SHORT[id]) + '" maxlength="14"></label><span class="mono fid">#' + id + '</span>' +
-        '<div class="talts"><span class="mono">ALTERNATES' + ((o.alts || []).length ? ' \u00b7 ROTATES WEEKLY \u00b7 THIS WEEK: ' + (D.helmPool(id).indexOf(D.helm(id)) === 0 ? 'MAIN' : 'ALT ' + D.helmPool(id).indexOf(D.helm(id))) : '') + '</span>' + (o.alts || []).map(function(a, i){ return '<span class="talt"><img src="' + esc(D.LOCAL ? (localStorage.getItem('dcImg:' + a.k) || '') : a.url) + '" alt=""><button type="button" data-altrm="' + i + '" aria-label="Remove alternate">\u00d7</button></span>'; }).join('') + ((o.alts || []).length < 5 ? '<label class="taltadd mono">+ ADD<input type="file" accept="image/*" data-alt hidden></label>' : '') + '</div></div>';
+        '<div class="talts"><span class="mono">ALTERNATES' + ((o.alts || []).length ? ' \u00b7 RANDOM EACH WEEK UNLESS PICKED \u00b7 WEEK ' + D.nflWeek + ': ' + (D.helmPool(id).indexOf(D.helm(id)) === 0 ? 'MAIN' : 'ALT ' + D.helmPool(id).indexOf(D.helm(id))) + (D.helmPick(id) != null ? ' (PICKED)' : ' (RANDOM)') : '') + '</span>' +
+          ((o.alts || []).length ? '<span class="taltc"><span class="talt"><img src="' + D.helmPool(id)[0] + '" alt=""></span><input class="mono" data-wk="main" value="' + esc(o.mainWk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>' : '') +
+          (o.alts || []).map(function(a, i){ return '<span class="taltc"><span class="talt"><img src="' + esc(D.LOCAL ? (localStorage.getItem('dcImg:' + a.k) || '') : a.url) + '" alt=""><button type="button" data-altrm="' + i + '" aria-label="Remove alternate">\u00d7</button></span><input class="mono" data-wk="' + i + '" value="' + esc(a.wk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>'; }).join('') + ((o.alts || []).length < 5 ? '<label class="taltadd mono">+ ADD<input type="file" accept="image/*" data-alt hidden></label>' : '') + '</div></div>';
     }).join('') + '<div class="ef pad" style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="tsave">SAVE TEAMS</button></div></article>';
   }
   // match the built-in helmets: trim empty transparent edges, then fit into the same 480×359 frame
@@ -126,11 +132,11 @@
     var up = t.closest('[data-up]'); if(up){ keepWeek(); var i = +up.getAttribute('data-up'), L = S.C.weeks[S.w].dispatch; if(L[i]){ var x = L[i]; L[i] = L[i - 1]; L[i - 1] = x; } dispatch(); return; }
     var del = t.closest('[data-del]'); if(del){ var el = document.querySelector('.st3[data-i="' + del.getAttribute('data-del') + '"]'); if(el) el.remove(); keepWeek(); dispatch(); return; }
     if(t.id === 'dsave'){ keepWeek(); var w = S.C.weeks[S.w]; if(!w.dispatch.length){ toast('ADD AT LEAST ONE STORY', true); return; } t.disabled = true; D.save('column', S.C).then(function(r){ t.disabled = false; done(r, 'WEEK ' + S.w); }); return; }
-    var ar = t.closest && t.closest('[data-altrm]'); if(ar){ var rid = ar.closest('.trow').getAttribute('data-id'), oo = S.T[rid] || {}; (oo.alts || []).splice(+ar.getAttribute('data-altrm'), 1); var yy = window.scrollY; teams(); window.scrollTo(0, yy); toast('REMOVED \u2014 HIT SAVE TEAMS'); return; }
+    var ar = t.closest && t.closest('[data-altrm]'); if(ar){ keepWk(); var rid = ar.closest('.trow').getAttribute('data-id'), oo = S.T[rid] || {}; (oo.alts || []).splice(+ar.getAttribute('data-altrm'), 1); if(D.ALT[rid]) D.ALT[rid].splice(+ar.getAttribute('data-altrm'), 1); applyPins(); var yy = window.scrollY; teams(); window.scrollTo(0, yy); toast('REMOVED \u2014 HIT SAVE TEAMS'); return; }
     if(t.id === 'tsave'){
-      t.disabled = true; var T = {};
-      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:o.alts || [] }; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
-      D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ if(T[id].name) D.NAME[id] = T[id].name; if(T[id].short) D.SHORT[id] = T[id].short; }); } });
+      keepWk(); t.disabled = true; var T = {};
+      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:o.alts || [] }; if(o.mainWk && T[id].alts.length) T[id].mainWk = o.mainWk; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
+      D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ if(T[id].name) D.NAME[id] = T[id].name; if(T[id].short) D.SHORT[id] = T[id].short; }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
       return;
     }
     if(t.id === 'cadd'){ S.cal = readCal().concat([{ date:'', time:'', title:'', kind:'LEAGUE' }]); calendar(); return; }
@@ -148,7 +154,7 @@
     if(inp.hasAttribute('data-alt')){
       var o2 = S.T[id] = S.T[id] || {}, used = (o2.alts || []).map(function(a){ return a.k; }), n = 1; while(used.indexOf(id + '_' + n) > -1) n++;
       var k = id + '_' + n;
-      shrink(inp.files[0]).then(function(b){ return D.saveImg(k, b); }).then(function(r){ if(!r.ok) throw r.error; (o2.alts = o2.alts || []).push({ k:k, url:D.LOCAL ? 'local' : r.url }); var y = window.scrollY; teams(); window.scrollTo(0, y); toast('ALTERNATE ADDED \u2014 HIT SAVE TEAMS'); })
+      shrink(inp.files[0]).then(function(b){ return D.saveImg(k, b); }).then(function(r){ if(!r.ok) throw r.error; keepWk(); (o2.alts = o2.alts || []).push({ k:k, url:D.LOCAL ? 'local' : r.url }); (D.ALT[id] = D.ALT[id] || []).push(D.LOCAL ? (localStorage.getItem('dcImg:' + k) || '') : r.url); var y = window.scrollY; teams(); window.scrollTo(0, y); toast('ALTERNATE ADDED \u2014 HIT SAVE TEAMS'); })
         .catch(function(m2){ toast(typeof m2 === 'string' ? m2 : 'COULDN\u2019T USE THAT IMAGE', true); });
       return;
     }

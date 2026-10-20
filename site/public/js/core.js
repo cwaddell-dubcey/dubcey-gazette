@@ -13,8 +13,13 @@
   D.ALT = {};
   D.helmWeek = Math.floor((Date.now() - Date.UTC(2026, 0, 6, 9)) / 6048e5);
   D.helmPool = function(id){ return [D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp')].concat(D.ALT[id] || []); };
+  // NFL week (flips Tuesday morning, same as the rotation) and commish-picked weeks per helmet: D.PIN[id][week] = index in the pool
+  D.nflWeek = Math.max(1, Math.floor((Date.now() - Date.UTC(2026, 8, 8, 9)) / 6048e5) + 1);
+  D.PIN = {};
+  D.weeksOf = function(s){ var o = []; String(s || '').split(/[\s,]+/).forEach(function(p){ var m = /^(\d{1,2})(?:-(\d{1,2}))?$/.exec(p); if(!m) return; var a = +m[1], b = +(m[2] || m[1]); for(var w = Math.min(a, b); w <= Math.max(a, b) && w <= 22; w++) if(w > 0 && o.indexOf(w) < 0) o.push(w); }); return o.sort(function(a, b){ return a - b; }); };
+  D.helmPick = function(id){ var p = D.PIN[id]; return p && p[D.nflWeek] != null && p[D.nflWeek] < D.helmPool(id).length ? p[D.nflWeek] : null; };
   D.helm = function(id){
-    var P = D.helmPool(id); if(P.length < 2) return P[0];
+    var P = D.helmPool(id), pk = D.helmPick(id); if(pk != null) return P[pk]; if(P.length < 2) return P[0];
     var s = String(id) + ':' + D.helmWeek, h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
     return P[(h >>> 0) % P.length];
   };
@@ -86,7 +91,9 @@
   };
   // team-name / helmet overrides, applied before any page draws
   D.teamsReady = D.content('teams').then(function(t){
-    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; if(o.name) D.NAME[id] = o.name; if(o.short) D.SHORT[id] = o.short; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; if(Array.isArray(o.alts) && o.alts.length) D.ALT[id] = o.alts.map(function(a){ return D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; }).filter(Boolean); });
+    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; if(o.name) D.NAME[id] = o.name; if(o.short) D.SHORT[id] = o.short; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; var pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; });
+      if(Array.isArray(o.alts) && o.alts.length){ var L = []; o.alts.forEach(function(a){ var u = D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; if(!u) return; L.push(u); D.weeksOf(a.wk).forEach(function(w){ pin[w] = L.length; }); }); if(L.length) D.ALT[id] = L; }
+      if(Object.keys(pin).length) D.PIN[id] = pin; });
     return t || {};
   }).catch(function(){ return {}; });
 
@@ -107,7 +114,14 @@
     return fetch('/act/' + t, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) }).then(function(r){ return r.json(); });
   };
   D.columnFile = function(){ return fetch(D.LOCAL ? 'demo/column.json' : '/data/column.json?t=' + Math.floor(Date.now() / 300000)).then(function(r){ return r.json(); }); };
-  D.column = function(){ return D.content('column').then(function(c){ return c && c.weeks ? c : D.columnFile(); }); };
+  // weeks published from Commish win; any week only in the file (e.g. a Dispatch Claude wrote) still shows, no Publish needed
+  D.column = function(){ return Promise.all([D.content('column'), D.columnFile().catch(function(){ return null; })]).then(function(r){
+    var k = r[0] && r[0].weeks ? r[0] : null, f = r[1] && r[1].weeks ? r[1] : null; if(!k || !f) return k || f;
+    var o = { weeks:{}, previews:{} }, top = function(x){ return Math.max.apply(null, Object.keys(x.weeks).map(Number).concat(0)); };
+    Object.keys(f.weeks).forEach(function(w){ o.weeks[w] = f.weeks[w]; }); Object.keys(k.weeks).forEach(function(w){ o.weeks[w] = k.weeks[w]; });
+    [f.previews || {}, k.previews || {}].forEach(function(p){ Object.keys(p).forEach(function(w){ o.previews[w] = p[w]; }); });
+    var n = top(f) > top(k) ? f : k; o.threads = n.threads || k.threads || f.threads;
+    Object.keys(k).forEach(function(x){ if(!(x in o)) o[x] = k[x]; }); return o; }); };
   D.award = function(v){ return typeof v === 'string' ? { text:v, id:'' } : (v || { text:'', id:'' }); };
   // $50 weekly low scorer: commish's pick in Finances wins; otherwise the lowest MFL score that week
   D.LOW_FINE = 50;

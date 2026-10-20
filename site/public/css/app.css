@@ -2256,3 +2256,9 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
   .dvb.soup{gap:10px}
   .dvb.rumple .dvn{font-size:32px}
 }
+
+/* commish: weeks picker under each helmet */
+.taltc{display:flex;flex-direction:column;gap:4px;width:64px}
+.taltc input{width:64px;box-sizing:border-box;padding:4px 3px;font-size:9px;text-align:center;border:1.5px solid #102542;background:#fff;color:#102542;letter-spacing:.04em}
+.taltc input::placeholder{color:#A69C84}
+.talts .taltadd{align-self:flex-start}
