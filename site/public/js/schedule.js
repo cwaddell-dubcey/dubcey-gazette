@@ -98,10 +98,10 @@
   var TZ = 'America/New_York';
   function ymd(t){ var p = {}; new Intl.DateTimeFormat('en-US', { timeZone:TZ, year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(new Date(t)).forEach(function(x){ p[x.type] = x.value; }); return p.year + '-' + p.month + '-' + p.day; }
   function hm(t){ return new Date(t).toLocaleTimeString('en-US', { timeZone:TZ, hour:'numeric', minute:'2-digit' }).replace(' AM', ' a.m.').replace(' PM', ' p.m.').replace(':00 ', ' '); }
-  function tone(s){ s = String(s || ''); return /no add|no trade|trade deadline/i.test(s) ? 'r' : /process|bid|waiver run|fcfs/i.test(s) && !/put all/i.test(s) ? 'g' : /unlock/i.test(s) ? 'y' : /put all|free agents on waivers/i.test(s) ? 'k' : /injur/i.test(s) ? 'r' : /draft|auction|keeper/i.test(s) ? 'b' : 'k'; }
+  function tone(s){ s = String(s || ''); return /no trade|trade deadline/i.test(s) ? 'dl' : /no add/i.test(s) ? 'r' : /process|bid|waiver run|fcfs/i.test(s) && !/put all/i.test(s) ? 'g' : /unlock/i.test(s) ? 'y' : /put all|free agents on waivers/i.test(s) ? 'k' : /injur/i.test(s) ? 'r' : /draft|auction|keeper/i.test(s) ? 'b' : 'k'; }
   function short(t, end){ t = String(t || '');
     if(/no add/i.test(t)) return end ? 'ADD/DROPS OPEN' : 'ADD/DROPS LOCK';
-    if(/no trade/i.test(t)) return end ? 'TRADES REOPEN' : 'TRADES CLOSE';
+    if(/no trade|trade deadline/i.test(t)) return end ? 'TRADES REOPEN' : 'TRADE DEADLINE';
     if(/process|blind bid|waiver run/i.test(t)) return 'WAIVERS RUN';
     if(/unlock/i.test(t)) return 'PLAYERS UNLOCK';
     if(/put all free agents/i.test(t)) return 'FREE AGENTS \u2192 WAIVERS';
@@ -120,7 +120,7 @@
         add(ymd(s), { t:s, lbl:short(t), tm:tm(s), full:t + (range ? ' starts' : '') + ' at ' + hm(s), tone:tone(t), raw:t });
         if(range && en - s < 30 * 864e5) add(ymd(en), { t:en, lbl:short(t, 1), tm:tm(en), full:t + ' ends at ' + hm(en), tone:/no add|no trade/i.test(t) ? 'g2' : tone(t), raw:t });
       });
-      arr(r[1]).forEach(function(e){ var t = Date.parse(e.date + 'T' + (e.time || '12:00') + ':00'); if(t) add(e.date, { t:t, lbl:String(e.title).toUpperCase(), tm:e.time ? tm(t) : '', full:e.title, tone:tone(e.title), raw:e.title }); });
+      arr(r[1]).forEach(function(e){ var t = Date.parse(e.date + 'T' + (e.time || '12:00') + ':00'); if(t) add(e.date, { t:t, lbl:short(e.title), tm:e.time ? tm(t) : '', full:e.title, tone:tone(e.title), raw:e.title }); });
       var N = r[2] && (r[2].fullNflSchedule ? arr(r[2].fullNflSchedule.nflSchedule) : r[2].nflSchedule ? [r[2].nflSchedule] : []);
       arr(N).forEach(function(w){
         var c = {}, first = Infinity;
@@ -150,6 +150,7 @@
         var ev = DAY[k].ev, fa = ev.some(function(e){ return e.lbl === 'FREE AGENCY OPENS'; }), wr = ev.filter(function(e){ return e.lbl === 'WAIVERS RUN'; })[0];
         DAY[k].ev = ev.filter(function(e){
           if(fa && /^(ADD\/DROPS OPEN|PLAYERS UNLOCK)$/.test(e.lbl)) return false;
+          if(e.lbl === 'TRADE DEADLINE' && ev.some(function(o){ return o !== e && o.lbl === 'TRADE DEADLINE' && ev.indexOf(o) < ev.indexOf(e); })) return false;
           if(wr && e !== wr && /^(ADD\/DROPS LOCK|WAIVERS RUN)$/.test(e.lbl) && Math.abs(e.t - wr.t) < 36e5) return false;
           return true;
         });
@@ -183,13 +184,14 @@
     var nPast = (list.match(/ hid"/g) || []).length;
     if(nPast) list = '<button type="button" class="cgpast mono" data-past>SHOW ' + nPast + ' EARLIER DAY' + (nPast === 1 ? '' : 'S') + ' \u25be</button>' + list;
     var tail = (7 - (lead + days) % 7) % 7; for(var t = 0; t < tail; t++) cells += '<div class="cgc x"></div>';
+    function left(t){ var ms = Math.max(0, t - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return d ? d + 'D ' + h + 'H LEFT' : h + 'H ' + Math.floor(ms % 36e5 / 6e4) + 'M LEFT'; }
     function when(e){ return e ? new Date(e.t).toLocaleDateString('en-US', { timeZone:TZ, weekday:'short', month:'short', day:'numeric' }) : '\u2013'; }
     $('sb2').innerHTML = '<div class="calhd">' +
       '<div class="box cd"><span class="mono">NEXT WAIVER RUN</span><b>' + when(C.nextW) + '</b><i class="mono">' + (C.nextW ? hm(C.nextW.t).toUpperCase() + ' ET' : 'NOT SCHEDULED') + '</i></div>' +
       '<div class="box cd"><span class="mono">FREE AGENCY OPENS</span><b>' + when(C.nextFA) + '</b><i class="mono">' + (C.nextFA ? hm(C.nextFA.t).toUpperCase() + ' ET' : 'NOT SCHEDULED') + '</i></div>' +
-      (C.dl ? '<div class="box cd"><span class="mono">TRADE DEADLINE</span><b>' + when(C.dl) + '</b><i class="mono">' + Math.max(0, Math.ceil((C.dl.t - Date.now()) / 864e5)) + ' DAYS LEFT</i></div>' : '') + '</div>' +
+      (C.dl ? '<div class="box cd dlc"><span class="mono">TRADE DEADLINE</span><b>' + when(C.dl) + '</b><i class="mono">' + Math.max(0, Math.ceil((C.dl.t - Date.now()) / 864e5)) + ' DAYS LEFT</i></div>' : '') + '</div>' +
       '<article class="card cg"><div class="cgh"><button type="button" data-cm="-1" aria-label="Previous month">\u2039</button><h2>' + esc(title) + '</h2><button type="button" data-cm="1" aria-label="Next month">\u203a</button></div>' +
-      '<div class="cgk mono"><span><i class="r"></i>LOCKS</span><span><i class="g"></i>WAIVERS &amp; REOPENS</span><span><i class="y"></i>FREE AGENCY &amp; UNLOCKS</span><span><i class="k"></i>OTHER</span><em>ALL TIMES EASTERN</em></div>' +
+      '<div class="cgk mono"><span><i class="dl"></i>TRADE DEADLINE</span><span><i class="r"></i>LOCKS</span><span><i class="g"></i>WAIVERS &amp; REOPENS</span><span><i class="y"></i>FREE AGENCY &amp; UNLOCKS</span><span><i class="k"></i>OTHER</span><em>ALL TIMES EASTERN</em></div>' +
       '<div class="cgw mono"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div><div class="cgg">' + cells + '</div>' +
       '<div class="cgm">' + (list || '<div class="ld mono">NOTHING THIS MONTH</div>') + '</div></article>';
   }

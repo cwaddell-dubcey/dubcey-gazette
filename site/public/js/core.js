@@ -81,6 +81,16 @@
     if(D.LOCAL){ var v = null; try{ v = JSON.parse(localStorage.getItem('dcC:' + key) || 'null'); }catch(e){} return Promise.resolve(v); }
     return fetch('/content/' + key, { credentials:'same-origin' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
   };
+  // next trade deadline: MFL's "No Trades" lock, or a Commish calendar entry titled Trade Deadline
+  D.tradeDeadline = function(){
+    return Promise.all([D.api('calendar').catch(function(){ return null; }), D.content('calendar')]).then(function(r){
+      var ts = [], now = Date.now();
+      D.arr(r[0] && r[0].calendar && r[0].calendar.event).forEach(function(e){ if(/NO_TRADES/i.test(e.type) || /no trade|trade deadline/i.test(e.title)) ts.push(D.num(e.start_time) * 1000); });
+      D.arr(r[1]).forEach(function(e){ if(e && e.date && /no trade|trade deadline/i.test(e.title)) ts.push(Date.parse(e.date + 'T' + (e.time || '12:00') + ':00')); });
+      ts = ts.filter(function(t){ return t > now; }).sort(function(a, b){ return a - b; });
+      return ts.length ? { t:ts[0] } : null;
+    });
+  };
   D.save = function(key, obj){
     if(D.LOCAL){ try{ localStorage.setItem('dcC:' + key, JSON.stringify(obj)); }catch(e){ return Promise.resolve({ ok:false, error:'Too big for the preview.' }); } return Promise.resolve({ ok:true, demo:true }); }
     return fetch('/content/' + key, { method:'PUT', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(obj) }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error:'Couldn\u2019t reach the site.' }; });

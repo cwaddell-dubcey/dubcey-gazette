@@ -13,14 +13,39 @@
     v.addEventListener('click', function(e){ if(e.target === v || e.target.closest('[data-x]')) close(); });
     document.addEventListener('keydown', function k(e){ if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', k); } });
   }
-  D.popups().then(function(P){
+  // trade deadline week: countdown popup takes priority over the Commish popups
+  function deadlinePop(dl){
+    var key = 'dcPop:deadline:' + dl.t + ':' + new Date().toISOString().slice(0, 10);
+    var day = new Date(dl.t).toLocaleDateString('en-US', { timeZone:'America/New_York', weekday:'long' });
+    var full = new Date(dl.t).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }).replace(' AM', ' a.m.').replace(' PM', ' p.m.');
+    pop(key, '<article class="card wvhome note2 tdl"><div class="bar mono"><span>LEAGUE CALENDAR \u00b7 TRADE DEADLINE</span><a href="' + D.href('schedule') + '#calendar">CALENDAR \u2192</a></div>' +
+      '<div class="nt2"><h2>Trades close ' + esc(day) + '</h2><p class="mono tdw">' + esc(full.toUpperCase()) + ' ET</p>' +
+      '<div class="tdc mono" id="tdc"></div><p>Anything not accepted by then waits until the offseason. Get your offers in.</p>' +
+      '<div class="tdb"><a class="btn" href="https://www45.myfantasyleague.com/2026/options?L=18919&amp;O=05" target="_blank" rel="noopener">PROPOSE A TRADE \u2197</a></div></div></article>');
+    function tick(){
+      var el = document.getElementById('tdc'); if(!el) return clearInterval(iv);
+      var ms = dl.t - Date.now();
+      if(ms <= 0){ el.innerHTML = '<div class="tdx">TRADES ARE CLOSED</div>'; return clearInterval(iv); }
+      var u = [[Math.floor(ms / 864e5), 'DAYS'], [Math.floor(ms % 864e5 / 36e5), 'HRS'], [Math.floor(ms % 36e5 / 6e4), 'MIN'], [Math.floor(ms % 6e4 / 1e3), 'SEC']];
+      el.innerHTML = u.map(function(x){ return '<div><b>' + String(x[0]).padStart(2, '0') + '</b><span>' + x[1] + '</span></div>'; }).join('');
+    }
+    var iv = setInterval(tick, 1000); tick();
+  }
+  var forceDL = /[?&]popup=deadline/.test(location.search);
+  D.tradeDeadline().catch(function(){ return null; }).then(function(dl){
+    var wk = dl && (forceDL || dl.t - Date.now() < 7 * 864e5);
+    var dismissed = false; try{ dismissed = dl && !forceDL && !!localStorage.getItem('dcPop:deadline:' + dl.t + ':' + new Date().toISOString().slice(0, 10)); }catch(e){}
+    if(wk && !dismissed) return deadlinePop(dl);
+    if(!forceDL) others();
+  });
+  function others(){ D.popups().then(function(P){
     var force = (/[?&]popup=([^&]+)/.exec(location.search) || [])[1] || (/[?&]waivers=1/.test(location.search) ? 'waivers' : '');
     var act = P.filter(function(p){ return p.on !== false && (force ? p.id === force : D.inWindow(p)); })[0];
     if(!act) return;
     var stamp = new Date().toISOString().slice(0, 10);
     if(act.kind === 'waivers') D.waiverReport().then(function(m){ if(m.rows.length) pop('dcPop:waivers:' + (m.run || m.label), D.waiverMini(m)); }).catch(function(){});
     else pop('dcPop:' + act.id + ':' + stamp, '<article class="card wvhome note2"><div class="bar mono"><span>' + esc(act.kick || 'FROM THE COMMISH') + '</span>' + (act.link ? '<a href="' + esc(act.link) + '">' + esc(act.linkText || 'GO') + ' \u2192</a>' : '') + '</div><div class="nt2"><h2>' + esc(act.title) + '</h2>' + (act.body ? '<p>' + esc(act.body).replace(/\n/g, '<br>') + '</p>' : '') + '</div></article>');
-  });
+  }); }
 
   function shelf(order){
     $('helms').innerHTML = order.map(function(id, i){
