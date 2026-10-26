@@ -13,10 +13,25 @@ const arr = x => x == null ? [] : Array.isArray(x) ? x : [x];
 const json = (o, s = 200, h = {}) => new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...h } });
 const UA = { 'User-Agent': 'dubcey.party' };
 
-function session(req) {
+// session cookie = base64(JSON) + "." + HMAC signature; the key is generated once and kept in KV
+let HK = null;
+async function hkey(env) {
+  if (HK) return HK;
+  let k = env.SESSION_SECRET || (env.DC && await env.DC.get('sk'));
+  if (!k) { k = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join(''); if (env.DC) await env.DC.put('sk', k); }
+  HK = await crypto.subtle.importKey('raw', new TextEncoder().encode(k), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  return HK;
+}
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function signV(env, v) { return v + '.' + b64u(await crypto.subtle.sign('HMAC', await hkey(env), new TextEncoder().encode(v))); }
+async function session(req, env) {
   const m = /(?:^|;\s*)dc_s=([^;]+)/.exec(req.headers.get('Cookie') || '');
   if (!m) return null;
-  try { return JSON.parse(atob(decodeURIComponent(m[1]))); } catch (e) { return null; }
+  const raw = decodeURIComponent(m[1]), i = raw.lastIndexOf('.');
+  if (i < 1) return null;
+  const v = raw.slice(0, i);
+  if ((await signV(env, v)) !== raw) return null;
+  try { return JSON.parse(atob(v)); } catch (e) { return null; }
 }
 const cookie = (v, age) => `dc_s=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o || o === u.origin; };
@@ -181,15 +196,15 @@ export default {
         fid = (lg && lg.franchise_id) || '';
       } catch (e) {}
       if (env.DC && String(env.COMMISH || '').split(',').includes(fid)) ctx.waitUntil(env.DC.put('svc', tok));
-      const v = encodeURIComponent(btoa(JSON.stringify({ t: tok, f: fid, u: String(b.username).slice(0, 60) })));
+      const v = encodeURIComponent(await signV(env, btoa(JSON.stringify({ t: tok, f: fid, u: String(b.username).slice(0, 60) }))));
       return json({ ok: true, franchise: fid }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
     }
-    if (p === '/auth/me') { const s = session(req); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env), clerk: isClerk(s, env) } : {}); }
+    if (p === '/auth/me') { const s = (await session(req, env)); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env), clerk: isClerk(s, env) } : {}); }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
     // ---- suggestion box: any signed-in owner files bugs/ideas; commish sets status ----
     if (p === '/data/feedback') {
-      const s = session(req), clip = (x, n) => String(x == null ? '' : x).replace(/\s+$/,'').slice(0, n);
+      const s = (await session(req, env)), clip = (x, n) => String(x == null ? '' : x).replace(/\s+$/,'').slice(0, n);
       const list = async () => { try { return JSON.parse((env.DC && await env.DC.get('fb')) || '[]'); } catch (e) { return []; } };
       if (req.method === 'GET') return json({ items: await list(), me: s ? s.f : '', commish: isCommish(s, env) });
       if (!sameOrigin(req, u)) return json({ ok: false }, 403);
@@ -218,7 +233,7 @@ export default {
       if (key.startsWith('img/')) {
         const id = key.slice(4).replace(/[^0-9_]/g, '').slice(0, 7);
         if (req.method === 'PUT') {
-          const s = session(req); if (!isCommish(s, env) || !sameOrigin(req, u)) return json({ ok: false, error: 'Commissioner only.' }, 403);
+          const s = (await session(req, env)); if (!isCommish(s, env) || !sameOrigin(req, u)) return json({ ok: false, error: 'Commissioner only.' }, 403);
           if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
           const buf = await req.arrayBuffer(); if (buf.byteLength > 2e6) return json({ ok: false, error: 'Image too big.' }, 400);
           await env.DC.put('img:' + id, buf, { metadata: { type: req.headers.get('Content-Type') || 'image/webp' } });
@@ -230,7 +245,7 @@ export default {
       }
       if (!CONTENT[key]) return json({ error: 'unknown' }, 404);
       if (req.method === 'PUT') {
-        const s = session(req), may = key === 'clerk' ? isClerk(s, env) : isCommish(s, env); if (!may || !sameOrigin(req, u)) return json({ ok: false, error: key === 'clerk' ? 'Clerk only.' : 'Commissioner only.' }, 403);
+        const s = (await session(req, env)), may = key === 'clerk' ? isClerk(s, env) : isCommish(s, env); if (!may || !sameOrigin(req, u)) return json({ ok: false, error: key === 'clerk' ? 'Clerk only.' : 'Commissioner only.' }, 403);
         if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
         const t = await req.text(); try { JSON.parse(t); } catch (e) { return json({ ok: false, error: 'Bad data.' }, 400); }
         await env.DC.put('c:' + key, t);
@@ -247,7 +262,7 @@ export default {
     if (p === '/data/mfl') {
       const kind = u.searchParams.get('k'), id = (u.searchParams.get('P') || '').replace(/\D/g, '');
       if (!MFLP[kind] || !id) return new Response('', { status: 400 });
-      try { return new Response(await mflPage(env, ctx, session(req), kind, id), { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }); }
+      try { return new Response(await mflPage(env, ctx, (await session(req, env)), kind, id), { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }); }
       catch (e) { return new Response('', { status: 502 }); }
     }
     if (p === '/data/espn') {
@@ -350,25 +365,18 @@ export default {
     if (p === '/data/stats') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, ''), ids = (u.searchParams.get('P') || '').split(',').filter(x => /^\d+$/.test(x));
       if (!wk || !ids.length) return json({});
-      return json(await stats(env, ctx, wk, ids, u.searchParams.get('live') === '1', session(req)));
-    }
-    if (p === '/data/peek') {
-      const s = session(req), id = (u.searchParams.get('P') || '').replace(/\D/g, ''), wk = (u.searchParams.get('W') || '').replace(/\D/g, '');
-      const tok = (env.DC && await env.DC.get('svc')) || (s && s.t);
-      const r1 = await fetch(`${API}/${Y}/export?TYPE=nflSchedule&W=${wk}&JSON=1`, { headers: UA }).then(x => x.text()).catch(e => 'ERR ' + e);
-      const r2 = id ? await fetch(`${HOST}/${Y}/detailed?L=${L}&W=${wk}&P=${id}&YEAR=${Y}`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA }).then(async x => x.status + ' ' + (await x.text())).catch(e => 'ERR ' + e) : '';
-      return json({ signedIn: !!s, nflSchedule: r1.slice(0, 1500), detailed: r2 ? r2.slice(0, 200) + ' … ' + statLine(r2) : '' });
+      return json(await stats(env, ctx, wk, ids, u.searchParams.get('live') === '1', (await session(req, env))));
     }
     if (p === '/data/waivers') {
       const key = new Request(u.origin + '/data/waivers-v2?run=' + (u.searchParams.get('run') || ''));
       let res = await caches.default.match(key);
-      if (!res) { const d = await waivers(env, session(req), u.searchParams.get('run') || '', u.searchParams.get('fk') || ''); res = json(d, d.error ? 401 : 200, d.error ? {} : { 'Cache-Control': 'public, max-age=600' }); if (!d.error) ctx.waitUntil(caches.default.put(key, res.clone())); }
+      if (!res) { const d = await waivers(env, (await session(req, env)), u.searchParams.get('run') || '', u.searchParams.get('fk') || ''); res = json(d, d.error ? 401 : 200, d.error ? {} : { 'Cache-Control': 'public, max-age=600' }); if (!d.error) ctx.waitUntil(caches.default.put(key, res.clone())); }
       return res;
     }
 
     // ---- read league data ----
     if (p.startsWith('/api/')) {
-      const type = p.slice(5), s = session(req);
+      const type = p.slice(5), s = (await session(req, env));
       if (!PUB[type] && !PRIV[type]) return json({ error: 'unknown' }, 404);
       if (PRIV[type] && !s) return json({ error: 'sign in' }, 401);
       const q = new URLSearchParams(u.search);
@@ -398,7 +406,7 @@ export default {
 
     // ---- write actions: lineups, waivers, trades, etc. ----
     if (p.startsWith('/act/') && req.method === 'POST') {
-      const type = p.slice(5), s = session(req);
+      const type = p.slice(5), s = (await session(req, env));
       if (!ACT[type]) return json({ ok: false, error: 'unknown action' }, 404);
       if (!s) return json({ ok: false, error: 'Sign in first.' }, 401);
       if (!sameOrigin(req, u)) return json({ ok: false }, 403);
