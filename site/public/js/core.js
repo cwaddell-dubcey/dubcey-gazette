@@ -82,9 +82,10 @@
     return fetch('/content/' + key, { credentials:'same-origin' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
   };
   // next trade deadline: MFL's "No Trades" lock, or a Commish calendar entry titled Trade Deadline
+  D.TRADE_DEADLINE = Date.parse('2026-10-29T20:15:00-04:00'); // league trade deadline: Thu Oct 29, 8:15 p.m. ET
   D.tradeDeadline = function(){
     return Promise.all([D.api('calendar').catch(function(){ return null; }), D.content('calendar')]).then(function(r){
-      var ts = [], now = Date.now();
+      var ts = [D.TRADE_DEADLINE], now = Date.now();
       D.arr(r[0] && r[0].calendar && r[0].calendar.event).forEach(function(e){ if(/NO_TRADES/i.test(e.type) || /no trade|trade deadline/i.test(e.title)) ts.push(D.num(e.start_time) * 1000); });
       D.arr(r[1]).forEach(function(e){ if(e && e.date && /no trade|trade deadline/i.test(e.title)) ts.push(Date.parse(e.date + 'T' + (e.time || '12:00') + ':00')); });
       ts = ts.filter(function(t){ return t > now; }).sort(function(a, b){ return a - b; });

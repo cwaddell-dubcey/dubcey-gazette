@@ -12,7 +12,7 @@
   });
   function draw(){
     [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ dispatch:dispatch, teams:teams, calendar:calendar, bylaws:bylaws, lineups:lineups, popups:popups }[S.tab] || dispatch)();
+    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups }[S.tab] || dispatch)();
   }
 
   /* ---------- the Dispatch ---------- */
@@ -78,15 +78,6 @@
     });
   }
 
-  /* ---------- calendar ---------- */
-  function calendar(){
-    if(!S.cal){ D.content('calendar').then(function(c){ S.cal = arr(c); if(!S.cal.length) S.cal.push({ date:'', time:'', title:'Trade Deadline', kind:'TRADE' }); calendar(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
-    function row(e, i){ return '<div class="crow" data-i="' + i + '"><label class="mono">DATE<input type="date" name="date" value="' + esc(e.date) + '"></label><label class="mono">TIME<input type="time" name="time" value="' + esc(e.time || '') + '"></label><label class="mono">WHAT<input name="title" value="' + esc(e.title) + '"></label><label class="mono">TYPE<select name="kind">' + ['TRADE', 'WAIVERS', 'DRAFT', 'LEAGUE'].map(function(k){ return '<option' + (k === e.kind ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label><button type="button" class="x2" data-cdel="' + i + '" aria-label="Remove">\u00d7</button></div>'; }
-    $('cb').innerHTML = '<article class="card" style="max-width:900px;margin-bottom:44px"><div class="bar mono"><span>LEAGUE CALENDAR</span><span>WAIVER RUNS FROM MFL SHOW AUTOMATICALLY</span></div><div id="crows">' + S.cal.map(row).join('') + '</div>' +
-      '<div class="ef pad" style="display:flex;justify-content:space-between"><button class="btn ghost2" type="button" id="cadd">+ ADD DATE</button><button class="btn" type="button" id="csave">SAVE CALENDAR</button></div></article>';
-  }
-  function readCal(){ return [].map.call(document.querySelectorAll('#crows .crow'), function(el){ return { date:el.querySelector('[name=date]').value, time:el.querySelector('[name=time]').value, title:el.querySelector('[name=title]').value.trim(), kind:el.querySelector('[name=kind]').value }; }); }
-
   /* ---------- by-laws ---------- */
   function bylaws(){
     if(!S.law){ D.content('bylaws').then(function(b){ S.law = b || { text:'' }; bylaws(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
@@ -139,9 +130,6 @@
       D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ if(T[id].name) D.NAME[id] = T[id].name; if(T[id].short) D.SHORT[id] = T[id].short; }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
       return;
     }
-    if(t.id === 'cadd'){ S.cal = readCal().concat([{ date:'', time:'', title:'', kind:'LEAGUE' }]); calendar(); return; }
-    var cd = t.closest('[data-cdel]'); if(cd){ var L2 = readCal(); L2.splice(+cd.getAttribute('data-cdel'), 1); S.cal = L2; calendar(); return; }
-    if(t.id === 'csave'){ var L3 = readCal().filter(function(x){ return x.date && x.title; }); t.disabled = true; D.save('calendar', L3).then(function(r){ t.disabled = false; if(done(r, 'CALENDAR')) S.cal = L3.length ? L3 : null; }); return; }
     if(t.id === 'padd'){ S.pop = readPop().concat([{ id:'n' + Date.now().toString(36), kind:'note', title:'New message', on:true, sd:'Sun', st:'12:00', ed:'Sun', et:'13:00', kick:'', body:'' }]); popups(); return; }
     var pd = t.closest('[data-pdel]'); if(pd){ var L4 = readPop(); L4.splice(+pd.getAttribute('data-pdel'), 1); S.pop = L4; popups(); return; }
     if(t.id === 'psave'){ var L5 = readPop(); t.disabled = true; D.save('popups', L5).then(function(r){ t.disabled = false; if(done(r, 'POPUPS')){ S.pop = L5; popups(); } }); return; }

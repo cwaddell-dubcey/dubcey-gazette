@@ -395,8 +395,10 @@ export default {
       const cache = caches.default, key = new Request(target);
       let res = await cache.match(key);
       if (!res) {
-        const m = await fetch(target, { headers: UA });
-        const txt = await m.text(), bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt);
+        let m = await fetch(target, { headers: UA });
+        let txt = await m.text(), bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt);
+        // private-league exports (e.g. calendar) need a member login: retry with the commissioner's saved one
+        if (bad && !NFLWIDE[type]) { const svc = env.DC && await env.DC.get('svc'); if (svc) { m = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + svc } }); txt = await m.text(); bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt); } }
         res = new Response(txt, { status: m.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': bad ? 'no-store' : 'public, max-age=' + PUB[type] } });
         if (!bad) ctx.waitUntil(cache.put(key, res.clone()));
       }

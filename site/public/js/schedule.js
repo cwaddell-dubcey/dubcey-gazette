@@ -130,6 +130,8 @@
           var f = new Date(first); for(var i = 0; i < 4; i++){ var k2 = ymd(f.getTime() + i * 864e5); if(new Date(k2 + 'T12:00:00Z').getUTCDay() === 5){ (DAY[k2] = DAY[k2] || { ev:[] }).inj = 1; break; } }
         }
       });
+      if(D.TRADE_DEADLINE && !all0().some(function(e){ return e.lbl === 'TRADE DEADLINE'; })){ var td = D.TRADE_DEADLINE; add(ymd(td), { t:td, lbl:'TRADE DEADLINE', tm:tm(td), full:'Trade deadline at ' + hm(td), tone:'dl', raw:'trade deadline' }); }
+      function all0(){ var o = []; Object.keys(DAY).forEach(function(k){ DAY[k].ev.forEach(function(e){ o.push(e); }); }); return o; }
       // Dubcey weekly rhythm: waivers run Wed 8 p.m., free agency opens Thu 9 a.m. (the days before each NFL week's first game)
       function etTs(k, hh){ for(var o = 4; o <= 5; o++){ var t = Date.parse(k + 'T' + hh + ':00-0' + o + ':00'); if(+new Date(t).toLocaleString('en-US', { timeZone:TZ, hour:'numeric', hour12:false }) === +hh.split(':')[0]) return t; } return Date.parse(k + 'T' + hh + ':00-04:00'); }
       function dow(k){ return new Date(k + 'T12:00:00Z').getUTCDay(); }
