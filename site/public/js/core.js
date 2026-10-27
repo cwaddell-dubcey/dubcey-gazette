@@ -1,7 +1,21 @@
 /* dubcey.party shared core: team data, MFL data access, sign-in, header */
 (function(){
   var D = window.DC = {};
-  D.L = '18919'; D.Y = '2026';
+  /* ---------- the season, in one place: change these each year (the worker has its own year in src/worker.js) ---------- */
+  D.SEASON = {
+    year:2026,
+    week1:'2026-09-08',                         // Tuesday NFL Week 1 opens; weeks flip every Tuesday
+    regEnd:13, ffaWeek:14,                      // regular season ends after Week 13; Week 14 is the Free-For-All
+    playoffs:{ 15:'PLAYOFFS \u00b7 ROUND 1', 16:'SEMIFINALS', 17:'CHAMPIONSHIP' },
+    tradeDeadline:'2026-10-29T20:15:00-04:00',  // Thu Oct 29, 8:15 p.m. ET
+    waiverRun:['Wed', '20:00'], faOpen:['Thu', '9:00'],
+    lowFine:50,
+    events:[]                                   // one-off dates for the calendar: { date:'2027-08-21', time:'19:00', title:'2027 Auction' }
+  };
+  D.L = '18919'; D.Y = String(D.SEASON.year);
+  var W1 = D.SEASON.week1.split('-').map(Number);
+  // deploy version, stamped into every page by the worker (used for scripts loaded later)
+  D.V = ((document.querySelector('meta[name="dc-v"]') || {}).content) || '20261027a';
   D.RAW = 'https://raw.githubusercontent.com/cwaddell-dubcey/dubcey-gazette/main/assets/';
   D.LOCAL = !/dubcey\.party$|workers\.dev$/.test(location.hostname);
   D.IDS = ['0001','0002','0003','0004','0005','0006','0007','0008','0009','0010','0011','0012'];
@@ -14,7 +28,7 @@
   D.helmWeek = Math.floor((Date.now() - Date.UTC(2026, 0, 6, 9)) / 6048e5);
   D.helmPool = function(id){ return [D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp')].concat(D.ALT[id] || []); };
   // NFL week (flips Tuesday morning, same as the rotation) and commish-picked weeks per helmet: D.PIN[id][week] = index in the pool
-  D.nflWeek = Math.max(1, Math.floor((Date.now() - Date.UTC(2026, 8, 8, 9)) / 6048e5) + 1);
+  D.nflWeek = Math.max(1, Math.floor((Date.now() - Date.UTC(W1[0], W1[1] - 1, W1[2], 9)) / 6048e5) + 1);
   D.PIN = {};
   D.weeksOf = function(s){ var o = []; String(s || '').split(/[\s,]+/).forEach(function(p){ var m = /^(\d{1,2})(?:-(\d{1,2}))?$/.exec(p); if(!m) return; var a = +m[1], b = +(m[2] || m[1]); for(var w = Math.min(a, b); w <= Math.max(a, b) && w <= 22; w++) if(w > 0 && o.indexOf(w) < 0) o.push(w); }); return o.sort(function(a, b){ return a - b; }); };
   D.helmPick = function(id){ var p = D.PIN[id]; return p && p[D.nflWeek] != null && p[D.nflWeek] < D.helmPool(id).length ? p[D.nflWeek] : null; };
@@ -43,7 +57,7 @@
   D.weekMin = function(d, t){ var hm = String(t || '0:0').split(':'); return D.DAYS.indexOf(d) * 1440 + (+hm[0]) * 60 + (+hm[1] || 0); };
   D.inWindow = function(p, now){ var a = D.weekMin(p.sd, p.st), b = D.weekMin(p.ed, p.et); now = now == null ? D.etNow() : now; return a <= b ? now >= a && now < b : now >= a || now < b; };
   // Dubcey add rules: free agency opens Thu 9 a.m. ET; a player locks at his game's kickoff and stays on blind-bid waivers until the Wed 8 p.m. run
-  D.FA_OPEN = ['Thu', '9:00']; D.WAIVER_RUN = ['Wed', '20:00'];
+  D.FA_OPEN = D.SEASON.faOpen; D.WAIVER_RUN = D.SEASON.waiverRun;
   var NFLW = null;
   D.addWindow = function(team){
     NFLW = NFLW || D.api('nflSchedule').catch(function(){ return null; });
@@ -63,7 +77,11 @@
   };
   D.div = function(id){ for(var i = 0; i < D.DIVS.length; i++) if(D.DIVS[i].ids.indexOf(id) > -1) return D.DIVS[i]; return null; };
   // division header: crest + name (divisions with a crest), otherwise the old banner image
+  // the two division-banner typefaces load only on pages that draw a banner
+  var DVF = 0;
+  function divFonts(){ if(DVF++) return; var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Bungee+Inline&display=swap'; document.head.appendChild(l); }
   D.divBanner = function(d, extra){
+    if(d.crest) divFonts();
     if(!d.crest) return '<div class="divhd ' + d.k + '"><img src="img/div-' + d.k + '.webp" alt="' + D.esc(d.name) + ' Division"></div>';
     return '<div class="dvb ' + d.k + '"><img class="dvc" src="' + d.crest + '" alt=""><div class="dvt"><span class="dvn">' + D.esc(d.name) + '</span></div>' + (extra ? '<div class="dvx">' + extra + '</div>' : '') + '</div>';
   };
@@ -82,7 +100,7 @@
     return fetch('/content/' + key, { credentials:'same-origin' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
   };
   // next trade deadline: MFL's "No Trades" lock, or a Commish calendar entry titled Trade Deadline
-  D.TRADE_DEADLINE = Date.parse('2026-10-29T20:15:00-04:00'); // league trade deadline: Thu Oct 29, 8:15 p.m. ET
+  D.TRADE_DEADLINE = Date.parse(D.SEASON.tradeDeadline);
   D.tradeDeadline = function(){
     return Promise.all([D.api('calendar').catch(function(){ return null; }), D.content('calendar')]).then(function(r){
       var ts = [D.TRADE_DEADLINE], now = Date.now();
@@ -114,7 +132,9 @@
   D.injCode = function(s){ s = String(s || '').toLowerCase().trim(); if(!s) return ''; if(/^q/.test(s)) return 'Q'; if(/^doubt/.test(s)) return 'D'; if(/^out/.test(s)) return 'OUT'; if(/^(ir|injured)/.test(s)) return 'IR'; if(/^susp/.test(s)) return 'SUS'; if(/^pup/.test(s)) return 'PUP'; if(/^hold/.test(s)) return 'HO'; if(/^retir/.test(s)) return ''; if(/^prob/.test(s)) return 'P'; if(/^(nfi|non)/.test(s)) return 'NFI'; return s.toUpperCase().slice(0, 4); };
   D.injReady = api('injuries', 'r=2').then(function(j){ D.arr(j && j.injuries && j.injuries.injury).forEach(function(i){ var k = D.injCode(i.status); if(k) D.INJ[i.id] = { k:k, full:i.status || '', det:[i.details, i.exp_return ? 'est. return ' + i.exp_return : ''].filter(Boolean).join(', ') }; }); }).catch(function(){});
   D.ij = function(id){ var x = D.INJ[id]; return x ? '<span class="ij mono" title="' + D.esc(x.full + (x.det ? ' \u2014 ' + x.det : '')) + '">' + x.k + '</span>' : ''; };
-  D.api = function(t, q){ return Promise.all([D.teamsReady, D.injReady]).then(function(){ return api(t, q); }); };
+  // data calls wait for team names, but only up to 0.6 s for the injury list (badges fill in when it lands)
+  var INJW = Promise.race([D.injReady, new Promise(function(r){ setTimeout(r, 600); })]);
+  D.api = function(t, q){ return Promise.all([D.teamsReady, INJW]).then(function(){ return api(t, q); }); };
   function api(t, q){
     if(D.LOCAL) return fetch('demo/' + t + '.json').then(function(r){ if(!r.ok) throw 0; return r.json(); });
     return fetch('/api/' + t + (q ? '?' + q : ''), { credentials:'same-origin', cache:'no-cache' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); });
@@ -135,7 +155,7 @@
     Object.keys(k).forEach(function(x){ if(!(x in o)) o[x] = k[x]; }); return o; }); };
   D.award = function(v){ return typeof v === 'string' ? { text:v, id:'' } : (v || { text:'', id:'' }); };
   // $50 weekly low scorer: commish's pick in Finances wins; otherwise the lowest MFL score that week
-  D.LOW_FINE = 50;
+  D.LOW_FINE = D.SEASON.lowFine;
   // next year's auction: $200 each, trades move dollars (budget must land $170–$230) and rookie picks
   D.NEXT = { year:2027, base:200, min:170, max:230 };
   D.FUTURE_SEED = [
@@ -205,9 +225,9 @@
     }).catch(function(){ return []; });
     return WKR[w];
   };
-  // the week fans should see by default: last week until Tuesday 8 p.m. ET, then the coming week (Week 1 opens Tue Sep 8, 2026)
+  // the week fans should see by default: last week until Tuesday 8 p.m. ET, then the coming week
   D.ffWeek = function(){
-    var et = new Date(new Date().toLocaleString('en-US', { timeZone:'America/New_York' })), start = new Date(2026, 8, 8, 20, 0);
+    var et = new Date(new Date().toLocaleString('en-US', { timeZone:'America/New_York' })), start = new Date(W1[0], W1[1] - 1, W1[2], 20, 0);
     return Math.max(1, Math.min(18, Math.floor((et - start) / 604800000) + 1));
   };
   // latest finished week: the live week once its last game is over (kickoff + 4h), otherwise the week before
@@ -284,6 +304,109 @@
       });
     });
   };
+
+  /* ---------- playoff odds (Standings page + trade check): Monte Carlo of Weeks (done+1)..13 under Dubcey rules ----------
+     seeds 1-3 = division winners (record, then total points); 4-6 = next three best records; ranks 7-10 play the
+     Week 14 Free-For-All with +100 / +50 / 0 / 0 head starts, top two scores get in. */
+  var REG_END = D.SEASON.regEnd, FFA_BONUS = [100, 50, 0, 0];
+  function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var ODL = null;
+  D.oddsLoad = function(){
+    return ODL = ODL || Promise.all([D.api('leagueStandings'), D.api('schedule')]).then(function(r){
+      var F = D.arr(r[0] && r[0].leagueStandings && r[0].leagueStandings.franchise).filter(function(f){ return D.NAME[f.id]; });
+      var played = Math.max.apply(null, F.map(function(f){ return D.num(f.h2hw) + D.num(f.h2hl) + D.num(f.h2ht); }).concat(0));
+      var W = D.arr(r[1] && r[1].schedule && r[1].schedule.weeklySchedule);
+      return Promise.all([D.weeks(played), played < REG_END ? D.previews(played + 1).catch(function(){ return []; }) : []]).then(function(x){ return { F:F, played:played, W:W, hist:x[0], pv:x[1] }; });
+    });
+  };
+  D.oddsRun = function(d, delta, sims, seed){
+    var SIMS = sims || 10000, rnd = seed ? rng(seed) : Math.random, gauss = function(){ var u = 0, v = 0; while(!u) u = rnd(); while(!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    var T = {}, ids = d.F.map(function(f){ return f.id; });
+    d.F.forEach(function(f){ T[f.id] = { id:f.id, w:D.num(f.h2hw) + D.num(f.h2ht) / 2, l:D.num(f.h2hl), pf:D.num(f.pf), sc:[] }; });
+    d.hist.forEach(function(wk){ wk.forEach(function(x){ if(T[x.id] && x.s > 0) T[x.id].sc.push(x.s); }); });
+    var PJ = {}; D.arr(d.pv).forEach(function(p){ if(p.pa > 0) PJ[p.a] = p.pa; if(p.ph > 0) PJ[p.h] = p.ph; });
+    var all = [], lgAvg; ids.forEach(function(id){ all = all.concat(T[id].sc); }); lgAvg = all.length ? all.reduce(function(a, b){ return a + b; }, 0) / all.length : 600;
+    // strength = half season average (regressed a little toward the league), half this week's best projected lineup
+    ids.forEach(function(id){
+      var t = T[id], n = t.sc.length, avg = n ? t.sc.reduce(function(a, b){ return a + b; }, 0) / n : lgAvg;
+      var reg = (avg * n + lgAvg * 2) / (n + 2), sd = n > 1 ? Math.sqrt(t.sc.reduce(function(a, b){ return a + (b - avg) * (b - avg); }, 0) / (n - 1)) : 90;
+      t.avg = avg; t.mu = (PJ[id] ? .5 * reg + .5 * PJ[id] : reg) + ((delta && delta[id]) || 0); t.sd = Math.max(70, Math.min(140, sd)); t.proj = PJ[id] || 0;
+    });
+    var G = []; d.W.forEach(function(wk){ var n = D.num(wk.week); if(n <= d.played || n > REG_END) return; D.arr(wk.matchup).forEach(function(m){ var f = D.arr(m.franchise); if(f.length === 2 && T[f[0].id] && T[f[1].id]) G.push([f[0].id, f[1].id]); }); });
+    var C = {}; ids.forEach(function(id){ C[id] = { po:0, div:0, top:0, ffa:0, ffaIn:0, bye:0, seed:[0,0,0,0,0,0,0,0,0,0,0,0] }; });
+    var better = function(S){ return function(a, b){ return S[b].w - S[a].w || S[b].pf - S[a].pf; }; };
+    for(var k = 0; k < SIMS; k++){
+      var S = {}, form = {};
+      ids.forEach(function(id){ var t = T[id]; S[id] = { w:t.w, pf:t.pf }; form[id] = t.mu + gauss() * 30; }); // season-long form: some teams are just better or worse than they've looked
+      for(var g = 0; g < G.length; g++){
+        var a = G[g][0], b = G[g][1], sa = form[a] + gauss() * T[a].sd, sb = form[b] + gauss() * T[b].sd;
+        S[a].pf += sa; S[b].pf += sb; if(sa >= sb) S[a].w++; else S[b].w++;
+      }
+      var cmp = better(S), dw = D.DIVS.map(function(dv){ return dv.ids.filter(function(id){ return S[id]; }).sort(cmp)[0]; }).filter(Boolean).sort(cmp);
+      var rest = ids.filter(function(id){ return dw.indexOf(id) < 0; }).sort(cmp), order = dw.concat(rest);
+      order.forEach(function(id, i){ C[id].seed[i]++; if(i < 6) C[id].po++; });
+      dw.forEach(function(id){ C[id].div++; C[id].top++; });
+      var ffa = order.slice(6, 10).map(function(id, i){ C[id].ffa++; return { id:id, s:form[id] + gauss() * T[id].sd + FFA_BONUS[i], i:i }; }).sort(function(x, y){ return y.s - x.s || x.i - y.i; });
+      ffa.slice(0, 2).forEach(function(x){ C[x.id].po++; C[x.id].ffaIn++; });
+    }
+    var L = ids.map(function(id){ var c = C[id], t = T[id]; return { id:id, w:t.w, l:t.l, pf:t.pf, mu:t.mu, proj:t.proj, avg:t.avg, po:c.po / SIMS, div:c.div / SIMS, top:c.top / SIMS, ffa:c.ffa / SIMS, ffaIn:c.ffa ? c.ffaIn / c.ffa : 0, seed:c.seed.map(function(n){ return n / SIMS; }) }; });
+    L.sort(function(a, b){ return b.po - a.po || b.top - a.top || b.w - a.w || b.pf - a.pf; });
+    return { played:d.played, left:REG_END - d.played, list:L, games:G.length };
+  };
+
+  /* ---------- By the Numbers + Records Watch: auto-written from finished weeks, standings and the record book ----------
+     fills any element with id="nums" (home and Dispatch rails) */
+  D.numbers = function(){
+    return Promise.all([D.doneWeek(), fetch('data/history.json').then(function(r){ return r.json(); }).catch(function(){ return null; }), D.api('leagueStandings').catch(function(){ return null; })]).then(function(r){
+      var w = Math.min(r[0].w, D.SEASON.regEnd), H = r[1], ST = D.arr(r[2] && r[2].leagueStandings && r[2].leagueStandings.franchise).filter(function(f){ return D.NAME[f.id]; });
+      if(!w) return null;
+      return D.weeks(w).then(function(W){
+        var wk = W[w - 1] || [], N = [], RW = [], nf = function(v){ return D.pts(Math.round(v * 100) / 100); }, sn = function(id){ return D.SHORT[id] || id; };
+        var byId = {}; wk.forEach(function(x){ byId[x.id] = x; });
+        if(wk.length){
+          var hi = wk.slice().sort(function(a, b){ return b.s - a.s; })[0], lo = wk.slice().sort(function(a, b){ return a.s - b.s; })[0], bn = wk.slice().sort(function(a, b){ return b.bench - a.bench; })[0];
+          var games = wk.filter(function(x){ return x.opp && x.id < x.opp && byId[x.opp]; }).map(function(x){ var o = byId[x.opp]; return { a:x, b:o, m:Math.abs(x.s - o.s), win:x.s >= o.s ? x : o, lose:x.s >= o.s ? o : x }; });
+          var cl = games.slice().sort(function(a, b){ return a.m - b.m; })[0], bl = games.slice().sort(function(a, b){ return b.m - a.m; })[0];
+          N.push({ id:hi.id, k:'HIGH SCORE', t:sn(hi.id) + ' put up ' + nf(hi.s) + '.' });
+          N.push({ id:lo.id, k:'LOW SCORE', t:sn(lo.id) + ' scored ' + nf(lo.s) + ' and owes the pool $' + D.LOW_FINE + '.' });
+          if(bn.bench > 0) N.push({ id:bn.id, k:'POINTS ON THE BENCH', t:sn(bn.id) + ' left ' + nf(bn.bench) + ' sitting.' });
+          if(cl) N.push({ id:cl.win.id, k:'CLOSEST GAME', t:sn(cl.win.id) + ' over ' + sn(cl.lose.id) + ' by ' + nf(cl.m) + '.' });
+          if(bl && bl !== cl) N.push({ id:bl.win.id, k:'BIGGEST BLOWOUT', t:sn(bl.win.id) + ' beat ' + sn(bl.lose.id) + ' by ' + nf(bl.m) + '.' });
+          var sb = {}; W.forEach(function(L){ L.forEach(function(x){ sb[x.id] = (sb[x.id] || 0) + x.bench; }); });
+          var sbt = Object.keys(sb).sort(function(a, b){ return sb[b] - sb[a]; })[0]; if(sbt) N.push({ id:sbt, k:'SEASON BENCH LEADER', t:sn(sbt) + ' has benched ' + Math.round(sb[sbt]).toLocaleString('en-US') + ' points this year.' });
+        }
+        if(H && H.records){
+          var tbl = function(cat, title){ return (H.records[cat] || []).filter(function(t){ return t.t === title; })[0]; }, val = function(row, i){ return parseFloat(String(row[i]).replace(/,/g, '')) || 0; };
+          var ord = function(n){ var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+          var cnt = function(n){ return n === 1 ? 'one' : n === 2 ? 'two' : n === 3 ? 'three' : String(n); };
+          // single-game top 10
+          var tg = tbl('game', 'Most Points Scored \u2014 Single Game'), best = null;
+          W.forEach(function(L, i){ L.forEach(function(x){ if(!best || x.s > best.s) best = { id:x.id, s:x.s, w:i + 1 }; }); });
+          if(tg && best){ var rk = tg.r.filter(function(r){ return val(r, 1) > best.s; }).length + 1; if(rk <= tg.r.length) RW.push({ id:best.id, k:'SINGLE GAME', t:sn(best.id) + '\u2019s ' + nf(best.s) + ' in Week ' + best.w + ' ranks ' + ord(rk) + ' all-time. The record is ' + tg.r[0][1] + ' (' + tg.r[0][2] + ', ' + tg.r[0][3] + ').' }); }
+          ST.forEach(function(f){
+            var g = D.num(f.h2hw) + D.num(f.h2hl) + D.num(f.h2ht), m = /^([WL])(\d+)/.exec(f.strk || ''), n = m ? +m[2] : 0, RE = D.SEASON.regEnd;
+            if(m && m[1] === 'L' && D.num(f.h2hw) === 0 && n >= 5){ var ls = tbl('season', 'Loss Streak to Start Season'); if(ls){ var rec = val(ls.r[0], 1), gap = rec - n; RW.push({ id:f.id, k:'WORST START EVER', t:sn(f.id) + ' is 0-' + n + '. ' + (gap > 0 ? cnt(gap).replace(/^./, function(c){ return c.toUpperCase(); }) + ' more loss' + (gap > 1 ? 'es' : '') + ' ties the worst start in league history (0-' + rec + ', ' + ls.r[0][2] + ' ' + ls.r[0][3] + ').' : gap === 0 ? 'That ties the worst start in league history.' : 'That\u2019s the worst start in league history.') }); } }
+            else if(m && m[1] === 'W' && n >= 5){ var ws = tbl('season', 'Regular Season Win Streak (One Season)'); if(ws){ var r2 = ws.r.filter(function(r){ return val(r, 1) > n; }).length + 1; RW.push({ id:f.id, k:'WIN STREAK', t:sn(f.id) + ' has won ' + n + ' straight' + (r2 <= ws.r.length ? ', tied for ' + ord(r2) + ' on the single-season list' : '') + '. The record is ' + ws.r[0][1] + ' (' + ws.r[0][2] + ', ' + ws.r[0][3] + ').' }); } }
+            else if(m && m[1] === 'L' && n >= 6){ var lx = tbl('season', 'Regular Season Loss Streak (One Season)'); if(lx){ var g2 = val(lx.r[0], 1) - n; RW.push({ id:f.id, k:'LOSING STREAK', t:sn(f.id) + ' has lost ' + n + ' straight. ' + (g2 > 0 ? g2 + ' more and it ties the record (' + lx.r[0][1] + ', ' + lx.r[0][2] + ' ' + lx.r[0][3] + ').' : 'That\u2019s the record.') }); } }
+            if(g >= 4){ var pace = D.num(f.pf) / g * RE, mp = tbl('season', 'Most Points \u2014 Single Season'), fp = tbl('season', 'Fewest Points \u2014 Single (Complete) Season');
+              if(mp){ var r3 = mp.r.filter(function(r){ return val(r, 1) > pace; }).length + 1; if(r3 <= Math.min(5, mp.r.length)) RW.push({ id:f.id, k:'POINTS PACE', t:sn(f.id) + ' is on pace for ' + Math.round(pace).toLocaleString('en-US') + ' points, which would rank ' + ord(r3) + ' all-time.' }); }
+              if(fp){ var r4 = fp.r.filter(function(r){ return val(r, 1) < pace; }).length + 1; if(r4 <= Math.min(5, fp.r.length)) RW.push({ id:f.id, k:'FEWEST POINTS PACE', t:sn(f.id) + ' is on pace for ' + Math.round(pace).toLocaleString('en-US') + ' points, ' + ord(r4) + '-fewest ever.' }); } }
+          });
+        }
+        return { w:w, nums:N, watch:RW };
+      });
+    });
+  };
+  D.numbersBox = function(el){
+    D.numbers().then(function(o){
+      if(!o || (!o.nums.length && !o.watch.length)) return;
+      var row = function(x){ return '<div class="nb"><img src="' + D.helm(x.id) + '" alt=""><div><b class="mono">' + D.esc(x.k) + '</b><span>' + D.esc(x.t) + '</span></div></div>'; };
+      el.innerHTML = (o.nums.length ? '<div class="bar mono"><span>BY THE NUMBERS</span><span>WEEK ' + o.w + '</span></div>' + o.nums.map(row).join('') : '') +
+        (o.watch.length ? '<div class="bar mono"><span>RECORDS WATCH</span><span>VS THE RECORD BOOK</span></div>' + o.watch.map(row).join('') : '');
+      el.hidden = false;
+    }).catch(function(){});
+  };
+  setTimeout(function(){ var el = D.$('nums'); if(el) D.numbersBox(el); }, 0);
 
   // auto-written Dispatch pieces: preview cards and the power rankings story
   D.previewCard = function(p){
@@ -453,7 +576,7 @@
     e.preventDefault(); e.stopPropagation();
     var id = c.getAttribute('data-card');
     if(D.openCard) return D.openCard(id);
-    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=20261015b'; s.onload = res; document.head.appendChild(s); }); }
+    if(!PC){ PC = new Promise(function(res){ var s = document.createElement('script'); s.src = 'js/pcard.js?v=' + D.V; s.onload = res; document.head.appendChild(s); }); }
     PC.then(function(){ D.openCard(id); });
   }, true);
 })();

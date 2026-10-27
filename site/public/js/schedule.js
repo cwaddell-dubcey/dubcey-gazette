@@ -131,6 +131,10 @@
         }
       });
       if(D.TRADE_DEADLINE && !all0().some(function(e){ return e.lbl === 'TRADE DEADLINE'; })){ var td = D.TRADE_DEADLINE; add(ymd(td), { t:td, lbl:'TRADE DEADLINE', tm:tm(td), full:'Trade deadline at ' + hm(td), tone:'dl', raw:'trade deadline' }); }
+      // season milestones from D.SEASON, pinned to the first kickoff of their week, plus any one-off dates
+      var MS = {}; MS[D.SEASON.regEnd] = 'REGULAR SEASON FINALE'; MS[D.SEASON.ffaWeek] = 'FREE-FOR-ALL'; Object.keys(D.SEASON.playoffs || {}).forEach(function(k){ MS[k] = D.SEASON.playoffs[k]; });
+      arr(N).forEach(function(w){ var lb = MS[num(w.week)]; if(!lb) return; var first = Infinity; arr(w.matchup).forEach(function(m){ var t = num(m.kickoff) * 1000; if(t && t < first) first = t; }); if(first < Infinity) add(ymd(first), { t:first - 1, lbl:lb, tm:'WK ' + w.week, full:'Week ' + w.week + ': ' + lb.toLowerCase().replace(/\b\w/g, function(x){ return x.toUpperCase(); }), tone:'b', raw:lb }); });
+      arr(D.SEASON.events).forEach(function(e){ var t = Date.parse(e.date + 'T' + (e.time || '12:00') + ':00'); if(t) add(e.date, { t:t, lbl:short(e.title), tm:e.time ? tm(t) : '', full:e.title, tone:tone(e.title), raw:e.title }); });
       function all0(){ var o = []; Object.keys(DAY).forEach(function(k){ DAY[k].ev.forEach(function(e){ o.push(e); }); }); return o; }
       // Dubcey weekly rhythm: waivers run Wed 8 p.m., free agency opens Thu 9 a.m. (the days before each NFL week's first game)
       function etTs(k, hh){ for(var o = 4; o <= 5; o++){ var t = Date.parse(k + 'T' + hh + ':00-0' + o + ':00'); if(+new Date(t).toLocaleString('en-US', { timeZone:TZ, hour:'numeric', hour12:false }) === +hh.split(':')[0]) return t; } return Date.parse(k + 'T' + hh + ':00-04:00'); }

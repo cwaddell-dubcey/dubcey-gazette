@@ -134,7 +134,7 @@
 
     $('ftabs').innerHTML = '<a href="#season" class="' + (S.tab === 'season' ? 'on' : '') + '">' + D.Y + ' SEASON</a><a href="#auction" class="' + (S.tab === 'auction' ? 'on' : '') + '">' + NX.year + ' AUCTION</a>';
     $('fin').innerHTML = S.tab === 'auction' ? auc : h;
-    $('ffoot').innerHTML = S.edit ? 'COMMISH MODE \u2014 CHANGES SAVE AS YOU GO' + (S.from === 'legacy' ? ' \u00b7 LOADED FROM THE OLD AUCTION TRACKER, NOT SAVED HERE YET' : '') + ' \u00b7 <button type="button" class="out mono" data-imp>RE-IMPORT FROM OLD TRACKER</button>' : '';
+    $('ffoot').innerHTML = S.edit ? 'COMMISH MODE \u2014 CHANGES SAVE AS YOU GO' : '';
   }
 
   // ---------- saving ----------
@@ -168,7 +168,6 @@
     if(e.target.closest('[data-fadd]')){ S.F.future.push({ date:new Date().toISOString().slice(0, 10), from:'', to:'', amt:0, pick:'', note:'' }); draw(); save(); return; }
     var fd = e.target.closest('[data-fdel]'); if(fd){ if(!confirm('Remove this trade?')) return; S.F.future.splice(+fd.getAttribute('data-fdel'), 1); draw(); save(); return; }
     var r = e.target.closest('[data-rmx]'); if(r){ S.F.expenses.splice(+r.getAttribute('data-rmx'), 1); draw(); save(); return; }
-    if(e.target.closest('[data-imp]')){ if(!confirm('Replace everything here with the numbers from the old Netlify auction tracker?')) return; legacy().then(function(f){ if(!f){ toast('OLD TRACKER DIDN\u2019T ANSWER'); return; } S.F = convert(f); draw(); save(); }); }
   });
   function toast(m){ var t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function(){ t.hidden = true; }, 2600); }
 
@@ -188,7 +187,7 @@
   var DEMO = { dues:{ 'Entertainment 720':1, 'Bloodfeast Islandmen':1, 'Breaking My Back':1, 'Diamond Dogs':1, 'Windy City Wet Bandits':1, 'Full Blown Trash':1, 'The Ligers':1, 'Prestige Worldwide':1, 'Viva La Resistance':1, 'Wad of Hell':1 }, luxTax:{ 'Bloodfeast Islandmen':50, 'Full Blown Trash':30, 'Prestige Worldwide':20 },
     btcQty:'0.029215448496', btcCost:'2260', zecQty:'0.25193138', zecCost:'282.50', zcatQty:'3211', zcatCost:'282.50', expenses:[{ label:'League trophy engraving', amount:65 }, { label:'Draft night food & venue', amount:180 }],
     penalties:Array.from({ length:13 }, function(_, i){ return { week:i + 1, name:i === 0 ? 'Wad of Hell' : i === 1 ? 'The Scallywags' : '', btc:i === 0 ? '0.00052' : i === 1 ? '0.00048' : '' }; }) };
-  function legacy(){ return D.LOCAL ? Promise.resolve(DEMO) : fetch('/data/legacy-fin').then(function(r){ return r.json(); }).then(function(d){ return d && d.finance; }).catch(function(){ return null; }); }
+  function legacy(){ return Promise.resolve(D.LOCAL ? DEMO : null); }
 
   Promise.all([D.shell('finances'), D.content('finance')]).then(function(r){
     S.edit = !!(r[0] && r[0].commish);

@@ -166,7 +166,7 @@ async function waivers(env, s, run, fk) {
 
 export default {
   async fetch(req, env, ctx) {
-    const u = new URL(req.url), p = u.pathname;
+    const u = new URL(req.url), p = u.pathname, VER = String((env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id) || '').slice(0, 8);
 
     // ---- sign in with MFL credentials (password is sent to MFL once and never stored) ----
     if (p === '/auth/login' && req.method === 'POST') {
@@ -195,7 +195,7 @@ export default {
         const lg = arr(ml.leagues && ml.leagues.league).find(x => String(x.league_id) === L);
         fid = (lg && lg.franchise_id) || '';
       } catch (e) {}
-      if (env.DC && String(env.COMMISH || '').split(',').includes(fid)) ctx.waitUntil(env.DC.put('svc', tok));
+      if (env.DC && String(env.COMMISH || '').split(',').includes(fid)) ctx.waitUntil(Promise.all([env.DC.put('svc', tok), env.DC.put('svcAt', String(Date.now()))]));
       const v = encodeURIComponent(await signV(env, btoa(JSON.stringify({ t: tok, f: fid, u: String(b.username).slice(0, 60) }))));
       return json({ ok: true, franchise: fid }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
     }
@@ -254,10 +254,27 @@ export default {
       const v = env.DC && await env.DC.get('c:' + key);
       return new Response(v || 'null', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
-    // one-time import of the old Netlify auction tracker's league financials
-    if (p === '/data/legacy-fin') {
-      try { const r = await fetch('https://dubcey2026.netlify.app/api/league', { headers: UA }); const d = await r.json(); return json({ finance: (d && d.finance) || null }); }
-      catch (e) { return json({ finance: null }); }
+    // ---- Commish health check: is every feed answering, and is the saved MFL login still good? ----
+    if (p === '/data/health') {
+      const s = await session(req, env); if (!isCommish(s, env)) return json({ error: 'Commissioner only.' }, 403);
+      const svc = env.DC && await env.DC.get('svc'), svcAt = env.DC && await env.DC.get('svcAt'), H = svc ? { ...UA, Cookie: 'MFL_USER_ID=' + svc } : UA;
+      const get = async (url, h = UA) => { const r = await fetch(url, { headers: h, signal: AbortSignal.timeout(8000) }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); };
+      const ex = async (type, extra = '', host = HOST, lg = true, h = UA) => { const t = await get(`${host}/${Y}/export?TYPE=${type}${lg ? '&L=' + L : ''}&JSON=1${extra}`, h); if (/^\s*\{[^{]*"error"/.test(t)) throw new Error((/"\$t"\s*:\s*"([^"]+)"/.exec(t) || [])[1] || 'MFL returned an error'); return JSON.parse(t); };
+      const chk = async (name, fn) => { const a = Date.now(); try { return { name, ok: true, ms: Date.now() - a, note: String(await fn() || '') }; } catch (e) { return { name, ok: false, ms: Date.now() - a, note: String(e && e.message || e).slice(0, 180) }; } };
+      const items = await Promise.all([
+        chk('Saved MFL login', async () => { if (!svc) throw new Error('None saved. Sign in on the site as commissioner.'); const j = await ex('myleagues', '&YEAR=' + Y, API, false, H); const lg = arr(j.leagues && j.leagues.league).find(x => String(x.league_id) === L); if (!lg) throw new Error('Expired. Sign out and back in on the site.'); return 'Good. Franchise ' + lg.franchise_id; }),
+        chk('League settings', async () => { const lg = (await ex('league')).league || {}; return arr(lg.franchises && lg.franchises.franchise).length + ' teams'; }),
+        chk('Live scoring', async () => 'Week ' + (((await ex('liveScoring')).liveScoring || {}).week || '?')),
+        chk('Standings', async () => arr(((await ex('leagueStandings')).leagueStandings || {}).franchise).length + ' teams'),
+        chk('Transactions', async () => arr(((await ex('transactions')).transactions || {}).transaction).length + ' moves'),
+        chk('Injuries', async () => arr(((await ex('injuries', '', API, false)).injuries || {}).injury).length + ' players listed'),
+        chk('NFL schedule', async () => arr(((await ex('nflSchedule', '', API, false)).nflSchedule || {}).matchup).length + ' games this week'),
+        chk('ESPN box scores', async () => { const j = JSON.parse(await get(`${ESPN}/scoreboard?dates=${Y}&seasontype=2`)); return (j.events || []).length + ' games, week ' + ((j.week || {}).number || '?'); }),
+        chk('Player news (uses saved login)', async () => { const h = await get(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, H); const n = (h.match(/[?&;]P=\d+/g) || []).length; if (!n) throw new Error('No stories found. The login may have expired or MFL changed the page.'); return n + ' player links'; }),
+        chk('Processed waivers (uses saved login)', async () => { const d = await waivers(env, null, '', ''); if (d.error) throw new Error(d.error); if (!d.runs.length && !d.rows.length) throw new Error('No waiver runs on the page. The login may have expired.'); return d.rows.length + ' claims, ' + d.runs.length + ' runs'; }),
+        chk('Site storage', async () => { if (!env.DC) throw new Error('Storage not connected.'); return (await env.DC.list({ limit: 200 })).keys.length + ' saved items'; })
+      ]);
+      return json({ at: Date.now(), svcAt: svcAt ? +svcAt : 0, ver: VER, items });
     }
     if (p === '/data/mfl') {
       const kind = u.searchParams.get('k'), id = (u.searchParams.get('P') || '').replace(/\D/g, '');
@@ -423,6 +440,15 @@ export default {
       return json({ ok, error: ok ? '' : (err || t.replace(/<[^>]+>/g, ' ').trim().slice(0, 200) || 'MFL rejected the request.') }, ok ? 200 : 400);
     }
 
-    return env.ASSETS.fetch(req);
+    // ---- static pages: stamp the deploy version on scripts and styles so browsers pick up every change ----
+    const res = await env.ASSETS.fetch(req);
+    if (!VER) return res;
+    if ((res.headers.get('Content-Type') || '').includes('text/html')) {
+      const ver = { element(e) { const a = e.tagName === 'link' ? 'href' : 'src', v = e.getAttribute(a) || ''; if (/^\/?(js|css)\/[^?]+\.(js|css)(\?|$)/.test(v)) e.setAttribute(a, v.split('?')[0] + '?v=' + VER); } };
+      return new HTMLRewriter().on('script[src]', ver).on('link[rel="stylesheet"]', ver)
+        .on('head', { element(e) { e.append('<meta name="dc-v" content="' + VER + '">', { html: true }); } }).transform(res);
+    }
+    if (/\.(js|css)$/.test(p) && u.searchParams.get('v') === VER && res.ok) { const r2 = new Response(res.body, res); r2.headers.set('Cache-Control', 'public, max-age=31536000, immutable'); return r2; }
+    return res;
   }
 };

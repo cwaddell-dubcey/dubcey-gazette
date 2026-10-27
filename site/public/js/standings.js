@@ -3,13 +3,41 @@
   var ME = '';
   D.shell('standings').then(function(me){ ME = me.franchise || ''; [].forEach.call(document.querySelectorAll('[data-id="' + ME + '"]'), function(el){ el.classList.add('me'); }); });
 
-  var SV = location.hash === '#power' ? 'power' : 'table', PR = null;
+  function hv(){ return location.hash === '#power' ? 'power' : location.hash === '#odds' ? 'odds' : 'table'; }
+  var SV = hv(), PR = null, OD = null;
   function sv(){
     [].forEach.call(document.querySelectorAll('#stabs [data-v]'), function(a){ a.classList.toggle('on', a.getAttribute('data-v') === SV); });
-    $('vtab').hidden = SV !== 'table'; $('vpow').hidden = SV !== 'power';
+    $('vtab').hidden = SV !== 'table'; $('vpow').hidden = SV !== 'power'; $('vodds').hidden = SV !== 'odds';
     if(SV === 'power') power();
+    if(SV === 'odds') odds();
   }
-  window.addEventListener('hashchange', function(){ SV = location.hash === '#power' ? 'power' : 'table'; sv(); });
+  window.addEventListener('hashchange', function(){ SV = hv(); sv(); });
+
+  var SIMS = 10000;
+  function odds(){
+    if(OD){ drawOdds(); return; }
+    D.oddsLoad().then(function(d){ OD = D.oddsRun(d, null, SIMS); drawOdds(); })
+      .catch(function(){ $('vodds').innerHTML = '<div class="card"><div class="ld mono">PLAYOFF ODDS AREN\u2019T AVAILABLE RIGHT NOW.</div></div>'; });
+  }
+  function pc(p){ if(p >= .9995) return '100%'; if(p <= 0) return '\u2013'; if(p > .99) return '>99%'; if(p < .01) return '<1%'; return Math.round(p * 100) + '%'; }
+  function heat(p){ return p <= 0 ? '' : ' style="background:rgba(16,37,66,' + (.06 + p * .82).toFixed(2) + ');color:' + (p > .45 ? '#F7EFDB' : '#102542') + '"'; }
+  function drawOdds(){
+    var O = OD, L = O.list;
+    if(!O.left){ $('vodds').innerHTML = '<div class="card"><div class="ld mono">THE REGULAR SEASON IS OVER. SEE SCHEDULE \u2192 PLAYOFF PICTURE.</div></div>'; return; }
+    var bub = L.filter(function(t){ return t.po > .2 && t.po < .8; }).sort(function(a, b){ return Math.abs(a.po - .5) - Math.abs(b.po - .5); })[0];
+    var lock = L[0], dv = D.DIVS.map(function(d){ var m = L.filter(function(t){ return d.ids.indexOf(t.id) > -1; }).sort(function(a, b){ return b.div - a.div; }); return { d:d, t:m[0], two:m[1] }; });
+    $('vodds').innerHTML = '<div class="pwh">' +
+      '<div class="pwc top"><span class="mono">MOST LIKELY 1 SEED</span><img src="' + helm(L.slice().sort(function(a, b){ return b.seed[0] - a.seed[0]; })[0].id) + '" alt=""><b>' + esc(D.NAME[L.slice().sort(function(a, b){ return b.seed[0] - a.seed[0]; })[0].id]) + '</b><i class="mono">' + pc(L.slice().sort(function(a, b){ return b.seed[0] - a.seed[0]; })[0].seed[0]) + ' TO FINISH NO. 1 \u00b7 ' + O.left + ' WEEK' + (O.left > 1 ? 'S' : '') + ' LEFT</i></div>' +
+      (bub ? '<div class="pwc"><span class="mono">ON THE BUBBLE</span><img src="' + helm(bub.id) + '" alt=""><b>' + esc(D.SHORT[bub.id]) + '</b><i class="mono">' + pc(bub.po) + ' TO GET IN</i></div>' : '') +
+      '<div class="pwc"><span class="mono">DIVISION RACES</span>' + dv.map(function(x){ return '<i class="mono odv"><img src="' + helm(x.t.id) + '" alt="">' + esc(x.d.name).toUpperCase() + ': ' + esc(D.SHORT[x.t.id]).toUpperCase() + ' ' + pc(x.t.div) + '</i>'; }).join('') + '</div>' +
+      '</div><article class="card pwt"><div class="bar mono"><span>PLAYOFF ODDS \u00b7 AFTER WEEK ' + O.played + '</span><span>' + SIMS.toLocaleString('en-US') + ' SIMULATED SEASONS</span></div>' +
+      '<div class="odr hd mono"><span></span><span>TEAM</span><span>RECORD</span><span class="px">PROJ/WK</span><span>MAKE PLAYOFFS</span><span>WIN DIV (TOP 3)</span><span class="px">1 SEED</span><span>FREE-FOR-ALL</span></div>' +
+      L.map(function(t){ return '<a class="odr' + (t.id === ME ? ' me' : '') + '" href="' + D.href('teams', 'f=' + t.id) + '"><img src="' + helm(t.id) + '" alt=""><span class="tn2"><b>' + esc(D.NAME[t.id]) + '</b>' + D.divTag(t.id) + '</span><span class="mono">' + t.w + '-' + t.l + '</span><span class="mono px">' + Math.round(t.mu) + '</span>' +
+        '<span class="opw"><span class="opb"><i class="' + (t.po >= .8 ? 'hi' : t.po >= .4 ? 'md' : 'lo') + '" style="width:' + (t.po * 100).toFixed(1) + '%"></i></span><b class="mono">' + pc(t.po) + '</b></span>' +
+        '<span class="oc mono"' + heat(t.div) + '>' + pc(t.div) + '</span><span class="oc mono px"' + heat(t.seed[0]) + '>' + pc(t.seed[0]) + '</span>' +
+        '<span class="oc mono"' + heat(t.ffa) + ' title="' + (t.ffa ? 'Wins the Free-For-All ' + pc(t.ffaIn) + ' of the time it lands there' : '') + '">' + pc(t.ffa) + '</span></a>'; }).join('') +
+      '<div class="fnote mono"><span>MAKE PLAYOFFS INCLUDES WINNING A WEEK 14 FREE-FOR-ALL SPOT</span><span>PROJ/WK = HALF SEASON AVERAGE, HALF THIS WEEK\u2019S BEST PROJECTED LINEUP</span><span>DIVISION WINNERS ARE SEEDS 1\u20133 AND PICK THEIR OPPONENTS \u00b7 TIES GO TO TOTAL POINTS</span></div></article>';
+  }
   function power(){
     if(PR){ drawPower(); return; }
     D.api('liveScoring').then(function(j){ var w = num(j && j.liveScoring && j.liveScoring.week) || 1; return D.power(w); }).then(function(p){ PR = p; drawPower(); })

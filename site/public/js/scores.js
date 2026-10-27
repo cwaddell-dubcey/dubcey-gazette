@@ -4,7 +4,7 @@
   mq.addEventListener && mq.addEventListener('change', function(){ if(S.data) draw(); });
   var ORDER = { QB:1, RB:2, WR:3, TE:4, PK:5, K:5, Def:6, DEF:6 };
   var qs = new URLSearchParams(location.search);
-  var S = { cur:0, w:+qs.get('w') || 0, sel:qs.has('m') ? +qs.get('m') : -1, data:null, rec:{}, me:'', benchOpen:false, timer:0, nfl:null };
+  var S = { wph:null, cur:0, w:+qs.get('w') || 0, sel:qs.has('m') ? +qs.get('m') : -1, data:null, rec:{}, me:'', benchOpen:false, timer:0, nfl:null };
 
   D.shell('scores').then(function(me){ S.me = me.franchise || ''; if(S.data) draw(); });
   D.records().then(function(r){ S.rec = r.rec; if(S.data) draw(); });
@@ -20,7 +20,7 @@
     }).filter(function(m){ return m.length === 2; }) };
   }
 
-  var LAST = 13;
+  var LAST = D.SEASON.regEnd;
   function load(first){
     if(first) return D.api('liveScoring', 'DETAILS=1').then(function(j){ var d = norm(j); S.cur = d ? +d.week : 0; }).catch(function(){}).then(function(){
       if(!S.w) S.w = Math.min(LAST, D.ffWeek()); if(!S.cur) S.cur = S.w; return route();
@@ -102,6 +102,7 @@
 
   function draw(){
     var d = S.data; if(!d) return;
+    if(!S.wph){ try{ S.wph = JSON.parse(localStorage.getItem(wkey()) || '{}'); }catch(e){ S.wph = {}; } }
     if(!S.H) hist();
     weeks();
     var live = isLive(), started = d.ms.some(function(m){ return m.some(function(f){ return f.score > 0; }); });
@@ -113,10 +114,47 @@
     $('slate').innerHTML = d.ms.map(function(m, k){
       return '<button type="button" class="bug' + (k === S.sel ? ' on' : '') + '" data-m="' + k + '">' + m.map(function(f, i){
         var w = started && f.score > m[1 - i].score;
-        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + (hasProj() && (live || !started) ? '<u class="mono">PROJ ' + D.pts(Math.round(tproj(f) * 10) / 10) + '</u>' : '') + '</b><i>' + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
+        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + (hasProj() && (live || !started) ? '<u class="mono">PROJ ' + D.pts(Math.round(tproj(f) * 10) / 10) + (live ? ' \u00b7 ' + pct(i ? 1 - wprob(m) : wprob(m)) : '') + '</u>' : '') + '</b><i>' + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
       }).join('') + '</button>';
     }).join('');
+    if(live && hasProj()) track(d);
     matchup(d.ms[S.sel], live, started);
+  }
+
+  /* ---------- live win probability ----------
+     each starter's unplayed points = his projection x the share of his game left; spread grows with what's still to come
+     (sd = 60% of the remaining projection, at least 4), so a matchup tightens toward 0/100 as games finish */
+  function Phi(z){ var t = 1 / (1 + .2316419 * Math.abs(z)), d = .3989423 * Math.exp(-z * z / 2), p = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - p : p; }
+  function wprob(m){
+    var t = m.map(function(f){ var mu = 0, v = 0; f.pl.forEach(function(p){ if(!p.st) return; var e = lproj(p), r = e - p.s; mu += e; if(r > .01){ var sd = Math.max(4, r * .6); v += sd * sd; } }); return { mu:mu, v:v }; });
+    var sd = Math.sqrt(t[0].v + t[1].v), d = t[0].mu - t[1].mu;
+    return sd < 1 ? (d > 0 ? 1 : d < 0 ? 0 : .5) : Phi(d / sd);
+  }
+  function pct(p){ return p >= .995 ? '>99%' : p <= .005 ? '<1%' : Math.round(p * 100) + '%'; }
+  // a point every poll, kept in this browser for the week (one line per matchup, first team's chance)
+  function wkey(){ return 'dcWP:' + D.Y + ':' + S.w; }
+  function track(d){
+    var H = {}; try{ H = JSON.parse(localStorage.getItem(wkey()) || '{}'); }catch(e){}
+    var now = Date.now();
+    d.ms.forEach(function(m){ var k = m[0].id + '-' + m[1].id, L = H[k] = H[k] || [], p = Math.round(wprob(m) * 1000) / 1000, last = L[L.length - 1];
+      if(!last || (now - last[0] > 50000 && Math.abs(last[1] - p) > .001) || now - last[0] > 900000) L.push([now, p]); if(L.length > 400) L.splice(0, L.length - 400); });
+    try{ localStorage.setItem(wkey(), JSON.stringify(H)); }catch(e){}
+    S.wph = H;
+  }
+  function wpStrip(m, live){
+    var a = m[0].id, b = m[1].id, p = wprob(m), L = ((S.wph || {})[a + '-' + b] || []).slice();
+    if(live) L.push([Date.now(), p]);
+    var spark = '';
+    if(L.length > 2){
+      var t0 = L[0][0], t1 = L[L.length - 1][0] || t0 + 1, W = 600, Hh = 64, pts = L.map(function(x){ return ((x[0] - t0) / Math.max(1, t1 - t0) * W).toFixed(1) + ',' + ((1 - x[1]) * Hh).toFixed(1); }).join(' ');
+      var hi = L.reduce(function(m2, x){ return Math.max(m2, x[1]); }, 0), lo = L.reduce(function(m2, x){ return Math.min(m2, x[1]); }, 1);
+      spark = '<svg class="wpsv" viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="' + W + '" y1="' + Hh / 2 + '" y2="' + Hh / 2 + '"/><polygon points="0,' + Hh / 2 + ' ' + pts + ' ' + W + ',' + Hh / 2 + '"/><polyline points="' + pts + '"/></svg>' +
+        '<div class="wpk mono"><span>' + new Date(t0).toLocaleTimeString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase() + '</span><span>RANGE ' + pct(lo) + '\u2013' + pct(hi) + ' FOR ' + esc(D.SHORT[a]).toUpperCase() + '</span><span>NOW</span></div>';
+    }
+    return '<div class="wps"><div class="wph mono"><span>WIN PROBABILITY' + (live ? ' \u00b7 LIVE' : ' \u00b7 BEFORE KICKOFF') + '</span><span>' + (L.length > 2 ? 'TRACKED WHILE THIS PAGE IS OPEN' : 'MOVES WITH EVERY PLAY') + '</span></div>' +
+      '<div class="wpr"><div class="wpt"><img src="' + helm(a) + '" alt=""><b>' + pct(p) + '</b><i class="mono">' + esc(D.SHORT[a]) + '</i></div>' +
+      '<div class="wpm"><div class="wpbar"><i style="width:' + (p * 100).toFixed(1) + '%"></i></div>' + spark + '</div>' +
+      '<div class="wpt r"><img src="' + helm(b) + '" alt=""><b>' + pct(1 - p) + '</b><i class="mono">' + esc(D.SHORT[b]) + '</i></div></div></div>';
   }
 
   function shortN(n, pos){ n = String(n || ''); if(/^(Def|DEF|TMDEF|ST)$/.test(pos || '')) return n.split(' ').slice(-1)[0]; var w = n.split(' '); return w.length > 1 ? w[0].charAt(0) + '. ' + w.slice(1).join(' ') : n; }
@@ -146,8 +184,9 @@
       '<div class="ph"><img class="hl a" src="' + helm(a.id) + '" alt=""><img class="hl b" src="' + helm(b.id) + '" alt="">' +
       '<span class="plate a">' + esc(S.rec[a.id] || '') + '</span><span class="plate b">' + esc(S.rec[b.id] || '') + '</span>' +
       '</div><div class="sb"><div class="nums"><b class="' + (started && a.score >= b.score ? 'w' : '') + '">' + D.pts(a.score) + '</b><i></i><b class="' + (started && b.score >= a.score ? 'w' : '') + '">' + D.pts(b.score) + '</b></div>' +
-      (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), sd = Math.max(25, Math.sqrt(pa + pb) * 2.2), z = (pa - pb) / sd, wa = Math.round(100 / (1 + Math.exp(-1.7 * z))); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + wa + '% \u2013 ' + (100 - wa) + '%</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
+      (hasProj() && (live || !started) ? (function(){ var pa = tproj(a), pb = tproj(b), wa = wprob(m); return '<div class="pjl mono"><span>PROJ ' + D.pts(Math.round(pa * 10) / 10) + '</span><b>' + pct(wa) + ' \u2013 ' + pct(1 - wa) + '</b><span>PROJ ' + D.pts(Math.round(pb * 10) / 10) + '</span></div>'; })() : '') + '<span class="st2 mono' + (live ? ' live' : '') + '">' + (live ? '\u25cf LIVE' : started ? 'FINAL' : 'WEEK ' + S.w) + '</span>' + (D.div(a.id) && D.div(a.id) === D.div(b.id) ? D.divTag(a.id, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a.id]) + '</b><span class="mono">' + esc(meta(a)) + '</span></div><div><b>' + esc(D.NAME[b.id]) + '</b><span class="mono">' + esc(meta(b)) + '</span></div></div>' +
+      (hasProj() && (live || !started) ? wpStrip(m, live) : '') +
       (started ? '' : histHTML(a.id, b.id, S.w === S.cur && S.pvT ? (S.pvT[a.id + '-' + b.id] || S.pvT[b.id + '-' + a.id] || null) : null)) +
       '<div class="cols mir">' + col(a, ra, ba) + col(b, rb, bb) + '</div>';
     wantStats(m);
@@ -202,7 +241,7 @@
       return '<button type="button" class="bug' + (k === S.sel ? ' on' : '') + '" data-m="' + k + '">' + [[p.a, p.pa], [p.h, p.ph]].map(function(x){ return '<div class="s"><img src="' + helm(x[0]) + '" alt=""><b title="' + esc(D.NAME[x[0]]) + '">' + sn(x[0]) + (x[1] ? '<u class="mono">PROJ ' + pj(x[1]) + '</u>' : '') + '</b><i>' + esc(S.rec[x[0]] || '') + '</i></div>'; }).join('') + '</button>';
     }).join('');
     var p = P[S.sel], a = p.a, b = p.h, has = p.pa > 0 && p.ph > 0;
-    var wp = has ? (function(){ var sd = Math.max(25, Math.sqrt(p.pa + p.ph) * 2.2), z = (p.pa - p.ph) / sd; return Math.round(100 / (1 + Math.exp(-1.7 * z))); })() : 0;
+    var wp = has ? Math.round(Phi((p.pa - p.ph) / 150) * 100) : 0;
     $('mu').innerHTML =
       '<div class="ph"><img class="hl a" src="' + helm(a) + '" alt=""><img class="hl b" src="' + helm(b) + '" alt="">' +
       '<span class="plate a">' + esc(S.rec[a] || p.ra || '') + '</span><span class="plate b">' + esc(S.rec[b] || p.rh || '') + '</span></div>' +

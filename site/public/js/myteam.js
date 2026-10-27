@@ -166,9 +166,51 @@
       var warn = function(v){ return v > N.max || v < N.min; };
       h += '<div class="trs2"><div><div class="sub mono">YOU GIVE · ' + ng + '</div>' + list(S.me, 'give') + extra('give', S.me, mineF) + '</div><div><div class="sub mono">YOU GET · ' + nr + '</div>' + list(t.to, 'get') + extra('get', t.to, theirF) + '</div></div>' +
         ((t.gd || t.rd) ? '<div class="tfa mono"><span class="' + (warn(mb) ? 'bad' : '') + '">YOU \u2192 $' + mb + ' IN ' + N.year + '</span><span class="' + (warn(tb) ? 'bad' : '') + '">' + esc(D.SHORT[t.to]).toUpperCase() + ' \u2192 $' + tb + '</span>' + (warn(mb) || warn(tb) ? '<em>OUTSIDE $' + N.min + '\u2013$' + N.max + ' \u00b7 FINE FOR NOW, MUST BE FIXED BY THE AUCTION</em>' : '') + '</div>' : '') +
-        '<div class="tsend"><input id="tcm" placeholder="Add a note (optional)" maxlength="160"><button class="btn" type="button" id="tsend"' + (ng && nr ? '' : ' disabled') + '>SEND OFFER</button></div>';
+        '<div id="tchk"></div><div class="tsend"><input id="tcm" placeholder="Add a note (optional)" maxlength="160"><button class="btn" type="button" id="tsend"' + (ng && nr ? '' : ' disabled') + '>SEND OFFER</button></div>';
     }
     $('prop').innerHTML = h;
+    if(t.to) tradeCheck();
+  }
+
+  /* ---------- trade check: best lineup and playoff odds for both teams, before and after ----------
+     player value = half season average, half this week's projection; FAAB, auction dollars and picks aren't valued */
+  var VAL = {};
+  function bestLU(ids){
+    var lim = limits(), tot = lim.count || 10, pick = [], used = {}, cnt = {};
+    var pool = ids.filter(function(id){ return D.OURPOS[D.pinfo(id)[1]]; }).map(function(id){ return { id:id, pos:D.pinfo(id)[1], v:VAL[id] || 0 }; }).sort(function(a, b){ return b.v - a.v; });
+    Object.keys(lim.pos).forEach(function(p){ pool.filter(function(x){ return x.pos === p; }).slice(0, lim.pos[p][0]).forEach(function(x){ pick.push(x); used[x.id] = 1; cnt[p] = (cnt[p] || 0) + 1; }); });
+    pool.forEach(function(x){ if(pick.length >= tot || used[x.id]) return; var l = lim.pos[x.pos]; if(l && (cnt[x.pos] || 0) >= l[1]) return; pick.push(x); used[x.id] = 1; cnt[x.pos] = (cnt[x.pos] || 0) + 1; });
+    return { pts:pick.reduce(function(a, x){ return a + x.v; }, 0), ids:used };
+  }
+  function tradeCheck(){
+    var t = S.trade, el = $('tchk'); if(!el) return;
+    var give = Object.keys(t.give), get = Object.keys(t.get);
+    if(!give.length && !get.length){ el.innerHTML = ''; return; }
+    var key = JSON.stringify([t.to, give.sort(), get.sort()]); S.tck = key;
+    el.innerHTML = '<div class="tck"><div class="ld mono">CHECKING THE TRADE\u2026</div></div>';
+    var mine = S.R[S.me] || [], theirs = S.R[t.to] || [], wk = S.cur || S.week || 1;
+    var need = mine.concat(theirs).filter(function(id){ return !(id in VAL); });
+    (need.length ? Promise.all([D.api('projectedScores', 'W=' + wk + '&PLAYERS=' + need.join(',')).catch(function(){ return null; }), D.scores('YTD', need).catch(function(){ return {}; })]).then(function(r){
+      var P = {}; arr(r[0] && r[0].projectedScores && r[0].projectedScores.playerScore).forEach(function(x){ if(x.score !== '') P[x.id] = num(x.score); });
+      var gp = Math.max(1, wk - 1); need.forEach(function(id){ var p = P[id] || 0, a = (r[1][id] || 0) / gp; VAL[id] = p > 0 && a > 0 ? .5 * p + .5 * a : (p || a); });
+    }) : Promise.resolve()).then(function(){ return D.oddsLoad().catch(function(){ return null; }); }).then(function(od){
+      if(S.tck !== key || !$('tchk')) return;
+      var gv = {}, gt = {}; give.forEach(function(id){ gv[id] = 1; }); get.forEach(function(id){ gt[id] = 1; });
+      var m0 = bestLU(mine), m1 = bestLU(mine.filter(function(id){ return !gv[id]; }).concat(get)), h0 = bestLU(theirs), h1 = bestLU(theirs.filter(function(id){ return !gt[id]; }).concat(give));
+      var dm = m1.pts - m0.pts, dt = h1.pts - h0.pts, odds = null;
+      if(od && od.played < 13){ var dl = {}; dl[S.me] = dm; dl[t.to] = dt; var b0 = D.oddsRun(od, null, 3000, 7), b1 = D.oddsRun(od, dl, 3000, 7), f = function(R, id){ return (R.list.filter(function(x){ return x.id === id; })[0] || {}).po || 0; };
+        odds = { m:[f(b0, S.me), f(b1, S.me)], t:[f(b0, t.to), f(b1, t.to)] }; }
+      var moves = function(a, b){ var inn = Object.keys(b.ids).filter(function(id){ return !a.ids[id]; }), out = Object.keys(a.ids).filter(function(id){ return !b.ids[id]; }); return { inn:inn, out:out }; };
+      var pc = function(p){ return p >= .995 ? '>99%' : p <= .005 ? '<1%' : Math.round(p * 100) + '%'; }, sg = function(v){ return (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(1); };
+      var edge = dm - dt, verdict = dm >= -2 && dt >= -2 ? 'HELPS BOTH TEAMS' : Math.abs(edge) < 10 ? 'PRETTY EVEN' : edge > 0 ? 'TILTS YOUR WAY' : 'TILTS ' + esc(D.SHORT[t.to]).toUpperCase() + '\u2019S WAY';
+      var side = function(id, a, b, d, o){ var mv = moves(a, b), nm = function(L){ return L.map(function(x){ return esc(D.pinfo(x)[0]); }).join(', '); };
+        return '<div class="tcs"><div class="tct"><img src="' + helm(id) + '" alt=""><b>' + esc(id === S.me ? 'You' : D.SHORT[id]) + '</b></div>' +
+          '<div class="tcr"><span class="mono">BEST LINEUP / WK</span><b>' + a.pts.toFixed(1) + ' \u2192 ' + b.pts.toFixed(1) + '</b><em class="mono ' + (d > .05 ? 'up' : d < -.05 ? 'dn' : '') + '">' + sg(d) + '</em></div>' +
+          (o ? '<div class="tcr"><span class="mono">PLAYOFF ODDS</span><b>' + pc(o[0]) + ' \u2192 ' + pc(o[1]) + '</b><em class="mono ' + (o[1] - o[0] > .005 ? 'up' : o[1] - o[0] < -.005 ? 'dn' : '') + '">' + sg((o[1] - o[0]) * 100).replace('.0', '') + ' PTS</em></div>' : '') +
+          (mv.inn.length || mv.out.length ? '<div class="tcm mono">' + (mv.inn.length ? '<span class="up">INTO THE LINEUP: ' + nm(mv.inn) + '</span>' : '') + (mv.out.length ? '<span class="dn">OUT OF THE LINEUP: ' + nm(mv.out) + '</span>' : '') + '</div>' : '<div class="tcm mono"><span>NO CHANGE TO THE BEST LINEUP</span></div>') + '</div>'; };
+      $('tchk').innerHTML = '<div class="tck"><div class="tckh mono"><span>TRADE CHECK</span><b>' + verdict + '</b></div><div class="tckg">' + side(S.me, m0, m1, dm, odds && odds.m) + side(t.to, h0, h1, dt, odds && odds.t) + '</div>' +
+        '<div class="tckn mono">PLAYER VALUE = HALF SEASON AVERAGE, HALF THIS WEEK\u2019S PROJECTION \u00b7 ODDS FROM 3,000 SIMULATED SEASONS \u00b7 FAAB, AUCTION DOLLARS AND PICKS NOT COUNTED</div></div>';
+    }).catch(function(){ if($('tchk')) $('tchk').innerHTML = ''; });
   }
 
   /* ---------- waivers ---------- */

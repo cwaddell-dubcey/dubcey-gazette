@@ -30,6 +30,10 @@ site/
 Already done: the `dubcey` KV namespace ID is set in `wrangler.jsonc`.
 3. `COMMISH` in `wrangler.jsonc` is your MFL franchise number (0001). Add a co-commish later with `"0001,0004"`.
 
+## Uploading changes
+
+GitHub's web uploader takes at most 100 files per upload. Don't upload the whole `site` folder (it has more than that). Upload only the changed files, keeping their `site/...` paths, in batches of 100 or fewer.
+
 ## Deploy (once)
 1. Upload this `site/` folder into the `dubcey-gazette` repo.
 2. Cloudflare → Workers & Pages → Create → **Import a repository** → pick `dubcey-gazette`.

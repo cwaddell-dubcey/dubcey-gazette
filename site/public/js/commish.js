@@ -12,7 +12,7 @@
   });
   function draw(){
     [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups }[S.tab] || dispatch)();
+    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups, health:health }[S.tab] || dispatch)();
   }
 
   /* ---------- the Dispatch ---------- */
@@ -37,6 +37,64 @@
       '<article class="card" style="margin-top:24px"><div class="bar mono"><span>AROUND THE LEAGUE</span><span>ONE TAKE PER TEAM</span></div><div class="ef pad takes2">' + D.IDS.map(function(id){ return '<label class="mono tk2"><span><img src="' + D.helm(id) + '" alt="">' + esc(D.NAME[id]) + '</span><textarea name="take" data-id="' + id + '" rows="3">' + esc((W.takes || {})[id] || '') + '</textarea></label>'; }).join('') + '</div></article></div>' +
       '<aside><article class="card"><div class="bar mono"><span>AWARDS</span></div><div class="ef pad" id="awards">' + ak.map(function(k){ var A = D.award(aw[k]); return '<div class="ed aw2"><label class="mono">AWARD<input name="an" value="' + esc(k) + '"></label><label class="mono">TEAM' + teamSel('aid', A.id, 1) + '</label><label class="mono">WHY<textarea name="at" rows="3">' + esc(A.text) + '</textarea></label></div>'; }).join('') + '</div></article>' +
       '<div class="note mono" style="color:#9FB4CC">PUBLISHING UPDATES THE HOME PAGE AND THE DISPATCH ARCHIVE RIGHT AWAY.</div></aside></div>';
+    $('cb').insertAdjacentHTML('afterbegin', '<article class="card" style="margin-bottom:24px"><div class="bar mono"><span>WEEK DATA FOR CLAUDE</span><span>ONE COPY HAS EVERYTHING NEEDED TO WRITE THE DISPATCH</span></div><div class="ef pad wpk"><label class="mono">WEEK<input type="number" id="wpw" min="1" max="18" value="' + esc(S.pw || '') + '"></label><button class="btn" type="button" id="wpack">BUILD + COPY</button><span class="mono" id="wpst"></span>' + (S.pt ? '<textarea id="wpt" readonly>' + esc(S.pt) + '</textarea>' : '') + '</div></article>');
+    if(!S.pw) D.doneWeek().then(function(d){ if(d.w && $('wpw') && !$('wpw').value){ S.pw = d.w; $('wpw').value = d.w; } });
+  }
+
+  /* ---------- week data pack: results with names, standings, the week's moves, next week's games ---------- */
+  function pack(w){
+    w = +w; var no = function(){ return null; };
+    return Promise.all([D.api('weeklyResults', 'W=' + w), D.api('leagueStandings').catch(no), D.api('transactions').catch(no), D.api('schedule', 'W=' + (w + 1)).catch(no), D.api('rosters').catch(no)]).then(function(r){
+      var M = arr(r[0] && r[0].weeklyResults && r[0].weeklyResults.matchup), ids = [], SAL = {};
+      if(!M.length) throw 'NO RESULTS FOR WEEK ' + w;
+      M.forEach(function(m){ arr(m.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ ids.push(p.id); }); }); });
+      arr(r[4] && r[4].rosters && r[4].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ SAL[p.id] = p.salary; }); });
+      var since = Date.now() / 1000 - 8 * 86400, pid = function(x){ return String(x || '').replace(/\|/g, ',').split(',').filter(function(y){ return /^\d{4,5}$/.test(y); }); };
+      var TX = arr(r[2] && r[2].transactions && r[2].transactions.transaction).filter(function(t){ return D.num(t.timestamp) >= since && /^(FREE_AGENT|BBID_WAIVER|WAIVER|TRADE|IR|TAXI)/.test(t.type) && !/REQUEST|PROPOSAL/.test(t.type); });
+      TX.forEach(function(t){ ids = ids.concat(pid(t.transaction), pid(t.franchise1_gave_up), pid(t.franchise2_gave_up)); });
+      return D.players(ids).then(function(){
+        var nm = function(id){ var i = D.pinfo(id); return i[0] + ' ' + i[1] + (i[2] ? ' ' + i[2] : ''); };
+        var tn = function(id){ return id + ' ' + (D.NAME[id] || id); };
+        var day = function(ts){ return new Date(D.num(ts) * 1000).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); };
+        var L = ['DUBCEY CHRONICLE \u00b7 WEEK ' + w + ' DATA PACK \u00b7 built ' + day(Date.now() / 1000) + ' ET', 'Key: * = started but should have sat (MFL optimal) \u00b7 ! = benched but belonged in the optimal lineup \u00b7 $ = salary', '', '== WEEK ' + w + ' RESULTS'];
+        M.forEach(function(m){
+          var F = arr(m.franchise); if(F.length !== 2) return;
+          L.push(''); L.push(F.map(function(f){ return tn(f.id) + ' ' + f.score + ' (optimal ' + (f.opt_pts || '?') + ') ' + (f.result || ''); }).join('  vs  '));
+          F.forEach(function(f){
+            var P = arr(f.player), row = function(p){ return nm(p.id) + ' ' + (p.score == null || p.score === '' ? 'DNP' : p.score) + (p.status === 'starter' && p.shouldStart === '0' ? '*' : '') + (p.status !== 'starter' && p.shouldStart === '1' ? '!' : '') + (SAL[p.id] ? ' $' + SAL[p.id] : ''); };
+            L.push('  ' + (D.SHORT[f.id] || f.id) + ' START: ' + P.filter(function(p){ return p.status === 'starter'; }).map(row).join(' | '));
+            var B = P.filter(function(p){ return p.status !== 'starter' && (p.score || p.shouldStart === '1'); });
+            if(B.length) L.push('  ' + (D.SHORT[f.id] || f.id) + ' BENCH: ' + B.map(row).join(' | '));
+          });
+        });
+        var ST = arr(r[1] && r[1].leagueStandings && r[1].leagueStandings.franchise);
+        if(ST.length){ L.push('', '== STANDINGS (MFL order)'); ST.forEach(function(f, i){ L.push((i + 1) + '. ' + tn(f.id) + ' ' + (f.h2hwlt || (f.h2hw + '-' + f.h2hl)) + ' \u00b7 PF ' + f.pf + ' \u00b7 PA ' + f.pa + ' \u00b7 ' + (f.strk || '') + ' \u00b7 DIV ' + (f.divwlt || '') + ' \u00b7 FAAB ' + (f.bbidbalance || '') + ' \u00b7 EFF ' + (f.eff || '')); }); }
+        L.push('', '== MOVES, LAST 8 DAYS (newest first)');
+        if(!TX.length) L.push('none');
+        TX.forEach(function(t){
+          var who = D.SHORT[t.franchise] || t.franchise;
+          if(/TRADE/.test(t.type)) L.push(day(t.timestamp) + ' \u00b7 TRADE: ' + (D.SHORT[t.franchise] || t.franchise) + ' gave ' + pid(t.franchise1_gave_up).map(nm).join(', ') + ' to ' + (D.SHORT[t.franchise2] || t.franchise2) + ' for ' + pid(t.franchise2_gave_up).map(nm).join(', ') + (t.comments ? ' \u00b7 note: ' + t.comments : ''));
+          else { var q = String(t.transaction || '').split('|'), add = pid(q[0]), bid = /BBID/.test(t.type) ? q[1] : '', drop = pid(bid ? q[2] : q[1]);
+            L.push(day(t.timestamp) + ' \u00b7 ' + who + ' ' + (bid ? 'WAIVER $' + D.num(bid) : t.type.replace(/_/g, ' ')) + ': ' + (add.length ? '+' + add.map(nm).join(', +') : '') + (drop.length ? ' / -' + drop.map(nm).join(', -') : '')); }
+        });
+        var NX = arr(r[3] && r[3].schedule && r[3].schedule.weeklySchedule)[0];
+        if(NX && arr(NX.matchup).length){ L.push('', '== WEEK ' + (w + 1) + ' MATCHUPS (MFL spread)'); arr(NX.matchup).forEach(function(m){ var F = arr(m.franchise), a = F.filter(function(x){ return x.isHome !== '1'; })[0] || F[0], h = F.filter(function(x){ return x !== a; })[0] || F[1]; if(a && h) L.push(tn(a.id) + ' @ ' + tn(h.id) + (h.spread ? ' \u00b7 home spread ' + h.spread : '')); }); }
+        return L.join('\n');
+      });
+    });
+  }
+
+  /* ---------- site health ---------- */
+  var DEMOH = { at:Date.now(), svcAt:Date.now() - 6 * 864e5, items:[{ name:'Saved MFL login', ok:true, ms:212, note:'Good. Franchise 0001' }, { name:'Live scoring', ok:true, ms:140, note:'Week 8' }, { name:'Player news (uses saved login)', ok:false, ms:820, note:'No stories found. The login may have expired or MFL changed the page.' }, { name:'ESPN box scores', ok:true, ms:96, note:'14 games, week 8' }] };
+  function health(){
+    $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>SITE HEALTH</span><span>EVERY FEED THE SITE DEPENDS ON</span></div><div id="hb"><div class="ld mono">CHECKING EVERY FEED\u2026</div></div><div class="ef pad" style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="hrun">CHECK AGAIN</button></div></article>';
+    (D.LOCAL ? Promise.resolve(DEMOH) : fetch('/data/health', { credentials:'same-origin', cache:'no-store' }).then(function(r){ return r.json(); })).then(function(h){
+      if(!h || !h.items) throw (h && h.error) || 'NO ANSWER';
+      var bad = h.items.filter(function(x){ return !x.ok; }), age = h.svcAt ? Math.floor((Date.now() - h.svcAt) / 864e5) : null;
+      $('hb').innerHTML = '<div class="hsum"><span>' + (bad.length ? bad.length + ' PROBLEM' + (bad.length > 1 ? 'S' : '') : 'ALL ' + h.items.length + ' FEEDS WORKING') + '</span><i class="mono">' + (age != null ? 'MFL LOGIN SAVED ' + (age ? age + ' DAY' + (age > 1 ? 'S' : '') + ' AGO' : 'TODAY') + ' \u00b7 ' : '') + 'CHECKED ' + new Date(h.at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }).toUpperCase() + (h.ver ? ' \u00b7 DEPLOY ' + esc(h.ver) : '') + '</i></div>' +
+        h.items.slice().sort(function(a, b){ return a.ok - b.ok; }).map(function(x){ return '<div class="hrow' + (x.ok ? '' : ' bad') + '"><i class="hdot"></i><b>' + esc(x.name) + '</b><span class="mono">' + esc(x.note) + '</span><span class="mono ms">' + x.ms + ' MS</span></div>'; }).join('') +
+        (bad.some(function(x){ return /login/i.test(x.name + x.note); }) ? '<div class="fnote warn mono"><span>FIX: SIGN OUT, THEN SIGN BACK IN ON THIS SITE. THAT SAVES A FRESH MFL LOGIN.</span></div>' : '');
+    }).catch(function(m){ $('hb').innerHTML = '<div class="ld mono">' + esc(typeof m === 'string' ? m : 'HEALTH CHECK DIDN\u2019T ANSWER') + '</div>'; });
   }
   function readWeek(){
     var st = [].map.call(document.querySelectorAll('#stories .st3'), function(el){ return { kick:el.querySelector('[name=kick]').value.trim(), head:el.querySelector('[name=head]').value.trim(), dek:el.querySelector('[name=dek]').value.trim(), id:el.querySelector('[name=id]').value }; }).filter(function(s){ return s.head || s.dek; });
@@ -119,6 +177,12 @@
   document.addEventListener('click', function(e){
     var t = e.target;
     var wk = t.closest('[data-w]'); if(wk){ e.preventDefault(); keepWeek(); S.w = wk.getAttribute('data-w'); dispatch(); return; }
+    if(t.id === 'hrun'){ health(); return; }
+    if(t.id === 'wpack'){ var wv = +$('wpw').value; if(!wv){ toast('PICK A WEEK', true); return; } S.pw = wv; t.disabled = true; $('wpst').textContent = 'BUILDING\u2026';
+      pack(wv).then(function(txt){ S.pt = txt; var ta = $('wpt'); if(!ta){ $('wpst').insertAdjacentHTML('afterend', '<textarea id="wpt" readonly></textarea>'); ta = $('wpt'); } ta.value = txt;
+        return (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ $('wpst').textContent = 'COPIED \u00b7 ' + txt.length.toLocaleString('en-US') + ' CHARACTERS. PASTE IT TO CLAUDE.'; }, function(){ ta.select(); $('wpst').textContent = 'SELECTED \u2014 PRESS CTRL/CMD+C TO COPY'; });
+      }).catch(function(m){ $('wpst').textContent = typeof m === 'string' ? m : 'COULDN\u2019T BUILD IT'; }).then(function(){ t.disabled = false; });
+      return; }
     if(t.id === 'addst'){ keepWeek(); var W = S.C.weeks[S.w] = S.C.weeks[S.w] || { dispatch:[], takes:{}, awards:{} }; W.dispatch = arr(W.dispatch).concat([{ kick:'', head:'', dek:'', id:'' }]); dispatch(); return; }
     var up = t.closest('[data-up]'); if(up){ keepWeek(); var i = +up.getAttribute('data-up'), L = S.C.weeks[S.w].dispatch; if(L[i]){ var x = L[i]; L[i] = L[i - 1]; L[i - 1] = x; } dispatch(); return; }
     var del = t.closest('[data-del]'); if(del){ var el = document.querySelector('.st3[data-i="' + del.getAttribute('data-del') + '"]'); if(el) el.remove(); keepWeek(); dispatch(); return; }
