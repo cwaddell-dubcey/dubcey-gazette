@@ -121,6 +121,13 @@ async function espnWeek(ctx, w, raw) {
   return out;
 }
 
+// player id inside a news row: MFL has used several link formats over the years
+const NEWSPID = [/[?&;]P=(\d{3,})/, /PLAYERS?=(\d{3,})/i, /data-player(?:-id)?="(\d{3,})"/i, /player_id=(\d{3,})/i, /\/player\/(\d{3,})/i];
+const newsPid = s => { for (const re of NEWSPID) { const m = re.exec(s); if (m) return m[1]; } return ''; };
+// rows of a news page: table rows first, then div/li blocks if MFL dropped the table
+const newsRows = h => { const tr = (h.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).filter(newsPid); if (tr.length) return tr; return (h.match(/<(?:li|article|div)[^>]*class="[^"]*(?:news|article|headline)[^"]*"[^>]*>[\s\S]*?<\/(?:li|article|div)>/gi) || []).filter(newsPid); };
+// why a news page came back empty, in plain words
+const newsWhy = (h, status) => { const t = (/<title[^>]*>([\s\S]*?)<\/title>/i.exec(h) || [])[1] || ''; if (/name="(?:USERNAME|PASSWORD)"|login_form|Please log ?in/i.test(h)) return 'MFL sent its login page, so the saved login is not accepted here.'; if (/no (?:news|articles)/i.test(h)) return 'MFL says there are no news articles right now.'; return 'No stories found (HTTP ' + status + ', ' + h.length + ' chars, title "' + t.trim().slice(0, 60) + '"). MFL probably changed the page. Open /data/news?raw=1 and send it over.'; };
 // Player card: MFL's own player page, news and projections, fetched server-side with a member login (MFL blocks browsers from other sites)
 const MFLP = { page: id => `player?L=${L}&P=${id}`, news: id => `news_articles?L=${L}&PLAYERS=${id}&DAYS=30`, proj: id => `player?L=${L}&P=${id}&YEAR=${Y}&DISPLAY_TYPE=projections&PROJSRC=mfl` };
 async function mflPage(env, ctx, s, kind, id) {
@@ -270,7 +277,7 @@ export default {
         chk('Injuries', async () => arr(((await ex('injuries', '', API, false)).injuries || {}).injury).length + ' players listed'),
         chk('NFL schedule', async () => arr(((await ex('nflSchedule', '', API, false)).nflSchedule || {}).matchup).length + ' games this week'),
         chk('ESPN box scores', async () => { const j = JSON.parse(await get(`${ESPN}/scoreboard?dates=${Y}&seasontype=2`)); return (j.events || []).length + ' games, week ' + ((j.week || {}).number || '?'); }),
-        chk('Player news (uses saved login)', async () => { const h = await get(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, H); const n = (h.match(/[?&;]P=\d+/g) || []).length; if (!n) throw new Error('No stories found. The login may have expired or MFL changed the page.'); return n + ' player links'; }),
+        chk('Player news (uses saved login)', async () => { const r = await fetch(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, { headers: H, signal: AbortSignal.timeout(8000) }); const h = await r.text(); const n = newsRows(h).length; if (!n) throw new Error(newsWhy(h, r.status)); return n + ' stories'; }),
         chk('Processed waivers (uses saved login)', async () => { const d = await waivers(env, null, '', ''); if (d.error) throw new Error(d.error); if (!d.runs.length && !d.rows.length) throw new Error('No waiver runs on the page. The login may have expired.'); return d.rows.length + ' claims, ' + d.runs.length + ' runs'; }),
         chk('Site storage', async () => { if (!env.DC) throw new Error('Storage not connected.'); return (await env.DC.list({ limit: 200 })).keys.length + ' saved items'; })
       ]);
@@ -324,17 +331,19 @@ export default {
     }
     // league-wide MFL player news (last 3 days): [{id, head, body, src, ago}]
     if (p === '/data/news') {
-      const key = new Request('https://news.dubcey/' + Y), hit = await caches.default.match(key);
+      const key = new Request('https://news.dubcey/' + Y), hit = u.searchParams.get('raw') ? null : await caches.default.match(key);
       if (hit) return new Response(hit.body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
       try {
         const tok = env.DC && await env.DC.get('svc');
         const r = await fetch(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
         const html = r.ok ? await r.text() : '';
+        // commissioner-only: show what MFL actually sent (scripts/styles stripped) so a changed page can be diagnosed
+        if (u.searchParams.get('raw')) { const s = await session(req, env); if (!isCommish(s, env)) return json({ error: 'Commissioner only.' }, 403); return new Response('HTTP ' + r.status + ' · ' + html.length + ' chars · ' + newsRows(html).length + ' rows parsed\n\n' + html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/\n\s*\n+/g, '\n').slice(0, 12000), { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } }); }
         const clean = s => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
         const out = [];
-        (html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []).forEach(row => {
-          const id = (/[?&;]P=(\d+)/.exec(row) || [])[1]; if (!id) return;
-          const td = row.match(/<td[\s\S]*?<\/td>/gi) || [];
+        newsRows(html).forEach(row => {
+          const id = newsPid(row); if (!id) return;
+          const td = (row.match(/<td[\s\S]*?<\/td>/gi) || []).length ? row.match(/<td[\s\S]*?<\/td>/gi) : (row.match(/<(?:h\d|p|span|div|a)[^>]*>[\s\S]*?<\/(?:h\d|p|span|div|a)>/gi) || [row]);
           const hd = td.find(x => /class="headline"/i.test(x)) || td[0] || '', ts = td.find(x => /class="timestamp"/i.test(x)) || td[td.length - 1] || '';
           const body = td.filter(x => x !== hd && x !== ts).map(clean).join(' ');
           const src = (/^\(([^)]+)\)/.exec(body) || [])[1] || '';
