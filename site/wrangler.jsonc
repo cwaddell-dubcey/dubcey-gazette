@@ -13,6 +13,8 @@
   // storage for the Dispatch, team names, helmets, calendar, by-laws, finances and the suggestion box
   // deploy id, used to version scripts and styles automatically (no more ?v= bumps)
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  // refresh this season's lineups for History: Tuesday and Thursday mornings (11:00 UTC = 6 a.m. ET in winter)
+  "triggers": { "crons": ["0 11 * * 2", "0 11 * * 4"] },
   "kv_namespaces": [{ "binding": "DC", "id": "7a954825f712428fbcb0c6e05cfae1da" }],
   "routes": [{ "pattern": "dubcey.party", "custom_domain": true }]
 }

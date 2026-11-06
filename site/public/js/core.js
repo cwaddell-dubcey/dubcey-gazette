@@ -23,10 +23,22 @@
   D.SHORT = {"0001":"Bloodfeast","0002":"E720","0003":"Ligers","0004":"Wet Bandits","0005":"Full Blown","0006":"Nuts","0007":"Scallywags","0008":"Wad of Hell","0009":"Viva","0010":"Prestige","0011":"BMB","0012":"Diamond Dogs"};
   D.HELM = {"0001":"bloodfeast2026","0002":"helmet-e720","0003":"helmet-ligers","0004":"windy2026","0005":"helmet-full","0006":"helmet-nuts","0007":"scally2026","0008":"helmet-devil","0009":"helmet-resistance","0010":"helmet-prestige","0011":"helmet-bmb","0012":"diamonddogs2026v2"};
   D.CUSTOM = {};
+  // real names before any alter ego (Commish → Teams edits these, not the alter ego)
+  D.NAME0 = JSON.parse(JSON.stringify(D.NAME)); D.SHORT0 = JSON.parse(JSON.stringify(D.SHORT));
+  // alter egos: the commish can flip a team into its alter ego (name + helmet) from Commish → Teams
+  D.EGO = { '0012':{ name:'Bad Newz Karens', short:'Karens', helm:'h/helmet-karens.webp' } };
+  D.EGO_ON = {};
+  D.egoOf = function(id, o){ var d = D.EGO[id] || {}, e = (o && o.ego) || {}; return { name:e.name || d.name || '', short:e.short || d.short || '', helm:e.helm || d.helm || '', on:!!e.on }; };
+  D.REAL = JSON.parse(JSON.stringify(D.NAME));
+  D.applyTeam = function(id, o){
+    o = o || {}; D.NAME[id] = o.name || D.NAME0[id]; D.SHORT[id] = o.short || D.SHORT0[id]; D.REAL[id] = D.NAME[id];
+    var e = D.egoOf(id, o); delete D.EGO_ON[id];
+    if(e.on && e.name){ D.EGO_ON[id] = e; D.NAME[id] = e.name; D.SHORT[id] = e.short || e.name; }
+  };
   // helmets: a team with alternates rotates them, one per week (changes Tuesday), same pick for everyone
   D.ALT = {};
   D.helmWeek = Math.floor((Date.now() - Date.UTC(2026, 0, 6, 9)) / 6048e5);
-  D.helmPool = function(id){ return [D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp')].concat(D.ALT[id] || []); };
+  D.helmPool = function(id, real){ if(!real && D.EGO_ON[id] && D.EGO_ON[id].helm) return [D.EGO_ON[id].helm]; return [D.CUSTOM[id] || ('h/' + (D.HELM[id] || 'logo') + '.webp')].concat(D.ALT[id] || []); };
   // NFL week (flips Tuesday morning, same as the rotation) and commish-picked weeks per helmet: D.PIN[id][week] = index in the pool
   D.nflWeek = Math.max(1, Math.floor((Date.now() - Date.UTC(W1[0], W1[1] - 1, W1[2], 9)) / 6048e5) + 1);
   D.PIN = {};
@@ -120,11 +132,36 @@
   };
   // team-name / helmet overrides, applied before any page draws
   D.teamsReady = D.content('teams').then(function(t){
-    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; if(o.name) D.NAME[id] = o.name; if(o.short) D.SHORT[id] = o.short; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; var pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; });
+    Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; D.applyTeam(id, o); if(o.ego && o.ego.helm && D.LOCAL && D.EGO_ON[id]) D.EGO_ON[id].helm = localStorage.getItem('dcImg:' + id + '_ego') || D.EGO_ON[id].helm; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; var pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; });
       if(Array.isArray(o.alts) && o.alts.length){ var L = []; o.alts.forEach(function(a){ var u = D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; if(!u) return; L.push(u); D.weeksOf(a.wk).forEach(function(w){ pin[w] = L.length; }); }); if(L.length) D.ALT[id] = L; }
       if(Object.keys(pin).length) D.PIN[id] = pin; });
     return t || {};
   }).catch(function(){ return {}; });
+
+  // this season's lineups (the server refreshes them every Tuesday and Thursday); local preview reads the saved file
+  var SC = null;
+  D.seasonCards = function(){
+    if(!SC) SC = (D.LOCAL ? Promise.reject() : fetch('/data/season-cards').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){ if(!j || !j.t) throw 0; return j; }))
+      .catch(function(){ return fetch('data/cards/' + D.Y + '.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); });
+    return SC;
+  };
+  // swap this season's rows in data/rosters.json for the live lineups, so Rosters and player cards stay current
+  D.mergeSeason = function(R, C){
+    if(!R || !C || !C.t) return R; var y = +C.y, reg = +C.reg || 14, byId = {}, agg = {};
+    R.s = R.s.filter(function(x){ return x[1] !== y; });
+    R.p.forEach(function(p, i){ if(p[3]) byId[p[3]] = i; });
+    function tix(n){ var i = R.t.indexOf(n); if(i < 0){ R.t.push(n); i = R.t.length - 1; } return i; }
+    Object.keys(C.t).forEach(function(fid){ var tn = tix(D.REAL[fid] || D.NAME0[fid] || fid);
+      Object.keys(C.t[fid]).forEach(function(w){ (C.t[fid][w][1] || []).forEach(function(r){
+        var pp = C.p[r[0]]; if(!pp) return; var i = byId[pp[3]]; if(i == null){ R.p.push([pp[0], pp[1], pp[2], pp[3]]); i = byId[pp[3]] = R.p.length - 1; }
+        var a = agg[i + '|' + fid] || (agg[i + '|' + fid] = [i, y, tn, fid, 0, 0, 0, 0, 0]);
+        a[4]++; if(r[2]){ a[5]++; a[6] = Math.round((a[6] + r[1]) * 100) / 100; if(r[1] > a[7]) a[7] = r[1]; } if(+w > reg) a[8]++;
+      }); });
+    });
+    R.s = R.s.concat(Object.keys(agg).map(function(k){ return agg[k]; }));
+    if(R.yrs && R.yrs.indexOf(y) < 0) R.yrs.push(y);
+    return R;
+  };
 
   // league data via the site's own connection (local preview reads sample files)
   // injury designations (Q / D / OUT / IR / SUS…), loaded once and shown next to every player name via D.ij(id)

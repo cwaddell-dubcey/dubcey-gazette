@@ -151,7 +151,7 @@
   }
   // his whole Dubcey history: every fantasy team he was on, from data/rosters.json (2003–05, 2010 on)
   var VT = null, VD = null;
-  function vault(){ if(!VT) VT = fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }).then(function(j){ VD = j; }, function(){ VD = false; }).then(body); return VT; }
+  function vault(){ if(!VT) VT = Promise.all([fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }), D.seasonCards ? D.seasonCards() : null]).then(function(X){ VD = D.mergeSeason ? D.mergeSeason(X[0], X[1]) : X[0]; }, function(){ VD = false; }).then(body); return VT; }
   function dubcey(id){
     if(!VD) return '<div class="ld mono">DUBCEY HISTORY ISN’T AVAILABLE RIGHT NOW</div>';
     var i = -1; for(var k = 0; k < VD.p.length; k++) if(VD.p[k][3] === id){ i = k; break; }

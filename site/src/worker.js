@@ -37,6 +37,8 @@ const cookie = (v, age) => `dc_s=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; M
 const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o || o === u.origin; };
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
 const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
+// one line per page for link previews
+const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.' };
 const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1 };
 const txt = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
@@ -76,6 +78,32 @@ async function stats(env, ctx, w, ids, live, s) {
 
 // Box-score stat lines from ESPN's public NFL feed, one call per week → { "lamar jackson|BAL": "274 PASS YDS · 3 PASS TD" }
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+// ---- this season's lineups for History (Head-to-Head scorecards, Rosters, Bench Blunders, player cards) ----
+// Same shape as public/data/cards/<year>.json. Rebuilt by the cron in wrangler.jsonc (Tue + Thu mornings) and kept in KV.
+async function buildSeasonCards(env) {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const mfl = async (type, extra = '') => { await wait(250); const r = await fetch(`${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra}`, { headers: UA }); if (!r.ok) throw new Error(`MFL ${type} HTTP ${r.status}`); return r.json(); };
+  const lg = (await mfl('league')).league || {}, reg = +lg.lastRegularSeasonWeek || 14, end = +lg.endWeek || 17;
+  const P = {}; arr(((await mfl('players')).players || {}).player).forEach(p => { P[p.id] = [p.name, p.position, p.team]; });
+  const out = { y: +Y, src: 'mfl', reg, p: [], t: {}, weeks: 0, upd: new Date().toISOString() }, ix = {};
+  for (let w = 1; w <= end; w++) {
+    const j = await mfl('weeklyResults', '&W=' + w);
+    let any = 0;
+    arr(j.weeklyResults && j.weeklyResults.matchup).forEach(m => arr(m.franchise).forEach(f => {
+      if (f.score == null || !f.player || !/^\d{4}$/.test(f.id)) return; // no score yet = week not finished
+      any = 1;
+      const rows = arr(f.player).map(x => {
+        if (ix[x.id] == null) { const i = P[x.id] || ['Player ' + x.id, '', '']; ix[x.id] = out.p.length; out.p.push([i[0], i[1], i[2], x.id]); }
+        return [ix[x.id], Math.round((parseFloat(x.score) || 0) * 100) / 100, x.status === 'starter' ? 1 : 0];
+      });
+      (out.t[f.id] = out.t[f.id] || {})[w] = [parseFloat(f.score) || 0, rows];
+    }));
+    if (any) out.weeks = w; else if (w > out.weeks + 1) break;
+  }
+  if (env.DC && out.weeks) await env.DC.put('cards:' + Y, JSON.stringify(out));
+  return out;
+}
+
 async function cachedJSON(ctx, url, ttl) {
   const key = new Request(url), hit = await caches.default.match(key);
   if (hit) return hit.json();
@@ -172,6 +200,8 @@ async function waivers(env, s, run, fk) {
 }
 
 export default {
+  // cron (wrangler.jsonc): refresh this season's lineups after Monday night and after stat corrections
+  async scheduled(event, env, ctx) { ctx.waitUntil(buildSeasonCards(env).catch(() => {})); },
   async fetch(req, env, ctx) {
     const u = new URL(req.url), p = u.pathname, VER = String((env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id) || '').slice(0, 8);
 
@@ -388,6 +418,13 @@ export default {
         return json({ week: (sb.week && sb.week.number) || +wk || 0, games: games.sort((a, b) => a.kick - b.kick) });
       } catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
+    if (p === '/data/season-cards') {
+      // ?refresh=1 rebuilds now (commissioner only); otherwise serve the copy the cron last saved
+      let t = env.DC && await env.DC.get('cards:' + Y);
+      const force = u.searchParams.get('refresh') === '1' && isCommish(await session(req, env), env);
+      if (!t || force) { try { t = JSON.stringify(await buildSeasonCards(env)); } catch (e) { if (!t) return json({ error: String(e.message || e) }, 502); } }
+      return new Response(t, { headers: { 'Content-Type': 'application/json', 'Cache-Control': force ? 'no-store' : 'public, max-age=300' } });
+    }
     if (p === '/data/stats') {
       const wk = (u.searchParams.get('W') || '').replace(/\D/g, ''), ids = (u.searchParams.get('P') || '').split(',').filter(x => /^\d+$/.test(x));
       if (!wk || !ids.length) return json({});
@@ -451,12 +488,20 @@ export default {
 
     // ---- static pages: stamp the deploy version on scripts and styles so browsers pick up every change ----
     const res = await env.ASSETS.fetch(req);
-    if (!VER) return res;
     if ((res.headers.get('Content-Type') || '').includes('text/html')) {
-      const ver = { element(e) { const a = e.tagName === 'link' ? 'href' : 'src', v = e.getAttribute(a) || ''; if (/^\/?(js|css)\/[^?]+\.(js|css)(\?|$)/.test(v)) e.setAttribute(a, v.split('?')[0] + '?v=' + VER); } };
+      const ver = { element(e) { const a = e.tagName === 'link' ? 'href' : 'src', v = e.getAttribute(a) || ''; if (VER && /^\/?(js|css)\/[^?]+\.(js|css)(\?|$)/.test(v)) e.setAttribute(a, v.split('?')[0] + '?v=' + VER); } };
+      // link previews (GroupMe, iMessage, etc.): title from the page, a line about the page, and the league card image
+      let title = 'The Dubcey Chronicle';
+      const pg = (p.replace(/\.html$/, '').replace(/^\/+|\/+$/g, '') || 'index'), desc = OG[pg] || OG.index, esc = x => String(x).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
       return new HTMLRewriter().on('script[src]', ver).on('link[rel="stylesheet"]', ver)
-        .on('head', { element(e) { e.append('<meta name="dc-v" content="' + VER + '">', { html: true }); } }).transform(res);
+        .on('title', { text(t) { if (t.text.trim()) title = t.text.trim(); } })
+        .on('head', { element(e) { e.onEndTag(end => { end.before((VER ? '<meta name="dc-v" content="' + VER + '">' : '') +
+          '<meta property="og:site_name" content="The Dubcey Chronicle"><meta property="og:type" content="website">' +
+          '<meta property="og:title" content="' + esc(title.replace(/ · Dubcey Chronicle$/, '')) + '"><meta property="og:description" content="' + esc(desc) + '">' +
+          '<meta property="og:url" content="' + esc(u.origin + u.pathname) + '"><meta property="og:image" content="' + u.origin + '/h/og-card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' +
+          '<meta name="twitter:card" content="summary_large_image"><meta name="description" content="' + esc(desc) + '">', { html: true }); }); } }).transform(res);
     }
+    if (!VER) return res;
     if (/\.(js|css)$/.test(p) && u.searchParams.get('v') === VER && res.ok) { const r2 = new Response(res.body, res); r2.headers.set('Cache-Control', 'public, max-age=31536000, immutable'); return r2; }
     return res;
   }

@@ -92,8 +92,8 @@
   function yn(s, y){ y = parseInt(y, 10) || 0; s = String(s == null ? '' : s); if(!y || (y >= 2017 && y <= 2020) || s.indexOf('Bad Hombres') < 0) return s; var L = H.lineage['0012'] || [], nm = '';
     L.forEach(function(e){ var r = String(e[1]).split('-'), a = +r[0], b = +(r[1] || r[0]); if(y >= a && y <= b) nm = e[0]; }); return nm ? s.replace(/Bad Hombres(?!\))/g, nm) : s; }
   function rowYr(r, yc, ty){ if(yc > -1) return r[yc]; if(ty) return ty; for(var i = 0; i < r.length; i++){ var m = /^((19|20)\d{2})(,|$)/.exec(String(r[i])); if(m) return m[1]; } return ''; }
-  function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.png'; return hl0(n); }
-  function hl0(n){ if(/^Alcoholic All-?Stars\b/i.test(n)) return 'h/helmet-alcoholic.png'; if(/^Bad Newz Karens\b/i.test(n)) return 'h/helmet-karens.png'; if(/^The Box Socials\b/i.test(n)) return 'h/helmet-boxsocials.png'; if(/^18th Street Gangsters\b/i.test(n)) return 'h/helmet-18street.png'; if(/^River Terrace Crew\b/i.test(n)) return 'h/helmet-rtc.png'; if(/^The Fighting Moose\b/i.test(n)) return 'h/helmet-moose.png'; if(/^Swinging G-String\b/i.test(n)) return 'h/helmet-swingin.png'; if(/^Team Remix\b/i.test(n)) return 'h/helmet-teamremix.png'; if(/^Gnomes in Disguise\b/i.test(n)) return 'h/helmet-gnomes.png'; if(/^Bojangles Jive Turkeys\b/i.test(n)) return 'h/helmet-bojangles.png'; if(/^Bushw?h?ackers\b/i.test(n)) return 'h/helmet-bushwhackers.png'; if(/^Radioactive Rats\b/i.test(n)) return 'h/helmet-rats.png'; if(/^10\.5 Inch\b/i.test(n)) return 'h/helmet-105inch.png?v=2'; if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.png'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.png'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.png'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.png'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.png'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.png'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.png'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.png'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.png'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.png'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.png'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.png'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.webp'; return hl0(n); }
+  function hl0(n){ if(/^Alcoholic All-?Stars\b/i.test(n)) return 'h/helmet-alcoholic.webp'; if(/^Bad Newz Karens\b/i.test(n)) return 'h/helmet-karens.webp'; if(/^The Box Socials\b/i.test(n)) return 'h/helmet-boxsocials.webp'; if(/^18th Street Gangsters\b/i.test(n)) return 'h/helmet-18street.webp'; if(/^River Terrace Crew\b/i.test(n)) return 'h/helmet-rtc.webp'; if(/^The Fighting Moose\b/i.test(n)) return 'h/helmet-moose.webp'; if(/^Swinging G-String\b/i.test(n)) return 'h/helmet-swingin.webp'; if(/^Team Remix\b/i.test(n)) return 'h/helmet-teamremix.webp'; if(/^Gnomes in Disguise\b/i.test(n)) return 'h/helmet-gnomes.webp'; if(/^Bojangles Jive Turkeys\b/i.test(n)) return 'h/helmet-bojangles.webp'; if(/^Bushw?h?ackers\b/i.test(n)) return 'h/helmet-bushwhackers.webp'; if(/^Radioactive Rats\b/i.test(n)) return 'h/helmet-rats.webp'; if(/^10\.5 Inch\b/i.test(n)) return 'h/helmet-105inch.webp'; if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.webp'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.webp'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.webp'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.webp'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.webp'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.webp'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.webp'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.webp'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.webp'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.webp'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.webp'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.webp'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
@@ -160,9 +160,10 @@
   /* ---------- head-to-head scorecards: both lineups for a game, from data/cards/<season>.json ---------- */
   var GC = { idx:null, y:{}, open:'' };
   fetch('data/cards/index.json?v=20261106b').then(function(r){ return r.json(); }).then(function(j){ GC.idx = j; if(H && S.tab === 'h2h') draw(); }).catch(function(){});
-  function gcHas(y){ return !!(GC.idx && GC.idx.years.indexOf(+y) > -1); }
+  function gcHas(y){ return +y === +D.Y || !!(GC.idx && GC.idx.years.indexOf(+y) > -1); }
   function gcLoad(y){
     if(GC.y[y]) return; GC.y[y] = 'loading';
+    if(+y === +D.Y){ D.seasonCards().then(function(j){ GC.y[y] = j && j.t ? j : 'none'; if(S.tab === 'h2h') draw(); }); return; }
     fetch('data/cards/' + y + '.json?v=' + (GC.idx && GC.idx.v || '1')).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){ GC.y[y] = j; if(S.tab === 'h2h') draw(); })
       .catch(function(){ GC.y[y] = 'none'; if(S.tab === 'h2h') draw(); });
   }
@@ -240,7 +241,26 @@
   }
 
   /* ---------- bench blunders: losses one bench swap would have won ---------- */
+  // this season's bench blunders, from the live lineups and the game log (same rule as the saved ones)
+  function exLive(C){
+    if(!EX || !C || !C.t || !H) return; var y = +C.y;
+    function pos(p){ p = String(p).toUpperCase(); return p === 'DEF' || p === 'DST' ? 'DEF' : p === 'K' ? 'PK' : p; }
+    var add = [];
+    H.games.forEach(function(g){ if(g[0] !== y) return;
+      [[g[2], g[3], g[4], g[5]], [g[3], g[2], g[5], g[4]]].forEach(function(x){ var t = x[0], o = x[1], sc = x[2], so = x[3]; if(sc >= so) return;
+        var L = C.t[t] && C.t[t][g[1]]; if(!L) return; var R = L[1].map(function(r){ return { p:C.p[r[0]], s:r[1], st:r[2] }; });
+        var st = R.filter(function(r){ return r.st; }), bn = R.filter(function(r){ return !r.st; }), best = null;
+        bn.forEach(function(b){ var same = st.filter(function(r){ return pos(r.p[1]) === pos(b.p[1]); }); if(!same.length) return;
+          var lo = same.reduce(function(a, r){ return r.s < a.s ? r : a; }), gain = Math.round((b.s - lo.s) * 100) / 100;
+          if(gain > so - sc && (!best || gain > best.gain)) best = { gain:gain, b:b, lo:lo }; });
+        if(best) add.push({ y:y, w:g[1], t:t, tn:D.REAL[t] || D.NAME[t] || t, o:o, on:D.REAL[o] || D.NAME[o] || o, s:sc, so:so, by:Math.round((so - sc) * 100) / 100, gain:best.gain,
+          b:[rvName(best.b.p[0]), pos(best.b.p[1]), best.b.s, best.b.p[3]], st:[rvName(best.lo.p[0]), pos(best.lo.p[1]), best.lo.s, best.lo.p[3]] }); });
+    });
+    EX.blunders = EX.blunders.filter(function(x){ return x.y !== y; }).concat(add).sort(function(a, b){ return b.gain - a.gain; });
+    if((EX.yrs || []).indexOf(y) < 0) EX.yrs = (EX.yrs || []).concat([y]);
+  }
   function blunders(){
+    if(EX && !EX._live){ EX._live = 1; D.seasonCards().then(function(C){ exLive(C); if(S.tab === 'records' && S.rc === 'blunders') draw(); }); }
     var seg = '<div class="seg mono hseg">' + CATS.map(function(c){ return '<a href="#records/' + c[0] + '" class="' + (c[0] === S.rc ? 'on' : '') + '">' + c[1] + '</a>'; }).join('') + '</div>';
     if(!EX){ $('hb').innerHTML = seg + '<div class="ld mono">COUNTING THE REGRETS…</div>'; return; }
     var B = EX.blunders, f = S.bt || '', cnt = {}, lost = {};
@@ -342,7 +362,7 @@
   var RSORT = [['st', 'STARTS'], ['wk', 'WEEKS'], ['sp', 'POINTS'], ['tm', 'TEAMS'], ['yr', 'SEASONS']];
   function rvLoad(){
     if(RV || RVL) return; RVL = 1;
-    fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }).then(function(j){ RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
+    Promise.all([fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }), D.seasonCards()]).then(function(X){ var j = D.mergeSeason(X[0], X[1]); RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
       .catch(function(){ RVL = 0; if(S.tab === 'rosters') $('hb').innerHTML = '<div class="ld mono">COULDN’T OPEN THE ROSTER VAULT.</div>'; });
   }
   function rvName(n, pos){ var m = /^(.*?),\s*(.*)$/.exec(String(n)); return m ? m[2] + ' ' + m[1] : String(n); }
