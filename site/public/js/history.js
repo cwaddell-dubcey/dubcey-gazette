@@ -2,12 +2,16 @@
   var D = DC, $ = D.$, esc = D.esc;
   var H = null, ME = '';
   var S = { tab:'champions', team:'', a:'', b:'', rc:'game', yr:'' };
-  var CATS = [['game', 'SINGLE GAME'], ['season', 'SEASON'], ['career', 'CAREER'], ['playoffs', 'POSTSEASON'], ['player', 'PLAYERS'], ['milestone', 'MILESTONES']];
-  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
+  var CATS = [['game', 'SINGLE GAME'], ['season', 'SEASON'], ['career', 'CAREER'], ['playoffs', 'POSTSEASON'], ['player', 'PLAYERS'], ['blunders', 'BENCH BLUNDERS'], ['milestone', 'MILESTONES']];
+  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
   fetch('data/history.json?v=20261015a').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); live(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
+
+  // lineup-based extras (bench blunders, Mount Rushmore, every-era player records), built from data/cards
+  var EX = null;
+  fetch('data/extras.json?v=20261106a').then(function(r){ return r.json(); }).then(function(j){ EX = j; if(H && (S.tab === 'records' || S.tab === 'teams')) draw(); }).catch(function(){});
 
   // the file is refreshed now and then; add this season's finished weeks it doesn't have yet (regular season only)
   function live(){
@@ -100,7 +104,7 @@
 
   function draw(){
     [].forEach.call(document.querySelectorAll('#htabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct }[S.tab] || champions)();
+    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct, rosters:rosters }[S.tab] || champions)();
   }
 
   /* ---------- champions ---------- */
@@ -140,10 +144,52 @@
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]);
         return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
-      }).join('') + '</tbody></table></div></div></div>';
+      }).join('') + '</tbody></table></div></div></div>' + rushmore(id);
+  }
+
+
+  /* ---------- Mount Rushmore: the four players with the most starter points for a franchise ---------- */
+  function rushmore(id){
+    var R = EX && EX.rush && EX.rush[id]; if(!R || !R.length) return '';
+    return '<section class="rush"><div class="lh"><span class="t">Mount Rushmore</span><span class="mono">MOST POINTS AS A STARTER · EVERY NAME · ' + esc(rvRuns(EX.yrs || [])) + '</span></div><div class="rshg">' +
+      R.map(function(p, i){ return '<' + (p[2] ? 'a href="#" data-card="' + esc(p[2]) + '"' : 'div') + ' class="rsh"><span class="rshn mono">' + ['I', 'II', 'III', 'IV'][i] + '</span><span class="pos ' + esc(p[1]) + '">' + esc(p[1]) + '</span><h3>' + esc(p[0]) + '</h3><span class="mono rshy">' + esc(p[5]) + '</span>' +
+        '<div class="rshs"><div><b>' + Math.round(p[4]).toLocaleString('en-US') + '</b><span class="mono">PTS</span></div><div><b>' + p[3] + '</b><span class="mono">STARTS</span></div><div><b>' + D.pts(p[6]) + '</b><span class="mono">BEST</span></div></div></' + (p[2] ? 'a' : 'div') + '>'; }).join('') + '</div></section>';
   }
 
   /* ---------- head to head ---------- */
+  /* ---------- head-to-head scorecards: both lineups for a game, from data/cards/<season>.json ---------- */
+  var GC = { idx:null, y:{}, open:'' };
+  fetch('data/cards/index.json?v=20261106b').then(function(r){ return r.json(); }).then(function(j){ GC.idx = j; if(H && S.tab === 'h2h') draw(); }).catch(function(){});
+  function gcHas(y){ return !!(GC.idx && GC.idx.years.indexOf(+y) > -1); }
+  function gcLoad(y){
+    if(GC.y[y]) return; GC.y[y] = 'loading';
+    fetch('data/cards/' + y + '.json?v=' + (GC.idx && GC.idx.v || '1')).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){ GC.y[y] = j; if(S.tab === 'h2h') draw(); })
+      .catch(function(){ GC.y[y] = 'none'; if(S.tab === 'h2h') draw(); });
+  }
+  function nameIn(id, y){ var nm = ''; (H.lineage[id] || []).forEach(function(e){ var r = String(e[1]).split('-'), lo = +r[0], hi = +(r[1] || r[0]); if(y >= lo && y <= hi) nm = e[0]; }); return nm || D.NAME[id]; }
+  function gcSide(C, id, y, w, score, win){
+    var nm = nameIn(id, y), L = C.t[id] && C.t[id][w];
+    var head = '<div class="gch' + (win ? ' w' : '') + '"><img src="' + hl(nm, y) + '" alt=""><span><b>' + esc(nm) + '</b>' + (nm !== D.NAME[id] ? '<i class="mono">NOW ' + esc(D.SHORT[id]) + '</i>' : '') + '</span><em>' + D.pts(score) + '</em></div>';
+    if(!L) return '<div class="gct">' + head + '<div class="gce mono">NO LINEUP ON FILE FOR THIS WEEK</div></div>';
+    var rows = L[1], st = rows.filter(function(r){ return r[2]; }), bn = rows.filter(function(r){ return !r[2]; }), top = Math.max.apply(null, st.map(function(r){ return r[1]; }).concat([0]));
+    function row(r){ var p = C.p[r[0]], pos = rvPos(p[1]), nm2 = rvName(p[0]);
+      return '<div class="gcr' + (r[2] && r[1] === top && top > 0 ? ' mvp' : '') + '"><span class="pos ' + esc(pos) + '">' + esc(pos) + '</span>' +
+        (p[3] ? '<a href="#" class="gnm" data-card="' + esc(p[3]) + '">' + esc(nm2) + '</a>' : '<span class="gnm">' + esc(nm2) + '</span>') + '<b>' + D.pts(r[1]) + '</b></div>'; }
+    var sum = Math.round(st.reduce(function(t, r){ return t + r[1]; }, 0) * 100) / 100, bsum = Math.round(bn.reduce(function(t, r){ return t + r[1]; }, 0) * 100) / 100;
+    var best = bn.slice().sort(function(x, z){ return z[1] - x[1]; })[0];
+    return '<div class="gct">' + head + '<div class="gcl mono">STARTERS</div>' + st.map(row).join('') +
+      (Math.abs(sum - score) > 0.01 ? '<div class="gcf mono">LINEUP ADDS TO ' + D.pts(sum) + '</div>' : '') +
+      (bn.length ? '<div class="gcl mono">BENCH \u00b7 ' + D.pts(bsum) + ' PTS' + (best && best[1] > 0 ? ' \u00b7 BEST ' + esc(rvName(C.p[best[0]][0])).toUpperCase() + ' ' + D.pts(best[1]) : '') + '</div><div class="gbn">' + bn.map(row).join('') + '</div>' : '') + '</div>';
+  }
+  function gcard(g, a, b){
+    var y = g[0], w = g[1], C = GC.y[y];
+    if(!C || C === 'loading'){ gcLoad(y); return '<div class="gcd"><div class="ld mono">PULLING THE SCORECARDS\u2026</div></div>'; }
+    if(C === 'none') return '<div class="gcd"><div class="ld mono">NO SCORECARDS ON FILE FOR ' + y + '.</div></div>';
+    var sa = g[2] === a ? g[4] : g[5], sb = g[2] === a ? g[5] : g[4];
+    var note = C.src === 'scorecards' ? 'FROM THE OLD DUBCEY SITE SCORECARDS \u00b7 STARTERS ONLY' : C.src === 'rt' ? 'FROM RT SPORTS\u2019 WEEKLY ROSTERS' : 'FROM MFL WEEKLY RESULTS';
+    return '<div class="gcd"><div class="gck mono"><span>' + y + ' \u00b7 WEEK ' + w + '</span><span>' + note + '</span></div><div class="gcs">' + gcSide(C, a, y, w, sa, sa > sb) + gcSide(C, b, y, w, sb, sb > sa) + '</div></div>';
+  }
+
   function h2h(){
     var a = S.a || D.IDS[0], b = S.b && S.b !== a ? S.b : '', T = H.team[a];
     var top = '<div class="h2pick"><div><div class="sub mono">TEAM A</div>' + rail(a, 'data-ha') + '</div><div><div class="sub mono">TEAM B</div>' + rail(b, 'data-hb', function(id){ return id === a ? 'dim' : ''; }) + '</div></div>';
@@ -158,9 +204,10 @@
     if(b && H.games) res += rivCard(a, b);
     if(b && H.games){
       var gl = H.games.filter(function(g){ return (g[2] === a && g[3] === b) || (g[2] === b && g[3] === a); }).reverse();
-      res += '<article class="card" style="margin-top:26px"><div class="bar mono"><span>EVERY GAME</span><span>' + gl.length + ' ON RECORD · 2006\u201309 LOST</span></div><div class="sx"><table class="ht"><thead><tr><th class="l">SEASON</th><th>WK</th><th class="l">WINNER</th><th>SCORE</th><th>MARGIN</th></tr></thead><tbody>' +
+      res += '<article class="card" style="margin-top:26px"><div class="bar mono"><span>EVERY GAME</span><span>' + gl.length + ' ON RECORD · 2006\u201309 LOST' + (GC.idx ? ' · TAP A GAME FOR LINEUPS' : '') + '</span></div><div class="sx"><table class="ht"><thead><tr><th class="l">SEASON</th><th>WK</th><th class="l">WINNER</th><th>SCORE</th><th>MARGIN</th><th class="gcx">LINEUPS</th></tr></thead><tbody>' +
         gl.map(function(g){ var w = g[4] >= g[5] ? g[2] : g[3], hi = Math.max(g[4], g[5]), lo = Math.min(g[4], g[5]);
-          return '<tr><td class="l y">' + g[0] + '</td><td>' + g[1] + '</td><td class="l"><span class="tn3"><img src="' + D.helm(w) + '" alt=""><b>' + esc(D.SHORT[w]) + '</b></span></td><td class="b">' + D.pts(hi) + ' \u2013 ' + D.pts(lo) + '</td><td>' + D.pts(Math.round((hi - lo) * 100) / 100) + '</td></tr>'; }).join('') +
+          var k = g[0] + '|' + g[1], has = gcHas(g[0]), op = has && GC.open === k;
+          return '<tr class="' + (has ? 'ck2 gcrow' : '') + (op ? ' gold' : '') + '"' + (has ? ' data-hg="' + k + '"' : '') + '><td class="l y">' + g[0] + '</td><td>' + g[1] + '</td><td class="l"><span class="tn3"><img src="' + D.helm(w) + '" alt=""><b>' + esc(D.SHORT[w]) + '</b></span></td><td class="b">' + D.pts(hi) + ' \u2013 ' + D.pts(lo) + '</td><td>' + D.pts(Math.round((hi - lo) * 100) / 100) + '</td><td class="gcx mono">' + (has ? (op ? 'HIDE \u25b4' : 'VIEW \u25be') : '\u2013') + '</td></tr>' + (op ? '<tr class="gcwrap"><td colspan="6">' + gcard(g, a, b) + '</td></tr>' : ''); }).join('') +
         '</tbody></table></div></article>';
     }
     var vs = D.IDS.filter(function(id){ return id !== a; }).map(function(id){ return { id:id, r:T.h2h[id] || [0, 0, 0, 0, 0], p:T.h2hp[id] || [0, 0, 0, 0, 0] }; }).sort(function(x, y){ return parseFloat(pct(y.r)) - parseFloat(pct(x.r)); });
@@ -185,9 +232,33 @@
       '</tbody></table></div></article>';
   }
   function records(){
+    if(S.rc === 'blunders') return blunders();
     var L = H.records[S.rc] || H.records.game;
+    if(S.rc === 'player' && EX) L = EX.rec.concat(L);
     $('hb').innerHTML = '<div class="seg mono hseg">' + CATS.map(function(c){ return '<a href="#records/' + c[0] + '" class="' + (c[0] === S.rc ? 'on' : '') + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       '<div class="rgrid">' + L.map(function(t){ return table(t, t.c.length > 6); }).join('') + '</div>';
+  }
+
+  /* ---------- bench blunders: losses one bench swap would have won ---------- */
+  function blunders(){
+    var seg = '<div class="seg mono hseg">' + CATS.map(function(c){ return '<a href="#records/' + c[0] + '" class="' + (c[0] === S.rc ? 'on' : '') + '">' + c[1] + '</a>'; }).join('') + '</div>';
+    if(!EX){ $('hb').innerHTML = seg + '<div class="ld mono">COUNTING THE REGRETS…</div>'; return; }
+    var B = EX.blunders, f = S.bt || '', cnt = {}, lost = {};
+    B.forEach(function(x){ if(D.NAME[x.t]){ cnt[x.t] = (cnt[x.t] || 0) + 1; lost[x.t] = (lost[x.t] || 0) + x.gain; } });
+    var L = B.filter(function(x){ return !f || x.t === f; }), yrs = EX.yrs || [];
+    var strip = '<div class="bbx">' + D.IDS.slice().sort(function(a, b){ return (cnt[b] || 0) - (cnt[a] || 0); }).map(function(id){
+      return '<button type="button" class="' + (id === f ? 'on' : '') + '" data-bt="' + id + '" title="' + esc(D.NAME[id]) + '"><img src="' + D.helm(id) + '" alt=""><b>' + (cnt[id] || 0) + '</b><span class="mono">' + esc(D.SHORT[id]) + '</span></button>'; }).join('') + '</div>';
+    function pl(x){ return (x[3] ? '<a href="#" data-card="' + esc(x[3]) + '">' + esc(x[0]) + '</a>' : esc(x[0])) + ' <i class="mono">' + esc(x[1]) + ' · ' + D.pts(x[2]) + '</i>'; }
+    $('hb').innerHTML = seg +
+      '<div class="bbh"><div><h2>Coulda, Woulda, Shoulda</h2><p>Every loss where moving one bench player into the lineup, at his own position, would have won the game. Lineups on file: ' + esc(rvRuns(yrs)) + ' (2003–05 scorecards list starters only, so no bench to blunder with).</p></div>' +
+      '<div class="bbn"><b>' + B.length + '</b><span class="mono">LOSSES THAT DIDN’T HAVE TO HAPPEN</span></div></div>' + strip +
+      '<article class="card"><div class="bar mono"><span>' + (f ? esc(D.NAME[f]).toUpperCase() + ' · ' + L.length + ' BLUNDERS · ' + D.pts(Math.round((lost[f] || 0) * 100) / 100) + ' PTS LEFT' : 'THE BIGGEST BLUNDERS') + '</span><span>' + (f ? '<a href="#records/blunders" data-bt="">SHOW EVERYONE ✕</a>' : 'MOST POINTS LEFT ON THE BENCH') + '</span></div>' +
+      '<div class="sx"><table class="ht bbt"><thead><tr><th>#</th><th class="l">TEAM</th><th>SEASON</th><th>WK</th><th class="l">LOST TO</th><th>LOST BY</th><th class="l">SHOULD HAVE STARTED</th><th class="l">INSTEAD OF</th><th>SWING</th></tr></thead><tbody>' +
+      L.slice(0, f ? 200 : 60).map(function(x, i){ var k = x.y + '|' + x.w, h2 = D.NAME[x.o] ? '#h2h/' + x.t + '/' + x.o : '';
+        return '<tr' + (i === 0 ? ' class="gold"' : '') + '><td>' + (i + 1) + '</td><td class="l"><span class="tn3"><img src="' + hl(x.tn, x.y) + '" alt=""><b>' + esc(x.tn) + (x.tn !== D.NAME[x.t] && D.NAME[x.t] ? '<i class="mono">NOW ' + esc(D.SHORT[x.t]) + '</i>' : '') + '</b></span></td>' +
+          '<td class="y">' + x.y + '</td><td>' + x.w + '</td><td class="l">' + (h2 ? '<a class="bbo" href="' + h2 + '">' + esc(x.on) + '</a>' : esc(x.on)) + '<i class="mono bbs">' + D.pts(x.s) + ' – ' + D.pts(x.so) + '</i></td><td>' + D.pts(x.by) + '</td>' +
+          '<td class="l bbp up">' + pl(x.b) + '</td><td class="l bbp">' + pl(x.st) + '</td><td class="b">+' + D.pts(x.gain) + '</td></tr>'; }).join('') +
+      '</tbody></table></div></article>';
   }
   function alltime(){
     var n = function(v){ return parseFloat(String(v).replace(/,/g, '')) || 0; };
@@ -265,11 +336,105 @@
       (S.yr === 'all' ? allCard() : seasonCard(S.yr));
   }
 
+  /* ---------- rosters: every player who was ever on a Dubcey roster, from the weekly lineups ---------- */
+  var RV = null, RVL = 0, RS = { q:'', pos:'ALL', sort:'st', open:{}, lim:60 };
+  var RPOS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'PK', 'DEF', 'IDP'];
+  var RSORT = [['st', 'STARTS'], ['wk', 'WEEKS'], ['sp', 'POINTS'], ['tm', 'TEAMS'], ['yr', 'SEASONS']];
+  function rvLoad(){
+    if(RV || RVL) return; RVL = 1;
+    fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }).then(function(j){ RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
+      .catch(function(){ RVL = 0; if(S.tab === 'rosters') $('hb').innerHTML = '<div class="ld mono">COULDN’T OPEN THE ROSTER VAULT.</div>'; });
+  }
+  function rvName(n, pos){ var m = /^(.*?),\s*(.*)$/.exec(String(n)); return m ? m[2] + ' ' + m[1] : String(n); }
+  function rvPos(p){ p = String(p || '').toUpperCase(); return p === 'D/ST' || p === 'DST' ? 'DEF' : p === 'K' ? 'PK' : p; }
+  function rvKey(s){ return String(s).toLowerCase().replace(/[’'.]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function rvPrep(j){
+    var P = j.p.map(function(p, i){ var nm = rvName(p[0]); return { i:i, n:nm, raw:p[0], pos:rvPos(p[1]), nfl:p[2] || '', id:p[3] || '', S:[], k:rvKey(nm + ' ' + p[0] + ' ' + (p[2] || '')) }; });
+    j.s.forEach(function(s){ var p = P[s[0]]; if(p) p.S.push({ y:s[1], t:j.t[s[2]], f:s[3] || '', wk:s[4], st:s[5], sp:s[6], hi:s[7], po:s[8] }); });
+    P.forEach(function(p){ p.S.sort(function(a, b){ return a.y - b.y || a.t.localeCompare(b.t); }); });
+    return { P:P.filter(function(p){ return p.S.length; }), yrs:j.yrs || [], rt:j.rt || [], lu:j.lineups || [], upd:j.upd || '' };
+  }
+  // totals for one player, optionally only his time with one franchise ('x' = defunct franchises)
+  function rvTot(p, fr){
+    var L = p.S.filter(function(s){ return !fr || (fr === 'x' ? !s.f : s.f === fr); }); if(!L.length) return null;
+    var o = { p:p, L:L, wk:0, st:0, sp:0, hi:0, ys:{}, tm:{}, tl:[] };
+    L.forEach(function(s){ o.wk += s.wk; o.st += s.st; o.sp += s.sp; if(s.hi > o.hi) o.hi = s.hi; o.ys[s.y] = 1; var k = s.f || s.t; if(!o.tm[k]){ o.tm[k] = s; o.tl.push(k); } else o.tm[k] = s; });
+    o.yl = Object.keys(o.ys).map(Number).sort(function(a, b){ return a - b; }); o.ny = o.yl.length; o.nt = o.tl.length;
+    return o;
+  }
+  function rvSpan(L){ var a = L[0], b = L[L.length - 1]; return a === b ? String(a) : a + '–' + b; }
+  // [2003,2004,2005,2010,2011] -> "2003–05 · 2010–11"
+  function rvRuns(L){ var out = [], a = null, b = null; L.forEach(function(y){ if(a !== null && y === b + 1){ b = y; return; } if(a !== null) out.push([a, b]); a = b = y; }); if(a !== null) out.push([a, b]);
+    return out.map(function(r){ return r[0] === r[1] ? String(r[0]) : r[0] + '–' + String(r[1]).slice(-2); }).join(' · '); }
+  function rvList(){
+    if(!RV) return;
+    var fr = S.rf || '', toks = rvKey(RS.q).split(' ').filter(Boolean);
+    var R = RV.P.filter(function(p){ return (RS.pos === 'ALL' || p.pos === RS.pos) && toks.every(function(t){ return p.k.indexOf(t) > -1; }); })
+      .map(function(p){ return rvTot(p, fr); }).filter(Boolean);
+    var by = { st:function(a, b){ return b.st - a.st || b.sp - a.sp; }, wk:function(a, b){ return b.wk - a.wk || b.st - a.st; }, sp:function(a, b){ return b.sp - a.sp || b.st - a.st; },
+      tm:function(a, b){ return b.nt - a.nt || b.st - a.st; }, yr:function(a, b){ return b.ny - a.ny || b.st - a.st; } }[RS.sort];
+    R.sort(by);
+    var lab = RSORT.filter(function(x){ return x[0] === RS.sort; })[0][1], who = !fr ? 'ALL FRANCHISES' : fr === 'x' ? 'DEFUNCT FRANCHISES' : String(D.NAME[fr] || fr).toUpperCase();
+    var head = '<div class="rxr hd mono"><span class="rk">#</span><span class="l">PLAYER</span><span class="c-tm">TEAMS</span><span class="c-yr">SEASONS</span><span>WKS</span><span>STARTS</span><span>PTS</span></div>';
+    var rows = R.slice(0, RS.lim).map(function(o, i){
+      var p = o.p, op = RS.open[p.i];
+      var hel = o.tl.slice(0, 7).map(function(k){ var s = o.tm[k]; return '<img src="' + hl(s.t, s.y) + '" alt="" title="' + esc(s.t) + '">'; }).join('') + (o.nt > 7 ? '<i class="mono">+' + (o.nt - 7) + '</i>' : '');
+      return '<button type="button" class="rxr' + (op ? ' on' : '') + '" data-rvp="' + p.i + '"><span class="rk">' + (i + 1) + '</span>' +
+        '<span class="rxn"><b>' + esc(p.n) + '</b><span class="rxm"><span class="pos ' + esc(p.pos) + '">' + esc(p.pos) + '</span>' + (p.nfl && p.pos !== 'DEF' ? '<span class="mono">' + esc(p.nfl) + '</span>' : '') + '<span class="rxh">' + hel + '</span></span></span>' +
+        '<span class="c-tm">' + o.nt + '</span><span class="c-yr"><b>' + o.ny + '</b><i class="mono">' + rvSpan(o.yl) + '</i></span><span>' + o.wk + '</span><span class="big">' + o.st + '</span><span>' + nf(o.sp, true) + '</span></button>' +
+        (op ? rvDetail(o) : '');
+    }).join('');
+    var more = R.length > RS.lim ? '<button type="button" class="rxmore mono" data-rvmore="1">SHOW ' + Math.min(60, R.length - RS.lim) + ' MORE · ' + R.length + ' IN ALL</button>' : '';
+    $('rxl').innerHTML = '<article class="card rxc"><div class="bar mono"><span>' + (toks.length ? R.length + (R.length === 1 ? ' MATCH' : ' MATCHES') : 'MOST ' + lab) + ' · ' + esc(who) + '</span><span>WKS = ON THE ROSTER · STARTS = IN THE LINEUP</span></div>' +
+      (R.length ? head + rows + more : '<div class="ld mono">' + (toks.length ? 'NO ONE BY THAT NAME IN THE VAULT' + (fr ? ' FOR THIS FRANCHISE' : '') + '.' : 'NOBODY HERE YET.') + '</div>') + '</article>';
+  }
+  function rvDetail(o){
+    var p = o.p;
+    return '<div class="rxx"><div class="sx"><table class="ht"><thead><tr><th class="l">SEASON</th><th class="l">FANTASY TEAM</th><th>WKS</th><th>STARTS</th><th>PTS</th><th>PER START</th><th>BEST</th></tr></thead><tbody>' +
+      o.L.map(function(s){ var n2 = s.f && D.NAME[s.f] && D.NAME[s.f] !== s.t ? D.SHORT[s.f] : '', rt = RV.rt.indexOf(s.y) > -1, lu = RV.lu.indexOf(s.y) > -1;
+        return '<tr><td class="l y">' + s.y + (rt ? ' <i class="rxrt mono" title="RT Sports season · regular season only">RT</i>' : '') + (lu ? ' <i class="rxrt rxog mono" title="From the old Dubcey site scorecards · starters only">OG</i>' : '') + '</td>' +
+          '<td class="l"><span class="tn3"><img src="' + hl(s.t, s.y) + '" alt=""><b>' + esc(s.t) + (n2 ? '<i class="mono">NOW ' + esc(n2) + '</i>' : '') + (!s.f ? '<i class="mono">DEFUNCT</i>' : '') + '</b></span></td>' +
+          '<td>' + s.wk + '</td><td class="b">' + s.st + '</td><td>' + nf(s.sp) + '</td><td>' + (s.st ? nf(s.sp / s.st) : '–') + '</td><td>' + (s.st ? nf(s.hi) : '–') + '</td></tr>'; }).join('') +
+      '</tbody><tfoot><tr><td class="l" colspan="2">' + (o.ny === 1 ? '1 SEASON' : o.ny + ' SEASONS') + ' · ' + (o.nt === 1 ? '1 TEAM' : o.nt + ' TEAMS') + '</td><td>' + o.wk + '</td><td class="b">' + o.st + '</td><td>' + nf(o.sp) + '</td><td>' + (o.st ? nf(o.sp / o.st) : '–') + '</td><td>' + (o.st ? nf(o.hi) : '–') + '</td></tr></tfoot></table></div>' +
+      (p.id ? '<div class="rxf"><a href="#" class="mono" data-card="' + esc(p.id) + '">OPEN PLAYER CARD →</a></div>' : '') + '</div>';
+  }
+  function rosters(){
+    if(!RV){ $('hb').innerHTML = '<div class="ld mono">UNLOCKING THE ROSTER VAULT…</div>'; rvLoad(); return; }
+    var fr = S.rf || '', ys = RV.yrs, rt = RV.rt.filter(function(y){ return ys.indexOf(y) > -1; }), lu = RV.lu.filter(function(y){ return ys.indexOf(y) > -1; }), miss = [];
+    for(var y = 2001; y <= +D.Y; y++) if(ys.indexOf(y) < 0) miss.push(y);
+    var opts = '<option value="">All franchises</option>' + D.IDS.map(function(id){ return '<option value="' + id + '"' + (id === fr ? ' selected' : '') + '>' + esc(D.NAME[id]) + '</option>'; }).join('') + '<option value="x"' + (fr === 'x' ? ' selected' : '') + '>Defunct franchises</option>';
+    var lin = fr && fr !== 'x' ? (H.lineage[fr] || []) : [];
+    $('hb').innerHTML = '<div class="rxtop">' +
+      '<div class="filt"><input id="rxq" type="search" autocomplete="off" spellcheck="false" placeholder="Search any player — Calvin Johnson, Ravens, Brady…" value="' + esc(RS.q) + '">' +
+      '<div class="seg mono">' + RPOS.map(function(x){ return '<button type="button" class="' + (x === RS.pos ? 'on' : '') + '" data-rp="' + x + '">' + x + '</button>'; }).join('') + '</div></div>' +
+      '<div class="filt f2 mono"><label>FRANCHISE <select id="rxf">' + opts + '</select></label><label>SORT BY <select id="rxs">' + RSORT.map(function(x){ return '<option value="' + x[0] + '"' + (x[0] === RS.sort ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label></div>' +
+      '<div class="rxi mono"><span><b>' + RV.P.length.toLocaleString('en-US') + '</b> PLAYERS</span><span>SEASONS <b>' + rvRuns(ys) + '</b></span>' +
+        (lu.length ? '<span><i class="rxrt rxog">OG</i> ' + rvRuns(lu) + ' · OLD SITE SCORECARDS, STARTERS ONLY</span>' : '') +
+        (rt.length ? '<span><i class="rxrt">RT</i> ' + rvRuns(rt) + ' · RT SPORTS, REGULAR SEASON ONLY</span>' : '') + (miss.length ? '<span>' + rvRuns(miss) + ' NOT ON FILE</span>' : '') + '</div>' +
+      (lin.length ? '<div class="rxfh"><img src="' + D.helm(fr) + '" alt=""><div><div class="mono">ALL-TIME ROSTER</div><h2>' + esc(D.NAME[fr]) + '</h2><div class="mono rxaka">' + lin.map(function(e){ return esc(e[0]) + ' <i>' + esc(e[1]) + '</i>'; }).join(' · ') + '</div></div></div>' : '') +
+      '</div><div id="rxl"></div>';
+    rvList();
+  }
+  var rvT = 0;
+  document.addEventListener('input', function(e){ if(e.target.id !== 'rxq') return; RS.q = e.target.value; RS.lim = 60; RS.open = {}; clearTimeout(rvT); rvT = setTimeout(rvList, 120); });
+  document.addEventListener('change', function(e){
+    if(e.target.id === 'rxf'){ S.rf = e.target.value; RS.lim = 60; RS.open = {}; history.replaceState(null, '', '#rosters' + (S.rf ? '/' + S.rf : '')); rosters(); }
+    if(e.target.id === 'rxs'){ RS.sort = e.target.value; RS.lim = 60; rvList(); }
+  });
+  document.addEventListener('click', function(e){
+    if(S.tab !== 'rosters') return;
+    var b = e.target.closest('[data-rp]'); if(b){ RS.pos = b.getAttribute('data-rp'); RS.lim = 60; RS.open = {}; [].forEach.call(document.querySelectorAll('[data-rp]'), function(x){ x.classList.toggle('on', x === b); }); rvList(); return; }
+    var r = e.target.closest('[data-rvp]'); if(r){ var i = r.getAttribute('data-rvp'); RS.open[i] = !RS.open[i]; rvList(); return; }
+    if(e.target.closest('[data-rvmore]')){ RS.lim += 60; rvList(); }
+  });
+
   window.addEventListener('hashchange', function(){ hash(); if(H){ draw(); window.scrollTo(0, 0); } });
   document.addEventListener('click', function(e){
     var t = e.target.closest('[data-team]'); if(t){ S.team = t.getAttribute('data-team'); history.replaceState(null, '', '#teams/' + S.team); draw(); return; }
+    var bt = e.target.closest('[data-bt]'); if(bt && S.tab === 'records'){ e.preventDefault(); var v = bt.getAttribute('data-bt'); S.bt = S.bt === v ? '' : v; draw(); return; }
+    var hg = e.target.closest('[data-hg]'); if(hg && !e.target.closest('[data-card]')){ var k = hg.getAttribute('data-hg'); GC.open = GC.open === k ? '' : k; draw(); return; }
     var rv = e.target.closest('[data-rv]'); if(rv){ e.preventDefault(); var q = rv.getAttribute('data-rv').split('/'); S.a = q[0]; S.b = q[1]; history.replaceState(null, '', '#h2h/' + S.a + '/' + S.b); draw(); window.scrollTo(0, 0); return; }
-    var a = e.target.closest('[data-ha]'); if(a){ S.a = a.getAttribute('data-ha'); if(S.b === S.a) S.b = ''; history.replaceState(null, '', '#h2h/' + S.a + (S.b ? '/' + S.b : '')); draw(); return; }
-    var b = e.target.closest('[data-hb]'); if(b){ var id = b.getAttribute('data-hb'); if(id === (S.a || D.IDS[0])) return; S.b = id; history.replaceState(null, '', '#h2h/' + (S.a || D.IDS[0]) + '/' + id); draw(); }
+    var a = e.target.closest('[data-ha]'); if(a){ GC.open = ''; S.a = a.getAttribute('data-ha'); if(S.b === S.a) S.b = ''; history.replaceState(null, '', '#h2h/' + S.a + (S.b ? '/' + S.b : '')); draw(); return; }
+    var b = e.target.closest('[data-hb]'); if(b){ GC.open = ''; var id = b.getAttribute('data-hb'); if(id === (S.a || D.IDS[0])) return; S.b = id; history.replaceState(null, '', '#h2h/' + (S.a || D.IDS[0]) + '/' + id); draw(); }
   });
 })();

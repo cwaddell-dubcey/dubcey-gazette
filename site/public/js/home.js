@@ -166,6 +166,18 @@
       });
   }).catch(function(){});
 
+  // this week in Dubcey history: the best starter performance from this week number in past seasons (data/extras.json)
+  Promise.all([fetch('data/extras.json?v=20261106a').then(function(r){ return r.json(); }), D.doneWeek().catch(function(){ return { w:0 }; })]).then(function(X){
+    var EX = X[0], w = Math.min(17, Math.max(1, num(X[1] && X[1].w) + 1)), L = arr(EX.tw && EX.tw[w]).filter(function(x){ return x[0] < +D.Y; }).slice(0, 4);
+    if(!L.length) return;
+    $('twih').innerHTML = '<div class="bar mono"><span>THIS WEEK IN DUBCEY HISTORY</span><span>WEEK ' + w + '</span></div>' + L.map(function(x){
+      var nm = x[8] ? '<span class="pk" data-card="' + esc(x[8]) + '">' + esc(x[3]) + '</span>' : esc(x[3]);
+      return '<div class="twi">' + (x[1] ? '<img src="' + helm(x[1]) + '" alt="">' : '<span class="twy mono">' + x[0] + '</span>') + '<div><span class="mono twk">' + x[0] + ' · WEEK ' + w + '</span>' +
+        '<p>' + nm + ' <i class="mono">' + esc(x[4]) + '</i> put up <b>' + D.pts(x[5]) + '</b> for ' + esc(x[2]) + (x[6] ? (x[7] === 1 ? ' in a win over ' : x[7] === 0 ? ' in a loss to ' : ' against ') + esc(x[6]) : '') + '.</p></div></div>';
+    }).join('') + '<a class="twft mono" href="' + D.href('history') + '#records/player">EVERY-ERA RECORDS →</a>';
+    $('twih').hidden = false;
+  }).catch(function(){});
+
   D.api('transactions', 'COUNT=40').then(function(j){
     var tx = arr(j && j.transactions && j.transactions.transaction).filter(function(t){ return /BBID_WAIVER|FREE_AGENT|TRADE/.test(t.type) && D.NAME[t.franchise]; }).slice(0, 8);
     if(!tx.length) throw 0;

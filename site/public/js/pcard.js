@@ -6,7 +6,7 @@
   var CACHE = {};
 
   function el(){ var v = document.getElementById('pcard'); if(v) return v; v = document.createElement('div'); v.id = 'pcard'; v.className = 'veil pcv'; v.innerHTML = '<div class="pcs2" role="dialog" aria-modal="true" aria-label="Player card"></div>'; document.body.appendChild(v);
-    v.addEventListener('click', function(e){ if(e.target === v || e.target.closest('[data-pcx]')) close(); var t = e.target.closest('[data-pct]'); if(t){ S.tab = t.getAttribute('data-pct'); if(S.tab === 'proj') proj(); body(); } var a = e.target.closest('[data-pca]'); if(a) act(a.getAttribute('data-pca')); });
+    v.addEventListener('click', function(e){ if(e.target === v || e.target.closest('[data-pcx]')) close(); var t = e.target.closest('[data-pct]'); if(t){ S.tab = t.getAttribute('data-pct'); if(S.tab === 'proj') proj(); if(S.tab === 'dubcey') vault(); body(); } var a = e.target.closest('[data-pca]'); if(a) act(a.getAttribute('data-pca')); });
     return v; }
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && document.getElementById('pcard')) close(); });
   function close(){ var v = document.getElementById('pcard'); if(v) v.remove(); document.documentElement.classList.remove('nos'); S.id = ''; }
@@ -129,7 +129,7 @@
     function box(x, l, hi){ return '<div' + (hi ? ' class="hi"' : '') + '><b>' + (x == null ? '\u2013' : D.pts(Math.round(x * 100) / 100)) + '</b><span class="mono">' + l + '</span></div>'; }
     var live = d.sec > 0 && d.sec < 3600, up = d.kick && d.kick > Date.now(), ln = [];
     if(live) ln.push('<em>LIVE</em>'); if(d.opp) ln.push(esc(d.opp)); if(up) ln.push('KICKOFF ' + esc(new Date(d.kick).toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase())); if(d.sx) ln.push(esc(d.sx));
-    var tabs = [['news', 'NEWS'], ['bio', 'BIO'], ['log', D.Y + ' STATS'], ['proj', 'PROJ.'], ['career', 'CAREER']];
+    var tabs = [['news', 'NEWS'], ['bio', 'BIO'], ['log', D.Y + ' STATS'], ['proj', 'PROJ.'], ['career', 'CAREER'], ['dubcey', 'IN DUBCEY']];
     v.innerHTML = '<button type="button" class="wvx" data-pcx aria-label="Close">\u00d7</button>' +
       '<div class="pct2"><div class="pph">' + (photo ? '<img src="' + esc(photo) + '" alt="" onerror="this.onerror=null;this.src=\'' + D.nflLogo(d.team) + '\';this.className=\'lg\'">' : '') + '</div>' +
       '<div class="pin"><div class="kick mono">' + [d.pos ? '<span class="pos ' + esc(d.pos) + '">' + esc(d.pos) + '</span>' : '', d.team ? D.tlogo(d.team) + esc(d.team) : ''].filter(Boolean).join(' ') + (d.inj ? ' <span class="ij mono">' + esc(d.inj) + '</span>' : '') + '</div>' +
@@ -148,6 +148,23 @@
     else if(d.me) A.push(['trade', 'PROPOSE TRADE', 1]);
     if(d.own) A.push(['team', 'VIEW ROSTER', 0]);
     return A.map(function(a){ return '<button type="button" class="btn' + (a[2] ? '' : ' ghost2') + ' sm" data-pca="' + a[0] + '">' + a[1] + '</button>'; }).join('');
+  }
+  // his whole Dubcey history: every fantasy team he was on, from data/rosters.json (2003–05, 2010 on)
+  var VT = null, VD = null;
+  function vault(){ if(!VT) VT = fetch('data/rosters.json?v=20261106a').then(function(r){ return r.json(); }).then(function(j){ VD = j; }, function(){ VD = false; }).then(body); return VT; }
+  function dubcey(id){
+    if(!VD) return '<div class="ld mono">DUBCEY HISTORY ISN’T AVAILABLE RIGHT NOW</div>';
+    var i = -1; for(var k = 0; k < VD.p.length; k++) if(VD.p[k][3] === id){ i = k; break; }
+    var L = i < 0 ? [] : VD.s.filter(function(s){ return s[0] === i; }).sort(function(a, b){ return b[1] - a[1]; });
+    if(!L.length) return '<div class="ld mono">NEVER ON A DUBCEY ROSTER IN THE SEASONS ON FILE</div>';
+    var st = 0, sp = 0, hi = 0, ys = {}, tm = {};
+    L.forEach(function(s){ st += s[5]; sp += s[6]; if(s[7] > hi) hi = s[7]; ys[s[1]] = 1; tm[s[3] || VD.t[s[2]]] = 1; });
+    var ny = Object.keys(ys).length, nt = Object.keys(tm).length;
+    function n2(v){ return D.pts(Math.round(v * 100) / 100); }
+    return '<div class="pdub mono"><div><b>' + ny + '</b><span>' + (ny === 1 ? 'SEASON' : 'SEASONS') + '</span></div><div><b>' + nt + '</b><span>' + (nt === 1 ? 'TEAM' : 'TEAMS') + '</span></div><div><b>' + st + '</b><span>STARTS</span></div><div><b>' + Math.round(sp).toLocaleString('en-US') + '</b><span>PTS AS STARTER</span></div></div>' +
+      '<div class="sx"><table class="ht pgt"><thead><tr><th class="l">SEASON</th><th class="l">FANTASY TEAM</th><th>WKS</th><th>STARTS</th><th>PTS</th><th>BEST</th></tr></thead><tbody>' +
+      L.map(function(s){ var nm = VD.t[s[2]]; return '<tr><td class="l y">' + s[1] + '</td><td class="l"><span class="tn3">' + (s[3] ? '<img src="' + D.helm(s[3]) + '" alt="">' : '') + '<b>' + esc(nm) + '</b></span></td><td>' + s[4] + '</td><td>' + s[5] + '</td><td>' + n2(s[6]) + '</td><td>' + (s[5] ? n2(s[7]) : '–') + '</td></tr>'; }).join('') +
+      '</tbody></table></div><div class="pdubn mono">WEEKS = ON THE ROSTER · 2003–05 STARTERS ONLY · 2010–13 REGULAR SEASON ONLY · <a href="' + D.href('history') + '#rosters">ROSTER VAULT →</a></div>';
   }
   function body(){
     var b = document.getElementById('pbody'); if(!b) return;
@@ -172,6 +189,8 @@
       b.innerHTML = d.pageOk == null ? wait : table(d.log, 'NO ' + D.Y + ' STATS YET');
     } else if(S.tab === 'proj'){
       b.innerHTML = !d.projLog ? wait : table(d.projLog, 'NO PROJECTIONS');
+    } else if(S.tab === 'dubcey'){
+      b.innerHTML = VD === null ? wait : dubcey(S.id);
     } else {
       b.innerHTML = d.pageOk == null ? wait : table(d.career, 'NO CAREER STATS');
     }

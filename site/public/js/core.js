@@ -15,7 +15,7 @@
   D.L = '18919'; D.Y = String(D.SEASON.year);
   var W1 = D.SEASON.week1.split('-').map(Number);
   // deploy version, stamped into every page by the worker (used for scripts loaded later)
-  D.V = ((document.querySelector('meta[name="dc-v"]') || {}).content) || '20261027a';
+  D.V = ((document.querySelector('meta[name="dc-v"]') || {}).content) || '20261106a';
   D.RAW = 'https://raw.githubusercontent.com/cwaddell-dubcey/dubcey-gazette/main/assets/';
   D.LOCAL = !/dubcey\.party$|workers\.dev$/.test(location.hostname);
   D.IDS = ['0001','0002','0003','0004','0005','0006','0007','0008','0009','0010','0011','0012'];

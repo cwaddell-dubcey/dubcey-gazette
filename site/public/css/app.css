@@ -2393,3 +2393,176 @@ img.fmk.lg{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
 .nb b{display:block;font-size:9.5px;letter-spacing:.12em;color:#E0A72B;margin-bottom:3px}
 .nb span{display:block;font-size:14px;line-height:1.35;color:#C9D6E6;text-wrap:pretty}
 .nbx .nb+.bar{margin-top:0}
+
+/* ---------- History → Rosters (every player ever rostered) ---------- */
+.rxtop{display:grid;gap:10px;margin-bottom:16px}
+.rxtop .filt{margin-bottom:0}
+.rxtop .filt input[type=search]{-webkit-appearance:none;appearance:none}
+.rxtop .filt .seg{flex:0 0 auto}
+.rxtop .filt.f2{display:flex;gap:10px 22px}
+.rxtop .filt.f2 select{min-width:200px}
+.rxi{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:9.5px;letter-spacing:.12em;color:#9FB4CC}
+.rxi b{color:#E0A72B;font-weight:700}
+.rxi .rtag{font-size:8.5px;padding:3px 6px}
+.rxfh{display:flex;align-items:center;gap:16px;margin-top:6px;padding:14px 16px;background:#16304F;border:2px solid #2C4C78}
+.rxfh img{width:84px;height:62px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.rxfh .mono{font-size:9px;letter-spacing:.16em;color:#E0A72B}
+.rxfh h2{margin:4px 0 6px;font:400 26px/1 'Alfa Slab One',serif;color:#F7EFDB;text-transform:uppercase}
+.rxfh .rxaka{color:#9FB4CC;letter-spacing:.06em;line-height:1.6}
+.rxfh .rxaka i{font-style:normal;color:#6F8BAD}
+.rxc{overflow:hidden}
+.rxr{display:grid;grid-template-columns:40px minmax(0,1fr) 62px 104px 56px 66px 84px;align-items:center;gap:0 10px;width:100%;padding:11px 18px;margin:0;border:0;border-bottom:1px solid #E0D6B8;background:transparent;color:#2A3442;text-align:right;font:500 13px/1.2 'Courier Prime',monospace;font-variant-numeric:tabular-nums;cursor:pointer}
+.rxr:hover{background:#EFE4C8}
+.rxr:focus-visible{outline:2px solid #E0A72B;outline-offset:-2px}
+.rxr.hd{cursor:default;padding:10px 18px 8px;font:700 8.5px/1 'Courier Prime',monospace;letter-spacing:.14em;color:#6B6455;border-bottom:2px solid #102542}
+.rxr.hd:hover{background:transparent}
+.rxr .l{text-align:left}
+.rxr .rk{text-align:center;color:#9A8F78;font-weight:700}
+.rxr .big{font:400 16px/1 'Alfa Slab One',serif;color:#102542}
+.rxr .c-yr{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.rxr .c-yr b{color:#102542}
+.rxr .c-yr i{font-style:normal;font-size:9px;color:#6B6455;letter-spacing:.04em}
+.rxr.on{background:#EFE4C8;box-shadow:inset 4px 0 0 #c8282d}
+.rxn{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;text-align:left}
+.rxn b{max-width:100%;font:700 17px/1.1 'Zilla Slab',Georgia,serif;color:#102542;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rxm{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:10px;color:#6B6455;letter-spacing:.06em}
+.rxm .pos{min-width:28px;padding:3px 5px;font-size:8.5px}
+.rxh{display:inline-flex;align-items:center;gap:3px;max-width:100%;overflow:hidden}
+.rxm{max-width:100%}
+.rxh img{width:28px;height:20px;object-fit:contain}
+.rxh i{font-style:normal;font-size:9px;color:#6B6455;margin-left:2px}
+.rxx{padding:4px 18px 14px 58px;background:#FBF6E8;border-bottom:2px solid #102542}
+.rxx .ht tfoot td{padding-top:10px;border-bottom:0;border-top:2px solid #102542;font-weight:700;color:#102542}
+.rxx .ht tfoot td.l{font:700 9px/1 'Courier Prime',monospace;letter-spacing:.14em;color:#6B6455}
+.rxx .ht th.l{text-align:left}
+.rxrt{display:inline-block;padding:2px 4px;margin-left:4px;background:#B5302A;color:#F7EFDB;font-style:normal;font-size:7.5px;letter-spacing:.1em;vertical-align:2px}
+.rxrt.rxog{background:#1f6f5c}
+.rxi .rxrt{margin:0 4px 0 0;vertical-align:1px}
+.pos.PK{background:#6B6455}
+.pos.IDP{background:#5B3F7A}
+.rxx .rxf{display:flex;justify-content:flex-end;margin-top:10px}
+.rxx .rxf a{font-size:10px;letter-spacing:.14em;color:#c8282d;text-decoration:none;font-weight:700}
+.rxx .rxf a:hover{color:#102542}
+.rxmore{display:block;width:100%;padding:14px;border:0;background:#102542;color:#E0A72B;font-size:10px;font-weight:700;letter-spacing:.14em;cursor:pointer}
+.rxmore:hover{background:#16304F}
+@media (max-width:760px){
+  .rxtop .filt .seg{width:100%;overflow-x:auto}
+  .rxtop .filt.f2{display:grid;grid-template-columns:1fr 1fr}
+  .rxtop .filt.f2 label{flex-direction:column;align-items:stretch}
+  .rxtop .filt.f2 select{min-width:0;width:100%}
+  .rxfh{padding:12px}
+  .rxfh img{width:60px;height:44px}
+  .rxfh h2{font-size:19px}
+  .rxr{grid-template-columns:26px minmax(0,1fr) 42px 50px 62px;gap:0 8px;padding:10px 10px;font-size:12px}
+  .rxr.hd{padding:9px 10px 7px}
+  .rxr .c-tm,.rxr .c-yr{display:none}
+  .rxr .big{font-size:14px}
+  .rxn b{font-size:15px}
+  .rxh img{width:22px;height:16px;flex:none}
+  .rxh i{display:none}
+  .rxtop .filt.f2 select{font-size:15px}
+  .rxx{padding:2px 8px 12px}
+  .rxc .bar span+span{display:none}
+}
+
+/* ---------- History → Head-to-Head scorecards ---------- */
+.ht th.gcx,.ht td.gcx{text-align:right;font-size:9px;letter-spacing:.12em;color:#c8282d;font-weight:700}
+.ht tr.gcrow:hover td{background:#EFE4C8}
+.ht tr.gcwrap td{padding:0;background:#FBF6E8;border-bottom:2px solid #102542;white-space:normal;text-align:left}
+.gcd{padding:14px 16px 18px}
+.gck{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:9px;letter-spacing:.14em;color:#6B6455;margin-bottom:12px}
+.gck span:first-child{color:#c8282d;font-weight:700}
+.gcs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.gct{min-width:0;background:#F7EFDB;border:1.5px solid #102542}
+.gch{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#102542;color:#F7EFDB}
+.gch img{width:44px;height:32px;object-fit:contain;flex:none}
+.gch span{flex:1;min-width:0}
+.gch b{display:block;font:400 13px/1.1 'Alfa Slab One',serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gch i{display:block;margin-top:3px;font-style:normal;font-size:8px;letter-spacing:.12em;color:#9FB4CC}
+.gch em{font:400 20px/1 'Alfa Slab One',serif;font-style:normal;color:#9FB4CC}
+.gch.w em{color:#E0A72B}
+.gcl{padding:9px 12px 5px;font-size:8.5px;letter-spacing:.14em;color:#6B6455;border-bottom:1px solid #E0D6B8}
+.gcr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid #EDE3C6;font:500 12.5px/1.2 'Courier Prime',monospace;color:#2A3442;font-variant-numeric:tabular-nums}
+.gcr .pos{min-width:30px;padding:3px 4px;font-size:8px}
+.gcr .gnm{font:600 14px/1.2 'Zilla Slab',Georgia,serif;color:#102542;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcr a.gnm:hover{color:#c8282d}
+.gcr b{font-weight:700;color:#102542}
+.gcr.mvp{background:#F1E3B8}
+.gcr.mvp b::before{content:'\2605 ';color:#c8282d}
+.gbn .gcr{opacity:.62}
+.gbn .gcr .gnm{font-weight:500}
+.gcf{padding:6px 12px;font-size:8.5px;letter-spacing:.12em;color:#B5302A;text-align:right}
+.gce{padding:18px 12px;font-size:9px;letter-spacing:.12em;color:#6B6455;text-align:center}
+@media (max-width:760px){
+  .gcd{position:sticky;left:0;box-sizing:border-box;width:calc(100vw - 34px);padding:10px 8px 14px}
+  .gcs{grid-template-columns:minmax(0,1fr);gap:12px}
+  .ht th.gcx,.ht td.gcx{font-size:8px}
+}
+
+/* ---------- History → Records → Bench Blunders ---------- */
+.bbh{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:4px 0 16px}
+.bbh h2{margin:0 0 6px;font:400 30px/1 'Alfa Slab One',serif;color:#F7EFDB;text-transform:uppercase}
+.bbh p{margin:0;max-width:640px;font:400 15px/1.45 'Zilla Slab',Georgia,serif;color:#9FB4CC}
+.bbn{text-align:right;flex:none}
+.bbn b{display:block;font:400 46px/1 'Alfa Slab One',serif;color:#E0A72B}
+.bbn span{font-size:9px;letter-spacing:.14em;color:#9FB4CC}
+.bbx{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;margin-bottom:18px}
+.bbx button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 7px;background:#16304F;border:1.5px solid #2C4C78;color:#F7EFDB;cursor:pointer}
+.bbx button:hover{border-color:#E0A72B}
+.bbx button.on{background:#E0A72B;border-color:#E0A72B;color:#102542}
+.bbx img{width:44px;height:32px;object-fit:contain}
+.bbx b{font:400 18px/1 'Alfa Slab One',serif}
+.bbx span{font-size:8px;letter-spacing:.08em;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.card .bar a{color:inherit;text-decoration:none}
+.bbt td.bbp{white-space:normal;min-width:150px;font:600 13.5px/1.25 'Zilla Slab',Georgia,serif;color:#102542}
+.bbt td.bbp a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.bbt td.bbp i{display:block;margin-top:2px;font-style:normal;font-size:9px;letter-spacing:.06em;color:#6B6455}
+.bbt td.bbp.up{color:#1f6f5c}
+.bbt td.b{color:#c8282d}
+.bbt .bbo{font:600 13px/1.2 'Zilla Slab',Georgia,serif;color:#102542;text-decoration:none;border-bottom:1px dotted #102542}
+.bbt .bbs{display:block;margin-top:2px;font-style:normal;font-size:9px;color:#6B6455}
+@media (max-width:760px){
+  .bbh{flex-direction:column;align-items:flex-start;gap:10px}
+  .bbh h2{font-size:22px}
+  .bbn{text-align:left}
+  .bbn b{font-size:34px}
+  .bbx{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .bbx img{width:34px;height:25px}
+}
+
+/* ---------- History → Trophy Case → Mount Rushmore ---------- */
+.rush{margin:30px 0 44px}
+.rush .lh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.rush .lh .t{font:400 24px/1 'Alfa Slab One',serif;color:#F7EFDB;text-transform:uppercase}
+.rush .lh .mono{font-size:9px;letter-spacing:.14em;color:#9FB4CC}
+.rshg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.rsh{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px 16px 14px;background:#F7EFDB;border:2px solid #102542;box-shadow:4px 4px 0 #c8282d;color:#102542;text-decoration:none}
+a.rsh:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #c8282d}
+.rshn{position:absolute;top:10px;right:12px;font:700 22px/1 'Courier Prime',monospace;color:#E0D6B8}
+.rsh h3{margin:2px 0 0;font:400 20px/1.05 'Alfa Slab One',serif;text-transform:uppercase;color:#102542}
+.rshy{font-size:9.5px;letter-spacing:.12em;color:#6B6455}
+.rshs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;margin-top:8px;padding-top:10px;border-top:2px solid #102542}
+.rshs b{display:block;font:400 16px/1 'Alfa Slab One',serif;color:#102542}
+.rshs span{font-size:8px;letter-spacing:.14em;color:#6B6455}
+@media (max-width:1000px){.rshg{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.rush .lh .t{font-size:19px}.rsh h3{font-size:17px}.rshg{gap:10px}}
+
+/* ---------- player card → In Dubcey ---------- */
+.pdub{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.pdub div{padding:10px 8px;background:#102542;color:#F7EFDB;text-align:center}
+.pdub b{display:block;font:400 18px/1 'Alfa Slab One',serif;color:#E0A72B}
+.pdub span{display:block;margin-top:4px;font-size:8px;letter-spacing:.12em;color:#9FB4CC}
+.pdubn{margin-top:10px;font-size:8.5px;letter-spacing:.1em;color:#6B6455;line-height:1.6}
+.pdubn a{color:#c8282d;text-decoration:none;font-weight:700}
+@media (max-width:760px){.pdub{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- Home → This Week in Dubcey History ---------- */
+.twih .twi{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:start;padding:11px 14px;border-bottom:1px solid #2C4C78}
+.twih .twi img{width:44px;height:32px;object-fit:contain}
+.twih .twy{display:flex;align-items:center;justify-content:center;width:44px;height:32px;background:#16304F;color:#E0A72B;font-size:10px;font-weight:700}
+.twih .twk{display:block;font-size:8.5px;letter-spacing:.14em;color:#E0A72B;font-weight:700}
+.twih p{margin:3px 0 0;font:400 14px/1.35 'Zilla Slab',Georgia,serif;color:#C9D6E6}
+.twih p .pk{font-weight:700;color:#F7EFDB;cursor:pointer;border-bottom:1px dotted #9FB4CC}
+.twih p i{font-style:normal;font-size:9px;color:#9FB4CC}
+.twih p b{font-weight:700;color:#E0A72B}
+.twih .twft{display:block;padding:10px 14px;font-size:9px;letter-spacing:.14em;color:#E0A72B;text-decoration:none;font-weight:700;text-align:right}
