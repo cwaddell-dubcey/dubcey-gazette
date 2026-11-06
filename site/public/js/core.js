@@ -280,26 +280,32 @@
   // matchup previews for week w: best projected lineup per team (league starter rules), records, key players
   D.previews = function(w){
     var no = function(){ return null; };
-    return Promise.all([D.api('schedule', 'W=' + w).catch(no), D.api('rosters').catch(no), D.api('projectedScores', 'W=' + w).catch(no), D.api('league').catch(no), D.records(), D.power(Math.max(1, w - 1)).catch(no)]).then(function(r){
+    return Promise.all([D.api('schedule', 'W=' + w).catch(no), D.api('rosters').catch(no), D.api('projectedScores', 'W=' + w).catch(no), D.api('league').catch(no), D.records(), D.power(Math.max(1, w - 1)).catch(no), D.api('nflSchedule', 'W=' + w).catch(no), D.injReady.catch(no)]).then(function(r){
       var wk = D.arr(r[0] && r[0].schedule && r[0].schedule.weeklySchedule).filter(function(x){ return +x.week === +w; })[0] || D.arr(r[0] && r[0].schedule && r[0].schedule.weeklySchedule)[0];
       var M = D.arr(wk && wk.matchup); if(!M.length) return [];
       var PJ = {}; D.arr(r[2] && r[2].projectedScores && r[2].projectedScores.playerScore).forEach(function(x){ if(x.score !== '') PJ[x.id] = D.num(x.score); });
       var RO = {}, ids = []; D.arr(r[1] && r[1].rosters && r[1].rosters.franchise).forEach(function(f){ RO[f.id] = D.arr(f.player).map(function(p){ ids.push(p.id); return p.id; }); });
       var st = (r[3] && r[3].league && r[3].league.starters) || {}, slots = D.arr(st.position).filter(function(p){ return D.OURPOS[p.name]; }).map(function(p){ var a = String(p.limit || '1').split('-'); return { pos:p.name, min:+a[0] || 0, max:+(a[1] || a[0]) || 0 }; }), tot = D.num(st.count) || 9;
       var PW = {}; if(r[5] && r[5].week) r[5].list.forEach(function(t){ PW[t.id] = t.rk; });
+      // NFL teams playing this week: anyone else is on bye and can't be a key player or count toward the projection
+      var PLAY = {}, nPlay = 0; D.arr(r[6] && r[6].nflSchedule && r[6].nflSchedule.matchup).forEach(function(g){ D.arr(g.team).forEach(function(t){ if(t.id && !PLAY[t.id]){ PLAY[t.id] = 1; nPlay++; } }); });
+      function plays(tm){ return !nPlay || !tm || !!PLAY[tm]; }
+      function hurt(id){ var x = D.INJ && D.INJ[id]; return !!(x && /^(OUT|IR|SUS|PUP)$/.test(x.k)); }
+      var PO = { QB:0, RB:1, WR:2, TE:3, PK:4, K:4, Def:5, DEF:5 };
       return D.players(ids).then(function(){
         function best(fid){
-          var pool = (RO[fid] || []).map(function(id){ return { id:id, pos:D.pinfo(id)[1], p:PJ[id] || 0 }; }).filter(function(x){ return D.OURPOS[x.pos]; }).sort(function(a, b){ return b.p - a.p; });
+          var pool = (RO[fid] || []).map(function(id){ var i = D.pinfo(id); return { id:id, pos:i[1], tm:i[2], p:PJ[id] || 0 }; }).filter(function(x){ return D.OURPOS[x.pos] && plays(x.tm) && !hurt(x.id); }).sort(function(a, b){ return b.p - a.p; });
           var pick = [], used = {}, cnt = {};
           slots.forEach(function(s){ pool.filter(function(x){ return x.pos === s.pos; }).slice(0, s.min).forEach(function(x){ pick.push(x); used[x.id] = 1; cnt[s.pos] = (cnt[s.pos] || 0) + 1; }); });
           pool.forEach(function(x){ if(pick.length >= tot || used[x.id]) return; var s = slots.filter(function(y){ return y.pos === x.pos; })[0]; if(s && (cnt[x.pos] || 0) >= s.max) return; pick.push(x); used[x.id] = 1; cnt[x.pos] = (cnt[x.pos] || 0) + 1; });
-          return { proj:pick.reduce(function(a, x){ return a + x.p; }, 0), key:pick[0] || null };
+          return { proj:pick.reduce(function(a, x){ return a + x.p; }, 0), key:pick[0] || null, keys:pick.filter(function(x){ return x.p > 0; }).slice(0, 3) };
         }
+        function byes(fid){ return nPlay ? (RO[fid] || []).map(function(id){ var i = D.pinfo(id); return { id:id, pos:i[1], tm:i[2] }; }).filter(function(x){ return D.OURPOS[x.pos] && x.tm && !PLAY[x.tm]; }).sort(function(a, b){ return (PO[a.pos] == null ? 9 : PO[a.pos]) - (PO[b.pos] == null ? 9 : PO[b.pos]); }) : []; }
         return M.map(function(m){
           var F = D.arr(m.franchise); if(F.length !== 2) return null;
           var a = F.filter(function(x){ return x.isHome !== '1'; })[0] || F[0], h = F.filter(function(x){ return x !== a; })[0];
           var A = best(a.id), H = best(h.id), da = D.div(a.id), dh = D.div(h.id);
-          return { a:a.id, h:h.id, pa:A.proj, ph:H.proj, ka:A.key, kh:H.key, ra:r[4].rec[a.id] || '', rh:r[4].rec[h.id] || '', pwa:PW[a.id], pwh:PW[h.id], div:!!(da && dh && da.k === dh.k), gap:Math.abs(A.proj - H.proj) };
+          return { a:a.id, h:h.id, pa:A.proj, ph:H.proj, ka:A.key, kh:H.key, ksa:A.keys, ksh:H.keys, ba:byes(a.id), bh:byes(h.id), ra:r[4].rec[a.id] || '', rh:r[4].rec[h.id] || '', pwa:PW[a.id], pwh:PW[h.id], div:!!(da && dh && da.k === dh.k), gap:Math.abs(A.proj - H.proj) };
         }).filter(Boolean).sort(function(x, y){ return (x.gap - y.gap); });
       });
     });

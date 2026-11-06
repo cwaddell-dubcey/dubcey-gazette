@@ -211,7 +211,7 @@ button{font:inherit;color:inherit}
 .mu .ph:after{content:"";position:absolute;left:0;right:0;bottom:0;height:38px;border-top:5px solid #b07a45;background:repeating-linear-gradient(178deg,rgba(0,0,0,.1) 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 40px,rgba(0,0,0,.05) 40px 95px),linear-gradient(180deg,#8a5a33,#5e391d)}
 .mu .hl{position:absolute;z-index:1;bottom:37px;width:clamp(120px,26%,300px);height:220px;object-fit:contain;object-position:center bottom}
 .mu .hl.a{left:4%}
-.mu .hl.b{right:4%;transform:scaleX(-1)}
+.mu .hl.b{right:4%}
 .mu .ph .plate{position:absolute;z-index:2;bottom:9px;font-size:11.5px;padding:3px 11px}
 .mu .ph .plate.a{left:calc(4% + clamp(60px,13%,150px));transform:translateX(-50%)}
 .mu .ph .plate.b{right:calc(4% + clamp(60px,13%,150px));transform:translateX(50%)}
@@ -2566,3 +2566,23 @@ a.rsh:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #c8282d}
 .twih p i{font-style:normal;font-size:9px;color:#9FB4CC}
 .twih p b{font-weight:700;color:#E0A72B}
 .twih .twft{display:block;padding:10px 14px;font-size:9px;letter-spacing:.14em;color:#E0A72B;text-decoration:none;font-weight:700;text-align:right}
+
+/* ---------- Scores → upcoming week: players to watch + byes ---------- */
+.hxp a.hxn{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.hxp a.hxn:hover{color:#c8282d}
+.hxp em.ij{font-style:normal;font-size:9px;vertical-align:2px}
+.hxby{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.hxby>div{background:#F7EFDB;border:1.5px solid #102542;min-width:0}
+.hxbh{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #E0D6B8}
+.hxbh img{width:34px;height:25px;object-fit:contain}
+.hxbh b{flex:1;font:400 12px/1.1 'Alfa Slab One',serif;text-transform:uppercase;color:#102542}
+.hxbh i{font-style:normal;font-size:8.5px;letter-spacing:.12em;color:#c8282d;font-weight:700}
+.hxby ul{list-style:none;margin:0;padding:4px 0}
+.hxby li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 10px}
+.hxby li .pos{min-width:28px;padding:3px 4px;font-size:8px}
+.hxby li a{font:600 14px/1.2 'Zilla Slab',Georgia,serif;color:#102542;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hxby li a:hover{color:#c8282d}
+.hxby li i{font-style:normal;font-size:9px;color:#6B6455}
+.hxby p{margin:0;padding:10px;font-size:9px;letter-spacing:.12em;color:#6B6455}
+@media (max-width:760px){.hxby{grid-template-columns:1fr}}
+@media (min-width:761px){.hxa .hxps{grid-template-columns:repeat(2,minmax(0,1fr))}}

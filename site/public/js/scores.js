@@ -204,7 +204,7 @@
   }
   function sn(id){ return esc(D.SHORT[id] || D.NAME[id] || id); }
   function gl(g, a, b){ var w = g.win || a, l = w === a ? b : a, ws = w === a ? g.sa : g.sb, ls = w === a ? g.sb : g.sa; return sn(w) + ' <u>' + D.pts(ws) + '\u2013' + D.pts(ls) + '</u>'; }
-  function histHTML(a, b, txt, keys){
+  function histHTML(a, b, txt, keys, byes){
     if(!S.H){ hist(); return '<div class="hx"><div class="ld mono">LOADING THE SERIES HISTORY\u2026</div></div>'; }
     var H = h2h(a, b), G = H.G, last = G[G.length - 1];
     var nw = function(t){ return '<u>' + t + '</u>'; }, lead = H.wa === H.wb ? 'Tied ' + nw(H.wa + '\u2013' + H.wb) : (H.wa > H.wb ? sn(a) + ' ' + nw(H.wa + '\u2013' + H.wb) : sn(b) + ' ' + nw(H.wb + '\u2013' + H.wa));
@@ -215,11 +215,15 @@
       ['BIGGEST BLOWOUT', gl(H.big, a, b), H.big.y + ' \u00b7 WEEK ' + H.big.w + ' \u00b7 BY ' + D.pts(Math.round(Math.abs(H.big.sa - H.big.sb) * 100) / 100)],
       H.close ? ['CLOSEST GAME', gl(H.close, a, b), H.close.y + ' \u00b7 WEEK ' + H.close.w + ' \u00b7 BY ' + D.pts(Math.round(Math.abs(H.close.sa - H.close.sb) * 100) / 100)] : null
     ].filter(Boolean) : [['ALL-TIME SERIES', 'First meeting', 'THESE TWO HAVE NEVER PLAYED']];
-    var key = keys ? keys.map(function(k){ if(!k.k) return ''; var i = D.pinfo(k.k.id); return '<div class="hxp">' + D.face(k.k.id, i[1], i[2]) + '<div><span class="mono">' + sn(k.f) + ' \u00b7 KEY PLAYER</span><b>' + esc(i[0]) + '</b><i class="mono">' + esc(i[1] + ' \u00b7 ' + i[2]) + (k.k.p ? ' \u00b7 PROJ ' + D.pts(k.k.p) : '') + '</i></div></div>'; }).join('') : '';
+    var key = keys ? keys.map(function(k){ if(!k.k) return ''; var i = D.pinfo(k.k.id), inj = D.INJ && D.INJ[k.k.id]; return '<div class="hxp">' + D.face(k.k.id, i[1], i[2]) + '<div><span class="mono">' + sn(k.f) + ' \u00b7 ' + (k.n ? 'NO. ' + (k.n + 1) + ' PROJECTED' : 'KEY PLAYER') + '</span><b><a href="#" class="hxn" data-card="' + esc(k.k.id) + '">' + esc(i[0]) + '</a>' + (inj && inj.k === 'Q' || inj && inj.k === 'D' ? ' <em class="ij mono">' + esc(inj.k) + '</em>' : '') + '</b><i class="mono">' + esc(i[1] + ' \u00b7 ' + i[2]) + (k.k.p ? ' \u00b7 PROJ ' + D.pts(k.k.p) : '') + '</i></div></div>'; }).join('') : '';
     var pvw = txt ? '<div class="hxw"><span class="hxk mono">THE PREVIEW</span><h3>' + esc(txt.head) + '</h3><p>' + esc(txt.text) + '</p></div>' : '';
     var ser = '<div><span class="hxk mono">THE SERIES</span><div class="hxg">' + tiles.map(function(t){ return '<div><span class="mono">' + t[0] + '</span><b>' + t[1] + '</b><i class="mono">' + t[2] + '</i></div>'; }).join('') + '</div></div>';
     var rec = G.length ? '<div><span class="hxk mono">RECENT MEETINGS</span><div class="hxl">' + G.slice(-5).reverse().map(function(g){ var w = g.win || a; return '<div><span class="mono">' + g.y + ' \u00b7 WK ' + g.w + '</span><img src="' + helm(w) + '" alt=""><b>' + sn(w) + '</b><i class="mono">' + D.pts(w === a ? g.sa : g.sb) + ' \u2013 ' + D.pts(w === a ? g.sb : g.sa) + '</i></div>'; }).join('') + '</div></div>' : '';
     var ply = key ? '<div><span class="hxk mono">PLAYERS TO WATCH</span><div class="hxps">' + key + '</div></div>' : '';
+    // everyone on each roster whose NFL team has the week off
+    if(byes) ply += '<div><span class="hxk mono">ON BYE THIS WEEK</span><div class="hxby">' + byes.map(function(x){
+      return '<div><div class="hxbh"><img src="' + helm(x.f) + '" alt=""><b>' + sn(x.f) + '</b><i class="mono">' + (x.L.length ? x.L.length + ' OUT' : 'FULL STRENGTH') + '</i></div>' +
+        (x.L.length ? '<ul>' + x.L.map(function(p){ var i = D.pinfo(p.id); return '<li><span class="pos ' + esc(p.pos) + '">' + esc(p.pos) + '</span><a href="#" data-card="' + esc(p.id) + '">' + esc(i[0]) + '</a><i class="mono">' + esc(p.tm) + '</i></li>'; }).join('') + '</ul>' : '<p class="mono">NOBODY ON BYE</p>') + '</div>'; }).join('') + '</div></div>';
     return '<div class="hx' + (pvw ? '' : ' one') + '">' + (pvw || ply ? '<div class="hxa">' + pvw + ply + '</div>' : '') + '<div class="hxb">' + ser + rec + '</div>' +
       '</div>';
   }
@@ -232,6 +236,10 @@
       S.pv = r[0].sort(function(x, y){ return x.a < y.a ? -1 : 1; }); S.pvT = (r[1] && r[1].previews && r[1].previews[S.w]) || {}; S.pvTw = S.w; drawPv();
     }).catch(function(){ $('slate').innerHTML = ''; $('mu').innerHTML = '<div class="ld mono">WEEK ' + S.w + ' MATCHUPS AREN\u2019T SET YET.</div>'; });
   }
+  // up to three players to watch per side, alternating teams; falls back to the single key player
+  function keysOf(p){ var A = p.ksa || (p.ka ? [p.ka] : []), B = p.ksh || (p.kh ? [p.kh] : []), out = [];
+    for(var i = 0; i < Math.max(A.length, B.length); i++){ if(A[i]) out.push({ f:p.a, k:A[i], n:i }); if(B[i]) out.push({ f:p.h, k:B[i], n:i }); }
+    return out.length ? out : [{ f:p.a, k:p.ka }, { f:p.h, k:p.kh }]; }
   function drawPv(){
     var P = S.pv; if(!P) return; weeks();
     $('stat').innerHTML = 'MATCHUP PREVIEWS';
@@ -249,7 +257,7 @@
       (has ? '<div class="pjl mono"><span>PROJECTED</span><b>' + wp + '% \u2013 ' + (100 - wp) + '%</b><span>PROJECTED</span></div>' : '') +
       '<span class="st2 mono">WEEK ' + S.w + ' PREVIEW</span>' + (p.div ? D.divTag(a, 'Divisional Matchup') : '') + '</div>' +
       '<div class="names"><div><b>' + esc(D.NAME[a]) + '</b><span class="mono">' + esc((S.rec[a] || p.ra) ? (S.rec[a] || p.ra) + ' RECORD' : '') + (p.pwa ? ' \u00b7 POWER NO. ' + p.pwa : '') + '</span></div><div><b>' + esc(D.NAME[b]) + '</b><span class="mono">' + esc((S.rec[b] || p.rh) ? (S.rec[b] || p.rh) + ' RECORD' : '') + (p.pwh ? ' \u00b7 POWER NO. ' + p.pwh : '') + '</span></div></div>' +
-      histHTML(a, b, S.pvT[a + '-' + b] || S.pvT[b + '-' + a] || null, [{ f:a, k:p.ka }, { f:b, k:p.kh }]);
+      histHTML(a, b, S.pvT[a + '-' + b] || S.pvT[b + '-' + a] || null, keysOf(p), [{ f:a, L:p.ba || [] }, { f:b, L:p.bh || [] }]);
   }
 
   document.addEventListener('click', function(e){
