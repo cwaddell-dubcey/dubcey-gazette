@@ -4,7 +4,7 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 
 **Specs:** transparent PNG, helmet facing right, roughly square (1800px is plenty). Claude makes a small web copy (~50 KB) for the site.
 
-_Checked against the site on Nov 6, 2026: 12 names below still show the current team's helmet or the league logo._
+_Checked against the site on Nov 6, 2026: 11 names below still show the current team's helmet or the league logo._
 
 ## Done
 - [x] The Shaved Beavers (2001–03) — `ShavedBeavers.png`
@@ -44,7 +44,7 @@ _Checked against the site on Nov 6, 2026: 12 names below still show the current 
 - [ ] Narcoleptic Nazis (2001–02)
 
 **Nuts on Your Drumset**
-- [ ] The Medieval Midgets (2001–03)
+- [x] The Medieval Midgets (2001–03) — `helmet-midgets`
 
 **Prestige Worldwide**
 - [x] Luck/Wayne Enterprises (2012) — `helmet-luckwayne`
