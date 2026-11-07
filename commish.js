@@ -12,7 +12,7 @@
   });
   function draw(){
     [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups }[S.tab] || dispatch)();
+    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups, health:health }[S.tab] || dispatch)();
   }
 
   /* ---------- the Dispatch ---------- */
@@ -37,6 +37,64 @@
       '<article class="card" style="margin-top:24px"><div class="bar mono"><span>AROUND THE LEAGUE</span><span>ONE TAKE PER TEAM</span></div><div class="ef pad takes2">' + D.IDS.map(function(id){ return '<label class="mono tk2"><span><img src="' + D.helm(id) + '" alt="">' + esc(D.NAME[id]) + '</span><textarea name="take" data-id="' + id + '" rows="3">' + esc((W.takes || {})[id] || '') + '</textarea></label>'; }).join('') + '</div></article></div>' +
       '<aside><article class="card"><div class="bar mono"><span>AWARDS</span></div><div class="ef pad" id="awards">' + ak.map(function(k){ var A = D.award(aw[k]); return '<div class="ed aw2"><label class="mono">AWARD<input name="an" value="' + esc(k) + '"></label><label class="mono">TEAM' + teamSel('aid', A.id, 1) + '</label><label class="mono">WHY<textarea name="at" rows="3">' + esc(A.text) + '</textarea></label></div>'; }).join('') + '</div></article>' +
       '<div class="note mono" style="color:#9FB4CC">PUBLISHING UPDATES THE HOME PAGE AND THE DISPATCH ARCHIVE RIGHT AWAY.</div></aside></div>';
+    $('cb').insertAdjacentHTML('afterbegin', '<article class="card" style="margin-bottom:24px"><div class="bar mono"><span>WEEK DATA FOR CLAUDE</span><span>ONE COPY HAS EVERYTHING NEEDED TO WRITE THE DISPATCH</span></div><div class="ef pad wpk"><label class="mono">WEEK<input type="number" id="wpw" min="1" max="18" value="' + esc(S.pw || '') + '"></label><button class="btn" type="button" id="wpack">BUILD + COPY</button><span class="mono" id="wpst"></span>' + (S.pt ? '<textarea id="wpt" readonly>' + esc(S.pt) + '</textarea>' : '') + '</div></article>');
+    if(!S.pw) D.doneWeek().then(function(d){ if(d.w && $('wpw') && !$('wpw').value){ S.pw = d.w; $('wpw').value = d.w; } });
+  }
+
+  /* ---------- week data pack: results with names, standings, the week's moves, next week's games ---------- */
+  function pack(w){
+    w = +w; var no = function(){ return null; };
+    return Promise.all([D.api('weeklyResults', 'W=' + w), D.api('leagueStandings').catch(no), D.api('transactions').catch(no), D.api('schedule', 'W=' + (w + 1)).catch(no), D.api('rosters').catch(no)]).then(function(r){
+      var M = arr(r[0] && r[0].weeklyResults && r[0].weeklyResults.matchup), ids = [], SAL = {};
+      if(!M.length) throw 'NO RESULTS FOR WEEK ' + w;
+      M.forEach(function(m){ arr(m.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ ids.push(p.id); }); }); });
+      arr(r[4] && r[4].rosters && r[4].rosters.franchise).forEach(function(f){ arr(f.player).forEach(function(p){ SAL[p.id] = p.salary; }); });
+      var since = Date.now() / 1000 - 8 * 86400, pid = function(x){ return String(x || '').replace(/\|/g, ',').split(',').filter(function(y){ return /^\d{4,5}$/.test(y); }); };
+      var TX = arr(r[2] && r[2].transactions && r[2].transactions.transaction).filter(function(t){ return D.num(t.timestamp) >= since && /^(FREE_AGENT|BBID_WAIVER|WAIVER|TRADE|IR|TAXI)/.test(t.type) && !/REQUEST|PROPOSAL/.test(t.type); });
+      TX.forEach(function(t){ ids = ids.concat(pid(t.transaction), pid(t.franchise1_gave_up), pid(t.franchise2_gave_up)); });
+      return D.players(ids).then(function(){
+        var nm = function(id){ var i = D.pinfo(id); return i[0] + ' ' + i[1] + (i[2] ? ' ' + i[2] : ''); };
+        var tn = function(id){ return id + ' ' + (D.NAME[id] || id); };
+        var day = function(ts){ return new Date(D.num(ts) * 1000).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); };
+        var L = ['DUBCEY CHRONICLE \u00b7 WEEK ' + w + ' DATA PACK \u00b7 built ' + day(Date.now() / 1000) + ' ET', 'Key: * = started but should have sat (MFL optimal) \u00b7 ! = benched but belonged in the optimal lineup \u00b7 $ = salary', '', '== WEEK ' + w + ' RESULTS'];
+        M.forEach(function(m){
+          var F = arr(m.franchise); if(F.length !== 2) return;
+          L.push(''); L.push(F.map(function(f){ return tn(f.id) + ' ' + f.score + ' (optimal ' + (f.opt_pts || '?') + ') ' + (f.result || ''); }).join('  vs  '));
+          F.forEach(function(f){
+            var P = arr(f.player), row = function(p){ return nm(p.id) + ' ' + (p.score == null || p.score === '' ? 'DNP' : p.score) + (p.status === 'starter' && p.shouldStart === '0' ? '*' : '') + (p.status !== 'starter' && p.shouldStart === '1' ? '!' : '') + (SAL[p.id] ? ' $' + SAL[p.id] : ''); };
+            L.push('  ' + (D.SHORT[f.id] || f.id) + ' START: ' + P.filter(function(p){ return p.status === 'starter'; }).map(row).join(' | '));
+            var B = P.filter(function(p){ return p.status !== 'starter' && (p.score || p.shouldStart === '1'); });
+            if(B.length) L.push('  ' + (D.SHORT[f.id] || f.id) + ' BENCH: ' + B.map(row).join(' | '));
+          });
+        });
+        var ST = arr(r[1] && r[1].leagueStandings && r[1].leagueStandings.franchise);
+        if(ST.length){ L.push('', '== STANDINGS (MFL order)'); ST.forEach(function(f, i){ L.push((i + 1) + '. ' + tn(f.id) + ' ' + (f.h2hwlt || (f.h2hw + '-' + f.h2hl)) + ' \u00b7 PF ' + f.pf + ' \u00b7 PA ' + f.pa + ' \u00b7 ' + (f.strk || '') + ' \u00b7 DIV ' + (f.divwlt || '') + ' \u00b7 FAAB ' + (f.bbidbalance || '') + ' \u00b7 EFF ' + (f.eff || '')); }); }
+        L.push('', '== MOVES, LAST 8 DAYS (newest first)');
+        if(!TX.length) L.push('none');
+        TX.forEach(function(t){
+          var who = D.SHORT[t.franchise] || t.franchise;
+          if(/TRADE/.test(t.type)) L.push(day(t.timestamp) + ' \u00b7 TRADE: ' + (D.SHORT[t.franchise] || t.franchise) + ' gave ' + pid(t.franchise1_gave_up).map(nm).join(', ') + ' to ' + (D.SHORT[t.franchise2] || t.franchise2) + ' for ' + pid(t.franchise2_gave_up).map(nm).join(', ') + (t.comments ? ' \u00b7 note: ' + t.comments : ''));
+          else { var q = String(t.transaction || '').split('|'), add = pid(q[0]), bid = /BBID/.test(t.type) ? q[1] : '', drop = pid(bid ? q[2] : q[1]);
+            L.push(day(t.timestamp) + ' \u00b7 ' + who + ' ' + (bid ? 'WAIVER $' + D.num(bid) : t.type.replace(/_/g, ' ')) + ': ' + (add.length ? '+' + add.map(nm).join(', +') : '') + (drop.length ? ' / -' + drop.map(nm).join(', -') : '')); }
+        });
+        var NX = arr(r[3] && r[3].schedule && r[3].schedule.weeklySchedule)[0];
+        if(NX && arr(NX.matchup).length){ L.push('', '== WEEK ' + (w + 1) + ' MATCHUPS (MFL spread)'); arr(NX.matchup).forEach(function(m){ var F = arr(m.franchise), a = F.filter(function(x){ return x.isHome !== '1'; })[0] || F[0], h = F.filter(function(x){ return x !== a; })[0] || F[1]; if(a && h) L.push(tn(a.id) + ' @ ' + tn(h.id) + (h.spread ? ' \u00b7 home spread ' + h.spread : '')); }); }
+        return L.join('\n');
+      });
+    });
+  }
+
+  /* ---------- site health ---------- */
+  var DEMOH = { at:Date.now(), svcAt:Date.now() - 6 * 864e5, items:[{ name:'Saved MFL login', ok:true, ms:212, note:'Good. Franchise 0001' }, { name:'Live scoring', ok:true, ms:140, note:'Week 8' }, { name:'Player news (uses saved login)', ok:false, ms:820, note:'No stories found. The login may have expired or MFL changed the page.' }, { name:'ESPN box scores', ok:true, ms:96, note:'14 games, week 8' }] };
+  function health(){
+    $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>SITE HEALTH</span><span>EVERY FEED THE SITE DEPENDS ON</span></div><div id="hb"><div class="ld mono">CHECKING EVERY FEED\u2026</div></div><div class="ef pad" style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="hrun">CHECK AGAIN</button></div></article>';
+    (D.LOCAL ? Promise.resolve(DEMOH) : fetch('/data/health', { credentials:'same-origin', cache:'no-store' }).then(function(r){ return r.json(); })).then(function(h){
+      if(!h || !h.items) throw (h && h.error) || 'NO ANSWER';
+      var bad = h.items.filter(function(x){ return !x.ok; }), age = h.svcAt ? Math.floor((Date.now() - h.svcAt) / 864e5) : null;
+      $('hb').innerHTML = '<div class="hsum"><span>' + (bad.length ? bad.length + ' PROBLEM' + (bad.length > 1 ? 'S' : '') : 'ALL ' + h.items.length + ' FEEDS WORKING') + '</span><i class="mono">' + (age != null ? 'MFL LOGIN SAVED ' + (age ? age + ' DAY' + (age > 1 ? 'S' : '') + ' AGO' : 'TODAY') + ' \u00b7 ' : '') + 'CHECKED ' + new Date(h.at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }).toUpperCase() + (h.ver ? ' \u00b7 DEPLOY ' + esc(h.ver) : '') + '</i></div>' +
+        h.items.slice().sort(function(a, b){ return a.ok - b.ok; }).map(function(x){ return '<div class="hrow' + (x.ok ? '' : ' bad') + '"><i class="hdot"></i><b>' + esc(x.name) + '</b><span class="mono">' + esc(x.note) + '</span><span class="mono ms">' + x.ms + ' MS</span></div>'; }).join('') +
+        (bad.some(function(x){ return /login/i.test(x.name + x.note); }) ? '<div class="fnote warn mono"><span>FIX: SIGN OUT, THEN SIGN BACK IN ON THIS SITE. THAT SAVES A FRESH MFL LOGIN.</span></div>' : '');
+    }).catch(function(m){ $('hb').innerHTML = '<div class="ld mono">' + esc(typeof m === 'string' ? m : 'HEALTH CHECK DIDN\u2019T ANSWER') + '</div>'; });
   }
   function readWeek(){
     var st = [].map.call(document.querySelectorAll('#stories .st3'), function(el){ return { kick:el.querySelector('[name=kick]').value.trim(), head:el.querySelector('[name=head]').value.trim(), dek:el.querySelector('[name=dek]').value.trim(), id:el.querySelector('[name=id]').value }; }).filter(function(s){ return s.head || s.dek; });
@@ -54,21 +112,50 @@
   function teams(){
     if(!S.T){ D.content('teams').then(function(t){ S.T = t || {}; teams(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
     $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>TEAM NAMES & HELMETS</span><span>SHOWS EVERYWHERE ON THE SITE</span></div>' + D.IDS.map(function(id){ var o = S.T[id] || {};
-      return '<div class="trow" data-id="' + id + '"><label class="hpick" title="Upload a new main helmet"><img src="' + D.helmPool(id)[0] + '" alt=""><input type="file" accept="image/*" hidden><span class="mono">CHANGE</span></label>' +
-        '<label class="mono">FULL NAME<input name="name" value="' + esc(o.name || D.NAME[id]) + '"></label><label class="mono">SHORT NAME<input name="short" value="' + esc(o.short || D.SHORT[id]) + '" maxlength="14"></label><span class="mono fid">#' + id + '</span>' +
+      return '<div class="trow" data-id="' + id + '"><label class="hpick" title="Upload a new main helmet"><img src="' + D.helmPool(id, true)[0] + '" alt=""><input type="file" accept="image/*" hidden><span class="mono">CHANGE</span></label>' +
+        '<label class="mono">FULL NAME<input name="name" value="' + esc(o.name || D.NAME0[id]) + '"></label><label class="mono">SHORT NAME<input name="short" value="' + esc(o.short || D.SHORT0[id]) + '" maxlength="14"></label><span class="mono fid">#' + id + '</span>' +
         '<div class="talts"><span class="mono">ALTERNATES' + ((o.alts || []).length ? ' \u00b7 RANDOM EACH WEEK UNLESS PICKED \u00b7 WEEK ' + D.nflWeek + ': ' + (D.helmPool(id).indexOf(D.helm(id)) === 0 ? 'MAIN' : 'ALT ' + D.helmPool(id).indexOf(D.helm(id))) + (D.helmPick(id) != null ? ' (PICKED)' : ' (RANDOM)') : '') + '</span>' +
-          ((o.alts || []).length ? '<span class="taltc"><span class="talt"><img src="' + D.helmPool(id)[0] + '" alt=""></span><input class="mono" data-wk="main" value="' + esc(o.mainWk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>' : '') +
-          (o.alts || []).map(function(a, i){ return '<span class="taltc"><span class="talt"><img src="' + esc(D.LOCAL ? (localStorage.getItem('dcImg:' + a.k) || '') : a.url) + '" alt=""><button type="button" data-altrm="' + i + '" aria-label="Remove alternate">\u00d7</button></span><input class="mono" data-wk="' + i + '" value="' + esc(a.wk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>'; }).join('') + ((o.alts || []).length < 5 ? '<label class="taltadd mono">+ ADD<input type="file" accept="image/*" data-alt hidden></label>' : '') + '</div></div>';
+          ((o.alts || []).length ? '<span class="taltc"><span class="talt"><img src="' + D.helmPool(id, true)[0] + '" alt=""></span><input class="mono" data-wk="main" value="' + esc(o.mainWk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>' : '') +
+          (o.alts || []).map(function(a, i){ return '<span class="taltc"><span class="talt"><img src="' + esc(D.LOCAL ? (localStorage.getItem('dcImg:' + a.k) || '') : a.url) + '" alt=""><button type="button" data-altrm="' + i + '" aria-label="Remove alternate">\u00d7</button></span><input class="mono" data-wk="' + i + '" value="' + esc(a.wk || '') + '" placeholder="WEEKS" title="Weeks this helmet always shows, e.g. 3, 7-9"></span>'; }).join('') + ((o.alts || []).length < 5 ? '<label class="taltadd mono">+ ADD<input type="file" accept="image/*" data-alt hidden></label>' : '') + '</div>' + egoRow(id, o) + '</div>';
     }).join('') + '<div class="ef pad" style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="tsave">SAVE TEAMS</button></div></article>';
   }
+  // alter ego: a second name + helmet the commish can switch on (e.g. Diamond Dogs → Bad Newz Karens)
+  function egoRow(id, o){
+    var e = D.egoOf(id, o); if(!e.name && !e.helm && !o.ego) return '<div class="tego off"><button type="button" class="mono" data-egoadd>+ ALTER EGO</button></div>';
+    var src = D.LOCAL && o.ego && o.ego.helm ? (localStorage.getItem('dcImg:' + id + '_ego') || e.helm) : e.helm;
+    return '<div class="tego' + (e.on ? ' on' : '') + '"><label class="mono tegot"><input type="checkbox" data-egoon' + (e.on ? ' checked' : '') + '><span>ALTER EGO ' + (e.on ? 'ON · SHOWING EVERYWHERE' : 'OFF') + '</span></label>' +
+      '<label class="hpick sm" title="Alter-ego helmet"><img src="' + esc(src || 'h/logo.webp') + '" alt=""><input type="file" accept="image/*" data-egoimg hidden><span class="mono">CHANGE</span></label>' +
+      '<label class="mono">ALTER EGO NAME<input name="egoname" value="' + esc(e.name) + '" placeholder="Bad Newz Karens"></label><label class="mono">SHORT<input name="egoshort" value="' + esc(e.short) + '" maxlength="14" placeholder="Karens"></label></div>';
+  }
+  function keepEgo(){ [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), b = r.querySelector('.tego:not(.off)'); if(!b) return; var o = S.T[id] = S.T[id] || {}, e = o.ego = o.ego || {};
+    e.on = b.querySelector('[data-egoon]').checked; e.name = b.querySelector('[name=egoname]').value.trim(); e.short = b.querySelector('[name=egoshort]').value.trim(); if(!e.helm){ var d = D.EGO[id]; if(d && d.helm) e.helm = d.helm; } }); }
+
   // match the built-in helmets: trim empty transparent edges, then fit into the same 480×359 frame
   function shrink(file){
     return new Promise(function(res, rej){
       var img = new Image(); img.onload = function(){
         var W = img.width, H = img.height, a = document.createElement('canvas'); a.width = W; a.height = H; var ax = a.getContext('2d'); ax.drawImage(img, 0, 0);
         var d = ax.getImageData(0, 0, W, H).data, l = W, t = H, r = -1, b = -1;
-        for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 16){ if(x < l) l = x; if(x > r) r = x; if(y < t) t = y; if(y > b) b = y; }
+        (function(){ // solid/gradient backdrop (no transparency)? flood-fill it away from the edges
+          var C = [0, (W - 1), (H - 1) * W, (H - 1) * W + W - 1], op = C.every(function(i){ return d[i * 4 + 3] > 200; }); if(!op) return;
+          var sr = 0, sg = 0, sb = 0; C.forEach(function(i){ sr += d[i * 4]; sg += d[i * 4 + 1]; sb += d[i * 4 + 2]; }); sr /= 4; sg /= 4; sb /= 4;
+          function bgc(i){ var r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], hi = Math.max(r, g, b), lo = Math.min(r, g, b); return hi - lo < 28 || Math.abs(r - sr) + Math.abs(g - sg) + Math.abs(b - sb) < 45; }
+          if(!C.every(bgc)) return;
+          var seen = new Uint8Array(W * H), q = new Int32Array(W * H), qh = 0, qt = 0;
+          function near(i, j){ return Math.abs(d[i * 4] - d[j * 4]) + Math.abs(d[i * 4 + 1] - d[j * 4 + 1]) + Math.abs(d[i * 4 + 2] - d[j * 4 + 2]) < 18 && bgc(j); }
+          for(var x0 = 0; x0 < W; x0++){ q[qt++] = x0; q[qt++] = (H - 1) * W + x0; } for(var y0 = 0; y0 < H; y0++){ q[qt++] = y0 * W; q[qt++] = y0 * W + W - 1; }
+          var Q0 = q.slice(0, qt); qt = 0; for(var k0 = 0; k0 < Q0.length; k0++){ var e = Q0[k0]; if(!seen[e] && bgc(e)){ seen[e] = 1; q[qt++] = e; } }
+          while(qh < qt){ var i = q[qh++], x = i % W, y = (i / W) | 0; d[i * 4 + 3] = 0;
+            [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1].forEach(function(j){ if(j >= 0 && !seen[j] && near(i, j)){ seen[j] = 1; q[qt++] = j; } }); }
+        })();
+        var cc = new Uint32Array(W), rc = new Uint32Array(H);
+        for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 128){ cc[x]++; rc[y]++; }
+        var mc = Math.max(2, Math.round(H * .004)), mr = Math.max(2, Math.round(W * .004));
+        for(var x2 = 0; x2 < W; x2++) if(cc[x2] >= mc){ if(x2 < l) l = x2; r = x2; }
+        for(var y2 = 0; y2 < H; y2++) if(rc[y2] >= mr){ if(y2 < t) t = y2; b = y2; }
         if(r < 0){ l = 0; t = 0; r = W - 1; b = H - 1; }
+        for(y = 0; y < H; y++) for(x = 0; x < W; x++){ var k = (y * W + x) * 4 + 3; if(x < l || x > r || y < t || y > b || d[k] < 20) d[k] = 0; }
+        ax.putImageData(new ImageData(d, W, H), 0, 0);
         var cw = r - l + 1, ch = b - t + 1, FW = 480, FH = 359, s = Math.min(FW / cw, FH / ch), dw = Math.round(cw * s), dh = Math.round(ch * s);
         var c = document.createElement('canvas'); c.width = FW; c.height = FH; var cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
         cx.drawImage(a, l, t, cw, ch, Math.round((FW - dw) / 2), Math.round((FH - dh) / 2), dw, dh);
@@ -119,15 +206,22 @@
   document.addEventListener('click', function(e){
     var t = e.target;
     var wk = t.closest('[data-w]'); if(wk){ e.preventDefault(); keepWeek(); S.w = wk.getAttribute('data-w'); dispatch(); return; }
+    if(t.id === 'hrun'){ health(); return; }
+    if(t.id === 'wpack'){ var wv = +$('wpw').value; if(!wv){ toast('PICK A WEEK', true); return; } S.pw = wv; t.disabled = true; $('wpst').textContent = 'BUILDING\u2026';
+      pack(wv).then(function(txt){ S.pt = txt; var ta = $('wpt'); if(!ta){ $('wpst').insertAdjacentHTML('afterend', '<textarea id="wpt" readonly></textarea>'); ta = $('wpt'); } ta.value = txt;
+        return (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ $('wpst').textContent = 'COPIED \u00b7 ' + txt.length.toLocaleString('en-US') + ' CHARACTERS. PASTE IT TO CLAUDE.'; }, function(){ ta.select(); $('wpst').textContent = 'SELECTED \u2014 PRESS CTRL/CMD+C TO COPY'; });
+      }).catch(function(m){ $('wpst').textContent = typeof m === 'string' ? m : 'COULDN\u2019T BUILD IT'; }).then(function(){ t.disabled = false; });
+      return; }
     if(t.id === 'addst'){ keepWeek(); var W = S.C.weeks[S.w] = S.C.weeks[S.w] || { dispatch:[], takes:{}, awards:{} }; W.dispatch = arr(W.dispatch).concat([{ kick:'', head:'', dek:'', id:'' }]); dispatch(); return; }
     var up = t.closest('[data-up]'); if(up){ keepWeek(); var i = +up.getAttribute('data-up'), L = S.C.weeks[S.w].dispatch; if(L[i]){ var x = L[i]; L[i] = L[i - 1]; L[i - 1] = x; } dispatch(); return; }
     var del = t.closest('[data-del]'); if(del){ var el = document.querySelector('.st3[data-i="' + del.getAttribute('data-del') + '"]'); if(el) el.remove(); keepWeek(); dispatch(); return; }
     if(t.id === 'dsave'){ keepWeek(); var w = S.C.weeks[S.w]; if(!w.dispatch.length){ toast('ADD AT LEAST ONE STORY', true); return; } t.disabled = true; D.save('column', S.C).then(function(r){ t.disabled = false; done(r, 'WEEK ' + S.w); }); return; }
+    if(t.closest && t.closest('[data-egoadd]')){ keepWk(); keepEgo(); var eid = t.closest('.trow').getAttribute('data-id'); (S.T[eid] = S.T[eid] || {}).ego = { on:false, name:'', short:'' }; var ye = window.scrollY; teams(); window.scrollTo(0, ye); return; }
     var ar = t.closest && t.closest('[data-altrm]'); if(ar){ keepWk(); var rid = ar.closest('.trow').getAttribute('data-id'), oo = S.T[rid] || {}; (oo.alts || []).splice(+ar.getAttribute('data-altrm'), 1); if(D.ALT[rid]) D.ALT[rid].splice(+ar.getAttribute('data-altrm'), 1); applyPins(); var yy = window.scrollY; teams(); window.scrollTo(0, yy); toast('REMOVED \u2014 HIT SAVE TEAMS'); return; }
     if(t.id === 'tsave'){
-      keepWk(); t.disabled = true; var T = {};
-      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:o.alts || [] }; if(o.mainWk && T[id].alts.length) T[id].mainWk = o.mainWk; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
-      D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ if(T[id].name) D.NAME[id] = T[id].name; if(T[id].short) D.SHORT[id] = T[id].short; }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
+      keepWk(); keepEgo(); t.disabled = true; var T = {};
+      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:o.alts || [] }; if(o.ego && (o.ego.name || o.ego.helm)) T[id].ego = o.ego; if(o.mainWk && T[id].alts.length) T[id].mainWk = o.mainWk; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
+      D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ D.applyTeam(id, T[id]); }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
       return;
     }
     if(t.id === 'padd'){ S.pop = readPop().concat([{ id:'n' + Date.now().toString(36), kind:'note', title:'New message', on:true, sd:'Sun', st:'12:00', ed:'Sun', et:'13:00', kick:'', body:'' }]); popups(); return; }
@@ -137,7 +231,12 @@
   });
   document.addEventListener('change', function(e){
     if(e.target.closest('.prow') && S.tab === 'popups'){ S.pop = readPop(); var y = window.scrollY; popups(); window.scrollTo(0, y); return; }
+    if(e.target.hasAttribute && e.target.hasAttribute('data-egoon')){ var tb = e.target.closest('.tego'); tb.classList.toggle('on', e.target.checked); tb.querySelector('.tegot span').textContent = 'ALTER EGO ' + (e.target.checked ? 'ON \u00b7 HIT SAVE TEAMS' : 'OFF \u00b7 HIT SAVE TEAMS'); return; }
     var inp = e.target; if(inp.type !== 'file' || !inp.files[0]) return;
+    if(inp.hasAttribute('data-egoimg')){ var er = inp.closest('.trow'), eid2 = er.getAttribute('data-id'), eimg = inp.closest('.hpick').querySelector('img');
+      shrink(inp.files[0]).then(function(b){ return D.saveImg(eid2 + '_ego', b); }).then(function(r){ if(!r.ok) throw r.error; keepWk(); keepEgo(); var oe = S.T[eid2] = S.T[eid2] || {}; (oe.ego = oe.ego || {}).helm = D.LOCAL ? 'local' : r.url; eimg.src = r.url; toast('ALTER-EGO HELMET UPLOADED \u2014 HIT SAVE TEAMS'); })
+        .catch(function(m3){ toast(typeof m3 === 'string' ? m3 : 'COULDN\u2019T USE THAT IMAGE', true); });
+      return; }
     var row = inp.closest('.trow'), id = row.getAttribute('data-id'), img = row.querySelector('img');
     if(inp.hasAttribute('data-alt')){
       var o2 = S.T[id] = S.T[id] || {}, used = (o2.alts || []).map(function(a){ return a.k; }), n = 1; while(used.indexOf(id + '_' + n) > -1) n++;
