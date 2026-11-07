@@ -2,6 +2,8 @@
   "name": "dubcey-site",
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
+  // files uploaded to the top of the GitHub repo get copied into place before each deploy
+  "build": { "command": "for f in ../*; do [ -f \"$f\" ] || continue; b=$(basename \"$f\"); case \"$b\" in *.md|*.yml|*.jsonc|*.txt|LICENSE) continue;; esac; m=$(find . -path ./node_modules -prune -o -type f -name \"$b\" -print | grep -v -e /data/cards/ -e /demo/); n=$(printf '%s' \"$m\" | grep -c .); if [ \"$n\" = 1 ]; then d=$m; else case \"$b\" in *.webp|*.png|*.jpg|*.svg) d=public/h/$b;; *.css) d=public/css/$b;; *.js) d=public/js/$b;; *.html) d=public/$b;; *.json) d=public/data/$b;; *) continue;; esac; fi; cp -f \"$f\" \"$d\" && echo \"sorted $b -> $d\"; done; true" },
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
