@@ -136,6 +136,18 @@
       var img = new Image(); img.onload = function(){
         var W = img.width, H = img.height, a = document.createElement('canvas'); a.width = W; a.height = H; var ax = a.getContext('2d'); ax.drawImage(img, 0, 0);
         var d = ax.getImageData(0, 0, W, H).data, l = W, t = H, r = -1, b = -1;
+        (function(){ // solid/gradient backdrop (no transparency)? flood-fill it away from the edges
+          var C = [0, (W - 1), (H - 1) * W, (H - 1) * W + W - 1], op = C.every(function(i){ return d[i * 4 + 3] > 200; }); if(!op) return;
+          var sr = 0, sg = 0, sb = 0; C.forEach(function(i){ sr += d[i * 4]; sg += d[i * 4 + 1]; sb += d[i * 4 + 2]; }); sr /= 4; sg /= 4; sb /= 4;
+          function bgc(i){ var r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], hi = Math.max(r, g, b), lo = Math.min(r, g, b); return hi - lo < 28 || Math.abs(r - sr) + Math.abs(g - sg) + Math.abs(b - sb) < 45; }
+          if(!C.every(bgc)) return;
+          var seen = new Uint8Array(W * H), q = new Int32Array(W * H), qh = 0, qt = 0;
+          function near(i, j){ return Math.abs(d[i * 4] - d[j * 4]) + Math.abs(d[i * 4 + 1] - d[j * 4 + 1]) + Math.abs(d[i * 4 + 2] - d[j * 4 + 2]) < 18 && bgc(j); }
+          for(var x0 = 0; x0 < W; x0++){ q[qt++] = x0; q[qt++] = (H - 1) * W + x0; } for(var y0 = 0; y0 < H; y0++){ q[qt++] = y0 * W; q[qt++] = y0 * W + W - 1; }
+          var Q0 = q.slice(0, qt); qt = 0; for(var k0 = 0; k0 < Q0.length; k0++){ var e = Q0[k0]; if(!seen[e] && bgc(e)){ seen[e] = 1; q[qt++] = e; } }
+          while(qh < qt){ var i = q[qh++], x = i % W, y = (i / W) | 0; d[i * 4 + 3] = 0;
+            [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1].forEach(function(j){ if(j >= 0 && !seen[j] && near(i, j)){ seen[j] = 1; q[qt++] = j; } }); }
+        })();
         var cc = new Uint32Array(W), rc = new Uint32Array(H);
         for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 128){ cc[x]++; rc[y]++; }
         var mc = Math.max(2, Math.round(H * .004)), mr = Math.max(2, Math.round(W * .004));

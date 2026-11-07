@@ -2,6 +2,10 @@
 
 Drop the image in `assets/` on GitHub, tick the box, and send Claude the file name.
 
+**Specs:** transparent PNG, helmet facing right, roughly square (1800px is plenty). Claude makes a small web copy (~50 KB) for the site.
+
+_Checked against the site on Nov 6, 2026: 12 names below still show the current team's helmet or the league logo._
+
 ## Done
 - [x] The Shaved Beavers (2001–03) — `ShavedBeavers.png`
 - [x] Little Executive Rough Riders (2004–06) — `LERR.png`
@@ -35,15 +39,15 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] dubcey's dominators (2001–02)
 
 **Entertainment 720**
-- [ ] Gotham Rogues (2011)
-- [ ] Boats 'n Hoes (2010)
+- [x] Gotham Rogues (2011) — `helmet-gotham`
+- [x] Boats 'n Hoes (2010) — `helmet-boatsnhoes`
 - [ ] Narcoleptic Nazis (2001–02)
 
 **Nuts on Your Drumset**
 - [ ] The Medieval Midgets (2001–03)
 
 **Prestige Worldwide**
-- [ ] Luck/Wayne Enterprises (2012)
+- [x] Luck/Wayne Enterprises (2012) — `helmet-luckwayne`
 
 **Breaking My Back**
 - [ ] F'ing Fatties (2013)
@@ -52,11 +56,13 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 - [ ] Corey's Nazi Justice (2010)
 
 **The Diamond Dogs**
-- [ ] Pick A Switch (2014–16)
-- [ ] Bad Newz Kennels (2007–13)
+- [x] Pick A Switch (2014–16) — `helmet-pickaswitch`
+- [x] Bad Newz Kennels (2007–13) — `helmet-kennels`
+
+_Bad Newz Karens (`helmet-karens.png`) is the Diamond Dogs’ alter ego, switched on and off in Commish → Teams. It isn’t a missing helmet._
 
 ## Defunct franchises
-- [ ] Bath Salt Zombies (2014–15)
+- [x] Bath Salt Zombies (2014–15) — `helmet-bathsalt`
 - [ ] Wishard Gun & Knife Club (2008–13; later Bath Salt Zombies)
 - [ ] The Roman Eagles (2003; later Little Executive Rough Riders)
 - [ ] The Little Asian Kids (later Naptown Ryderz)
