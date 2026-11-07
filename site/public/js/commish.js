@@ -136,8 +136,14 @@
       var img = new Image(); img.onload = function(){
         var W = img.width, H = img.height, a = document.createElement('canvas'); a.width = W; a.height = H; var ax = a.getContext('2d'); ax.drawImage(img, 0, 0);
         var d = ax.getImageData(0, 0, W, H).data, l = W, t = H, r = -1, b = -1;
-        for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 16){ if(x < l) l = x; if(x > r) r = x; if(y < t) t = y; if(y > b) b = y; }
+        var cc = new Uint32Array(W), rc = new Uint32Array(H);
+        for(var y = 0; y < H; y++) for(var x = 0; x < W; x++) if(d[(y * W + x) * 4 + 3] > 128){ cc[x]++; rc[y]++; }
+        var mc = Math.max(2, Math.round(H * .004)), mr = Math.max(2, Math.round(W * .004));
+        for(var x2 = 0; x2 < W; x2++) if(cc[x2] >= mc){ if(x2 < l) l = x2; r = x2; }
+        for(var y2 = 0; y2 < H; y2++) if(rc[y2] >= mr){ if(y2 < t) t = y2; b = y2; }
         if(r < 0){ l = 0; t = 0; r = W - 1; b = H - 1; }
+        for(y = 0; y < H; y++) for(x = 0; x < W; x++){ var k = (y * W + x) * 4 + 3; if(x < l || x > r || y < t || y > b || d[k] < 20) d[k] = 0; }
+        ax.putImageData(new ImageData(d, W, H), 0, 0);
         var cw = r - l + 1, ch = b - t + 1, FW = 480, FH = 359, s = Math.min(FW / cw, FH / ch), dw = Math.round(cw * s), dh = Math.round(ch * s);
         var c = document.createElement('canvas'); c.width = FW; c.height = FH; var cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
         cx.drawImage(a, l, t, cw, ch, Math.round((FW - dw) / 2), Math.round((FH - dh) / 2), dw, dh);

@@ -583,7 +583,27 @@ button{font:inherit;color:inherit}
 .cup{padding:5px 8px;background:linear-gradient(180deg,#f0cf7a,#c99a3a);border:1px solid #7a5a1d;color:#3b2a0a;font-size:10px}
 .aka{display:flex;flex-direction:column;gap:7px}
 .aka>div:not(.kk){display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #2C4C78;padding-bottom:6px}
-.aka b{font:600 14.5px/1.2 'Zilla Slab',Georgia,serif;color:#F7EFDB}
+.aka b{font:600 14.5px/1.2 'Zilla Slab',Georgia,serif;color:#F7EFDB;flex:1;min-width:0}
+.aka>div:not(.kk){align-items:center}
+.akh{width:40px;height:30px;object-fit:contain;flex:none}
+span.akh.hw,span.ysh.hw{display:inline-flex;align-items:center;justify-content:center;border:1px dashed #4A6A94;border-radius:6px;color:#6F8AAE;font:700 12px/1 'Zilla Slab',Georgia,serif}
+.snm{display:inline-flex;align-items:center;gap:8px}
+.ysh{width:40px;height:30px;object-fit:contain;flex:none}
+span.ysh.hw{opacity:.6}
+.hevo{margin:0 0 44px}
+.hevo .lh{color:#F7EFDB;border-bottom-color:#E0A72B;padding-left:0;padding-right:0}
+.hevo .lh .mono{font-size:10px;color:#9FB4CC;letter-spacing:.08em}
+.hevo .wrow{margin-top:14px}
+.hevo .row6{grid-template-columns:repeat(var(--n),minmax(0,1fr));max-width:calc(var(--n) * 190px);margin:0 auto}
+.hevo .plank .row6{max-width:none;margin:0;padding:0 max(0px,calc((100% - var(--n) * 190px) / 2))}
+.hevo .trophy img{max-width:150px;height:105px}
+.hevo .hy{display:none;font-size:9px;color:#9FB4CC}
+.hevo .trophy .now{font-size:8.5px;color:#E0A72B;letter-spacing:.12em}
+.hevo .hwb{width:100%;max-width:140px;height:105px}
+.hwb{width:120px;height:90px;border:1.5px dashed #4A6A94;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#6F8AAE}
+.hwb b{font:700 28px/1 'Zilla Slab',Georgia,serif}
+.hwb span{font-size:8.5px;letter-spacing:.1em}
+@media (max-width:640px){.hevo .row6{grid-template-columns:repeat(3,minmax(0,1fr))}.hevo .plank{display:none}.hevo .hy{display:block}.hevo .row6{gap:14px 0;max-width:none}.ysh{width:30px;height:22px}}
 .aka span{flex:none;font-size:9px;color:#9FB4CC}
 .sx{overflow-x:auto}
 /* one table system: mono labels + numbers, serif for words, Alfa Slab for the one stat that matters */

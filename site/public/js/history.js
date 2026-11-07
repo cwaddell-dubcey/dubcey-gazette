@@ -131,6 +131,13 @@
     var id = S.team || D.IDS[0], T = H.team[id]; if(!T) return;
     var names = H.lineage[id] || [], titles = T.titles || [];
     function nameIn(y){ for(var i = 0; i < names.length; i++){ var r = names[i][1].split('-'), a = +r[0], b = +(r[1] || r[0]); if(y >= a && y <= b) return names[i][0]; } return ''; }
+    function own(n, y){ if(!n) return ''; if(n === (names[0] || [])[0]) return D.helm(id); var p = hl(n, y); return (p === D.helm(id) || p === 'h/logo.webp') ? '' : p; }
+    function hthumb(n, y, cls){ var p = own(n, y); return p ? '<img class="' + cls + '" src="' + p + '" alt="" loading="lazy">' : '<span class="' + cls + ' hw" title="Helmet wanted">?</span>'; }
+    var evo = names.length > 1 ? (function(){ var L = names.slice().reverse(), n = L.length;
+      return '<section class="hevo"><div class="lh"><span class="t">Through the Years</span><span class="mono">' + n + ' NAMES \u00b7 ' + L.filter(function(x){ return own(x[0], +x[1].split('-')[0]); }).length + ' HELMETS ON FILE</span></div>' +
+        '<div class="wrow"><div class="row6" style="--n:' + n + '">' + L.map(function(x, k){ var p = own(x[0], +x[1].split('-')[0]);
+          return '<div class="trophy' + (k === n - 1 ? ' cur' : '') + '">' + (p ? '<img src="' + p + '" alt="" loading="lazy">' : '<div class="hwb"><b>?</b><span class="mono">HELMET WANTED</span></div>') + '<span class="nm3">' + esc(x[0]) + '</span><span class="hy mono">' + esc(x[1].replace('-', '\u2013')) + '</span>' + (k === n - 1 ? '<span class="now mono">TODAY</span>' : '') + '</div>';
+        }).join('') + '</div><div class="plank"><div class="row6" style="--n:' + n + '">' + L.map(function(x){ return '<span class="plate">' + esc(x[1].replace('-', '\u2013')) + '</span>'; }).join('') + '</div></div></div></section>'; })() : '';
     var best = T.seasons.slice().sort(function(a, b){ return parseFloat(b[2]) - parseFloat(a[2]); })[0];
     $('hb').innerHTML = rail(id, 'data-team') +
       '<div class="case"><div class="cpnl"><div class="shf"><img src="' + D.helm(id) + '" alt=""><span class="plate">' + titles.length + (titles.length === 1 ? ' TITLE' : ' TITLES') + '</span></div>' +
@@ -138,13 +145,13 @@
       (titles.length ? '<div class="cups">' + titles.map(function(y){ return '<span class="cup mono">\ud83c\udfc6 ' + y + '</span>'; }).join('') + '</div>' : '<div class="tl mono">STILL CHASING THE FIRST ONE</div>') +
       '<div class="cnt" style="grid-template-columns:repeat(3,1fr)"><div><b>' + esc(T.reg[0]) + '</b><span class="mono">REG SEASON</span></div><div><b>' + esc(T.post[0]) + '</b><span class="mono">PLAYOFFS</span></div><div><b>' + esc(T.reg[1]) + '</b><span class="mono">WIN PCT</span></div></div>' +
       (best ? '<div class="tl mono">BEST SEASON · ' + esc(best[0]) + ' · ' + esc(best[1]) + '</div>' : '') +
-      (names.length > 1 ? '<div class="aka"><div class="kk mono">ALSO KNOWN AS</div>' + names.slice(1).map(function(n){ return '<div><b>' + esc(n[0]) + '</b><span class="mono">' + esc(n[1]) + '</span></div>'; }).join('') + '</div>' : '') +
+      (names.length > 1 ? '<div class="aka"><div class="kk mono">ALSO KNOWN AS</div>' + names.slice(1).map(function(n){ return '<div>' + hthumb(n[0], +n[1].split('-')[0], 'akh') + '<b>' + esc(n[0]) + '</b><span class="mono">' + esc(n[1]) + '</span></div>'; }).join('') + '</div>' : '') +
       '</div></div>' +
       '<div class="tled"><div class="lh"><span class="t">Season by Season</span><a class="btn ghost2" href="#h2h/' + id + '">HEAD-TO-HEAD \u2192</a></div><div class="sx">' +
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]);
-        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l">' + esc(nameIn(+s[0])) + '</td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
-      }).join('') + '</tbody></table></div></div></div>' + rushmore(id);
+        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
+      }).join('') + '</tbody></table></div></div></div>' + evo + rushmore(id);
   }
 
 
