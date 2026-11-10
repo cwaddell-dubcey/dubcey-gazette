@@ -1,123 +1,144 @@
 {
-  "week": 8,
-  "threads": [
-    "Standings after Wk 8: E720, Ligers and FBT 6-2; Wet Bandits, Wad, BMB and Viva 5-3; DD 4-4; Scally and Bloodfeast 2-6; Nuts and Prestige 1-7.",
-    "Streaks: BMB W5, DD W2, Prestige W1 (first win), E720, Wet Bandits, Viva W1; Nuts L7, Bloodfeast L2; FBT's W6 snapped; Ligers, Wad, Scally L1.",
-    "Blowout week: five of six games decided by 218+. Closest was BMB over Ligers by 70. Margins: DD +367.75, WB +303, E720 +288.25, Viva +254.25, Prestige +218.75.",
-    "Nuts: Wk 8 low 327 (penalty). Started three 0.00s (Zay Flowers, Omar Cooper Jr., Emanuel Wilson). D.J. Moore 78.5 bench. Opt 432.25 still loses. Traded Tony Pollard (159 on their bench in Wk 7) Thursday for Pierre Strong Jr. + $7 of 2027 draft; Pollard 123.5 for E720, Strong 1.00 on Nuts' bench.",
-    "E720 over FBT 731.5-443.25, both perfect lineups. Gibbs 137.75, Pollard 123.5 in his first game, Geno 104.5. FBT: Tre Tucker 0.00, Bam Knight 1.50, Higbee 10.50. E720 now first, league-high PF 5,469.",
-    "Ligers: benched Kirk Cousins 148.25, started Jayden Daniels (85.75, acquired Wed from Bloodfeast). Also benched Rodriguez 58.25, Wan'Dale 57.75, Malik Washington 55; started Love 11.5, JT 19.5, Metcalf 3. Opt 795.25 wins by 129.5.",
-    "BMB: W5. Bhayshul Tuten 143.25, Maye 117.25, Demario Douglas 82. Benched Malik Willis (83.75) again and started Brissett (23.25), which the Wk 8 preview warned about. Won anyway.",
-    "Wet Bandits: week high 793. Tee Higgins 191.25, Mahomes 143.25 (after 38.25), Michael Wilson 116.75. Emmett Johnson 128.5 on bench. Caleb Douglas ($391 waiver) 32.25; FAAB now $363. Mumpfield started 0.00.",
-    "Scally: Tyler Allgeier 181.5 on the bench; started Carnell Tate (DNP) and Charbonnet 16. Opt 726.75 still loses to 793.",
-    "DD: 752.25 over Bloodfeast by 367.75, biggest margin of the week. Benched Bo Nix again (103.5) plus Gainwell 95, Sutton 39.75 = 238.25 bench (241 last week). Opt 903.75. Chase 130.75, Fannin 130.5, Swift 117. Series vs Bloodfeast now 10-10.",
-    "Bloodfeast: 384.5, second-lowest. Started Lamar Jackson ($40), 0.00. Benched Kenyon Sadiq (16.50), who belonged in the optimal lineup, a week after starting him for 4.50. Opt 401. Five FA moves in four days.",
-    "Viva: Joe Burrow 240.5, week's top player. Jaylen Warren 121.5, Gesicki 82 (the Hurts replacement). Kincaid 89.5 bench. Snapped L2. Series vs Wad now 11-10 Wad.",
-    "Wad: benched Cam Ward 138.5, started Deshaun Watson 72. Drake London ($37) 6.00, Jeudy 0.00. Opt 639.75 loses anyway.",
-    "Prestige: 1-7, first win, perfect lineup 545.75. Braelon Allen ($1) 128, Kyler 106.",
-    "Deadline trades: Bloodfeast sent Diggs + Jayden Daniels to Ligers for Daniel Jones + Adonai Mitchell + $13 2027 auction + 2027 rookie pick; Bloodfeast cut Mitchell a day later. E720 got Pollard from Nuts. Trade deadline has passed.",
-    "Wk 8 moves: WB $391 Caleb Douglas; BMB $28 Dylan Sampson (50 on bench; Bloodfeast's $115 buy, cut in Wk 7); Scally $1 Flournoy (55) for McLaurin; FBT added Cooper Kupp (30.25); Bloodfeast added Dulcich, Tank Dell, Travis Hunter (cut 3 days later), Quentin Johnston, Treylon Burks (60.75)."
+ "week": 9,
+ "data": {
+  "dispatch": [
+   {
+    "kick": "Week 9 · Game of the Week",
+    "id": "0002",
+    "head": "720 drops 800 on the Wet Bandits and has first place to itself",
+    "dek": "Entertainment 720 scored 800.75, the week's best, and left 12.25 points on the table. Shedeur Sanders, picked up Thursday 64 minutes after 720 added and dropped Carson Wentz, scored 128.25 for $2. CeeDee Lamb (186.25) and Christian Watson (178.25) did the rest. The Wet Bandits started a $51 zero and benched Emmett Johnson again. 720 is 7-2 and alone in first."
+   },
+   {
+    "kick": "Week 9 · Rock Bottom",
+    "id": "0006",
+    "head": "Nuts score 277.75 and lose by 389.75",
+    "dek": "Jordan Love scored 190.5 by himself. Nuts scored 277.75 as a team. The perfect Nuts lineup was 300.5, so this wasn't a lineup problem; this is the roster. Emanuel Wilson started and didn't play, a week after starting and scoring 0.00. Eight straight losses, 1-8, and a second straight week paying the bitcoin pool."
+   },
+   {
+    "kick": "Week 9 · Revenge",
+    "id": "0001",
+    "head": "Bloodfeast beats the team it sold its quarterback to",
+    "dek": "Jayden Daniels scored 86.5 against Bloodfeast and lost anyway. Puka Nacua went for 162.5, KC Concepcion ($4) for 90.25 and Joe Milton, the $36 waiver claim, for 70.25. Bloodfeast won 618.5–544.25, and the Ligers' perfect lineup still loses. The Ligers have lost two straight and are out of first."
+   },
+   {
+    "kick": "Week 9 · Malpractice",
+    "id": "0009",
+    "head": "Resistance benches the win and loses to Prestige",
+    "dek": "Justice Hill, a $1 running back, scored 72.75 on Resistance's bench. Mike Gesicki started and scored 8.25. Swap them and Resistance wins by 45.75. Instead it lost 378.25–359.5, wasting Joe Burrow's 156.25. Brian Thomas Jr. scored 0.00, and so did both bench receivers. Gardner Minshew, a $212 waiver claim, scored 43.50."
+   },
+   {
+    "kick": "Week 9 · Player of the Week",
+    "id": "0007",
+    "head": "C.J. Stroud scores 221 and the Scallywags beat Trash",
+    "dek": "The best game of the week belonged to a $9 quarterback. Stroud scored 221.00, Matthew Golden 173 and Bucky Irving 119.5, and the Scallywags won 759.5–599.75. Trash started Ladd McConkey, who didn't play, and Josh Jacobs (2.50). Trash has lost two straight."
+   },
+   {
+    "kick": "Week 9 · Streak Over",
+    "id": "0012",
+    "head": "The Diamond Dogs start Bo Nix and end BMB's streak",
+    "dek": "Bo Nix finally started, scored 90.25, and the Diamond Dogs beat BMB 696.5–513.25 to end its five-game streak. They still benched 145.5 points that belonged in the lineup. BMB finally started Malik Willis. He scored 25.50."
+   }
   ],
-  "data": {
-    "takes": {
-      "0002": "Last week, 130.5 points on the bench and a loss. This week, a perfect lineup and the biggest game of the season turned into a 288-point beating. Entertainment 720 scored 731.5, every point of it, against the team that had won six straight and allowed fewer points than anyone. Jahmyr Gibbs went for 137.75, Geno Smith got the start and scored 104.5, and Tony Pollard, acquired Thursday from Nuts for Pierre Strong Jr., scored 123.5 in his first game. Strong scored 1.00 on Nuts' bench. Jameson Williams (77.5) and Christian Watson (74.75) added the rest. With $0 of FAAB and no waiver budget, 720 found its upgrade at the deadline instead. 6-2, first place, the most points in the league, and the Wet Bandits next.",
-      "0005": "The streak is over, and it wasn't close. Full Blown Trash set a perfect lineup, 443.25 of 443.25, and lost by 288.25. There's no bench to blame, which is worse. Tre Tucker, who had three straight monster games, scored 0.00. Bam Knight scored 1.50. Tyler Higbee started again and scored 10.50, because some traditions are sacred. Dak Prescott (103.75), James Cook (80.75) and Josh Jacobs (79.25) did what they could. New pickup Cooper Kupp added 30.25. Six straight wins, then the worst possible week against the worst possible opponent. Still 6-2, still in the three-way tie for first, and the Scallywags are next, which should help.",
-      "0003": "The Ligers traded for a quarterback on Wednesday, then benched the one who scored 148.25. Kirk Cousins sat. Jayden Daniels, fresh from Bloodfeast, started and scored 85.75. That was only the beginning: Chris Rodriguez (58.25), Wan'Dale Robinson (57.75) and Malik Washington (55) also watched from the bench while Jeremiyah Love (11.50), Jonathan Taylor (19.50) and DK Metcalf (3.00) started. The optimal lineup was 795.25. They lost by 70, so the optimal wins by 129.5. Josh Allen scored 142.25 and Brock Bowers 119, and it didn't matter. 6-2, still tied for first, and Bloodfeast, the team that sold them Daniels, is next.",
-      "0011": "Five straight. BMB beat the Ligers 665.75–595.75 in the closest game of a week full of blowouts. Bhayshul Tuten went for 143.25, Drake Maye threw for 117.25, and Demario Douglas, the $58 waiver pickup the Wet Bandits gave up on, scored 82. Luther Burden added 67. They also benched Malik Willis again (83.75) and started Jacoby Brissett (23.25), which this publication specifically warned against. They won anyway, because the Ligers benched even more. Dylan Sampson, Bloodfeast's former $115 buy, cost $28 and scored 50 on the bench. 0-3 to 5-3. The Diamond Dogs are next.",
-      "0004": "The Wet Bandits scored 793, the best score of the week, a week after the second-worst. Tee Higgins went for 191.25. Patrick Mahomes went from 38.25 to 143.25. Michael Wilson added 116.75 and Jonah Coleman 92.75. Emmett Johnson scored 128.5 on the bench, and Konata Mumpfield started for 0.00, so the optimal lineup was 921.5, the best possible score in the league. Caleb Douglas, the $391 waiver claim, scored 32.25, which works out to about $12 per point. They have $363 left. 5-3, and next up is 720, the new first-place team.",
-      "0007": "The Scallywags benched Tyler Allgeier, who scored 181.5. They started Carnell Tate, who didn't play, and Zach Charbonnet, who scored 16. Jahan Dotson scored 71.25 on the bench, a week after starting and scoring 4.50. The good news: the optimal lineup, 726.75, still loses to the Wet Bandits' 793, so the bench only cost them their dignity. Bucky Irving followed last week's breakout with 125, Matthew Golden scored 84.25, and $1 pickup Ryan Flournoy added 55. 2-6, and Trash is next, coming off a 288-point loss and probably in a bad mood.",
-      "0010": "Prestige won a game. 545.75–327, a perfect lineup, no Penix controversy, no zeros in the starting lineup. Braelon Allen, a $1 running back, scored 128. Kyler Murray, last week's wrong choice, scored 106. Rashee Rice added 64.75 and Chase Brown 52. It helps to play the only team in the league that started three players who scored zero. 1-7, no longer the only winless team in the league. Next is Resistance, and MFL's projections have Prestige favored by 81.7. Nobody tell them.",
-      "0006": "Nuts scored 327, the lowest in the league, and owes the bitcoin pool. They started Zay Flowers (0.00), Omar Cooper Jr. (0.00) and Emanuel Wilson (0.00). D.J. Moore scored 78.5 on the bench. The optimal lineup, 432.25, still loses by 113.5, so nobody was saving this. And then there's the trade. Last week Nuts benched Tony Pollard's 159 and lost by 10.25. On Thursday they traded him to 720 for Pierre Strong Jr. and $7 of 2027 draft money. Pollard scored 123.5. Strong scored 1.00. Seven straight losses, 1-7, tied with Prestige for the worst record in the league, and the one team they could count on beating just beat them. Wad of Hell is next.",
-      "0012": "The Diamond Dogs scored 752.25, won by 367.75, the biggest margin of the week, and benched 238.25 points. Again. Bo Nix scored 103.5 on the bench for the second week in a row. Kenneth Gainwell scored 95 there too, and Courtland Sutton 39.75. The optimal lineup was 903.75. Ja'Marr Chase (130.75), Harold Fannin (130.5), D'Andre Swift (117) and Jaxon Smith-Njigba (113.5) were too much for Bloodfeast anyway. Two straight wins, back to .500 at 4-4, and the all-time series with Bloodfeast is now 10-10. BMB, the hottest team in the league, is next.",
-      "0001": "Bloodfeast traded Jayden Daniels and Stefon Diggs to the Ligers on Wednesday, made five free-agent moves in four days, started Lamar Jackson and got 0.00 from its $40 quarterback. Final: 752.25–384.5, a 367.75-point loss, the worst of the week. Daniel Jones, the quarterback they got back, scored 39.50. Adonai Mitchell, also from that trade, was cut the next day. Travis Hunter was picked up Thursday and cut Sunday for Treylon Burks, who did score 60.75. Puka Nacua (85) tried. And Kenyon Sadiq, started last week for 4.50, sat this week and scored 16.50, enough to make the optimal lineup. The optimal was still only 401. The bitcoin pool got lucky: Nuts was worse. 2-6, and the Ligers, who got Daniels and Diggs, are next.",
-      "0009": "Joe Burrow scored 240.5. The best individual game of the week by 49 points, more than the Scallywags' whole receiver room. Jaylen Warren added 121.5 and Mike Gesicki, the man Resistance cut Jalen Hurts for, scored 82. Fine. That one worked. T.J. Hockenson (68.5), Derrick Henry (56.75) and Kyren Williams (55.25) chipped in, and Resistance beat Wad of Hell 751.5–497.25 to end a two-game skid. Dalton Kincaid scored 89.5 on the bench, but nobody needed him. 5-3, and the series with Wad is 11-10. Next: Prestige, who are somehow favored.",
-      "0008": "Wad of Hell benched Cam Ward, who scored 138.5, and started Deshaun Watson, who scored 72. That's the decision that would have been the story, except the optimal lineup (639.75) still loses to Joe Burrow's 240.5-point afternoon. Drake London, a $37 receiver, scored 6.00. Jerry Jeudy scored 0.00. Bijan Robinson ($51) scored 38. Jordan Love (122) and Trey McBride (79) kept it from being embarrassing. It was embarrassing anyway: 751.5–497.25. 5-3, and Nuts are next, who have never been more beatable."
-    },
-    "dispatch": [
-      {
-        "kick": "Week 8 · Game of the Week",
-        "head": "720 sets a perfect lineup and ends Trash's streak by 288",
-        "id": "0002",
-        "dek": "Entertainment 720 scored 731.5, every available point, and beat Full Blown Trash 731.5–443.25. Tony Pollard, acquired Thursday, scored 123.5 in his first game. Trash also set a perfect lineup; Tre Tucker scored 0.00. E720, the Ligers and Trash are all 6-2, and 720 leads the league in points."
-      },
-      {
-        "kick": "Week 8 · Worst Trade of the Deadline",
-        "head": "Nuts trade Tony Pollard, then score 327",
-        "id": "0006",
-        "dek": "A week after benching Pollard's 159, Nuts sent him to 720 for Pierre Strong Jr. and $7 of 2027 draft money. Pollard scored 123.5; Strong scored 1.00 on the bench. Nuts started three zeros, posted the week's low score and owe the bitcoin pool. Seven straight losses."
-      },
-      {
-        "kick": "Week 8 · Malpractice",
-        "head": "The Ligers bench Kirk Cousins's 148.25 and lose by 70",
-        "id": "0003",
-        "dek": "The Ligers traded for Jayden Daniels on Wednesday and started him (85.75) over Cousins. They also benched three players who scored 55+ while starting Jonathan Taylor (19.50) and DK Metcalf (3.00). The optimal lineup wins by 129.5. BMB has won five straight."
-      },
-      {
-        "kick": "Week 8 · High Score",
-        "head": "Tee Higgins scores 191, and the Wet Bandits put up 793",
-        "id": "0004",
-        "dek": "A week after scoring 491.5, the Wet Bandits posted the week's best score behind Higgins, Patrick Mahomes (143.25) and Michael Wilson (116.75). The Scallywags benched Tyler Allgeier's 181.5 and still couldn't have caught them."
-      },
-      {
-        "kick": "Week 8 · Player of the Week",
-        "head": "Joe Burrow scores 240.5 and Resistance stops the slide",
-        "id": "0009",
-        "dek": "Burrow had the week's best game by 49 points, and Resistance beat Wad of Hell 751.5–497.25. Wad benched Cam Ward (138.5) for Deshaun Watson (72), but even its optimal lineup loses."
-      },
-      {
-        "kick": "Week 8 · Finally",
-        "head": "Prestige wins its first game",
-        "id": "0010",
-        "dek": "A perfect lineup, 545.75, and a 218.75-point win over Nuts. Braelon Allen, a $1 running back, scored 128. Prestige and Nuts are both 1-7."
-      },
-      {
-        "kick": "Week 8 · The Wire",
-        "head": "Bloodfeast sells to the Ligers, starts a $40 zero and loses by 368",
-        "id": "0001",
-        "dek": "Bloodfeast sent Jayden Daniels and Stefon Diggs to the Ligers for Daniel Jones, Adonai Mitchell, $13 of 2027 auction money and a 2027 rookie pick, then cut Mitchell the next day. Lamar Jackson started and scored 0.00. The Diamond Dogs won 752.25–384.5 with 238.25 on the bench. The Wet Bandits paid $391 for Caleb Douglas (32.25)."
-      }
-    ],
-    "awards": {
-      "Team of the Week": {
-        "text": "793, the week's top score, a week after scoring 491.5. Tee Higgins 191.25, Mahomes 143.25, Michael Wilson 116.75.",
-        "id": "0004"
-      },
-      "Biggest Bust": {
-        "text": "Traded Tony Pollard for Pierre Strong Jr. Pollard scored 123.5 for 720. Strong scored 1.00. Nuts started three zeros and scored 327.",
-        "id": "0006"
-      },
-      "Luckiest Win": {
-        "text": "Benched Malik Willis again and started Jacoby Brissett (23.25). Won by 70 only because the Ligers benched Kirk Cousins's 148.25.",
-        "id": "0011"
-      }
-    }
+  "takes": {
+   "0001": "Two weeks ago Bloodfeast sold Jayden Daniels and Stefon Diggs to the Ligers. Sunday, Daniels scored 86.5 against them and lost. Puka Nacua (162.5) carried, KC Concepcion ($4) added 90.25, and Joe Milton, the $36 waiver claim, scored 70.25. Then there's the rest of it: four free-agent moves before 1 p.m. Sunday, including DJ Giddens, added at 10:55 and cut at 12:06, the second team to cut him that morning. Demarcus Robinson was picked up at 12:50 and started for 16.50. Quentin Johnston (71) and Kenyon Sadiq (36.75) both sat. Sadiq has now been benched in a week he belonged in the lineup twice in a row, which is a skill. Won 618.5–544.25 anyway. 3-6, $4 of FAAB left, and the Wet Bandits next.",
+   "0002": "800.75, the best score of the week, and 12.25 points from perfect. The only miss: Jordan Mason (22.75) over Kaelon Black (35). Shedeur Sanders came in off waivers Thursday, 64 minutes after 720 picked up Carson Wentz and thought better of it, and scored 128.25 for $2. CeeDee Lamb went for 186.25, Christian Watson 178.25, Tyler Shough 111.75. Two of those receivers outscored the Wet Bandits' best player, and the Wet Bandits scored 684.75 and still lost by 116. 7-2, two straight, alone in first, the most points in the league, and $0 of FAAB because they don't need it. The Ligers are next.",
+   "0003": "The Ligers bought Jayden Daniels from Bloodfeast to win games like this one. Daniels scored 86.5. They lost to Bloodfeast. Josh Allen (76), Brock Bowers (99.25) and Denzel Boston (73.5) were fine. Aaron Jones started and scored 11.75, Malik Washington 15.75, and Jonathan Taylor, a $37 running back, scored 26.50. Seth McGowan (45.25) and Chris Rodriguez (44.25) sat. Kirk Cousins scored 69 on the bench for a second straight week, though this time he didn't belong in the lineup. The optimal lineup, 606.25, still loses to Bloodfeast's 618.5. Two straight losses, 6-3, out of first, and 720 is next.",
+   "0004": "Last week this publication gave the Wet Bandits one piece of advice: start Emmett Johnson. They benched him. He scored 42. Juwan Johnson scored 50.5 next to him. Meanwhile Adonai Mitchell, the $51 waiver claim, the same player Bloodfeast cut one day after getting him, started and scored 0.00. Dallas Goedert started for 37.5. Kenneth Walker III (156.75) and Patrick Mahomes (94.5) were good, but the optimal lineup, 739.75, still loses to 720 by 61, so the bench decisions only cost them their dignity. 5-4, $312 of FAAB, and Bloodfeast is next, a team with $4 of FAAB and a $36 quarterback.",
+   "0005": "Trash started Ladd McConkey, a $21 receiver who did not play. It started Josh Jacobs, who scored 2.50. It benched Cooper Kupp (24) and Rachaad White (34.75), both of whom belonged in the lineup. Marvin Harrison Jr. scored 15. Brock Purdy (133) and Dak Prescott (114.25) put up 247.25 between them, and the team still finished with 599.75 against a 3-6 opponent. The perfect lineup, 656, still loses by 103.5. Two weeks ago this team had won six straight. Now it's two straight losses, 6-3, and Wad of Hell next.",
+   "0006": "Nuts scored 277.75. Jordan Love scored 190.5 by himself, more than two-thirds of the Nuts total. The perfect lineup was 300.5, which would have lost by 367. Ashton Jeanty, a $30 running back, scored 8.75. Zay Flowers, $32, scored 13 a week after scoring 0.00, and started over Brenton Strange (16.50). Emanuel Wilson started and didn't play, a week after starting and scoring 0.00. Nuts are now starting Emanuel Wilson the way some people buy lottery tickets. Eight straight losses, 1-8, a second straight week as the bitcoin pool's donor, and the Scallywags next.",
+   "0007": "C.J. Stroud scored 221, the best game of the week, for $9. Matthew Golden added 173 and Bucky Irving 119.5, and the Scallywags beat Trash 759.5–599.75. Good week. Now the part where they almost blew it: Justin Herbert ($28) scored 61.75 on the bench while Jared Goff ($28) started for 35. Kyle Williams, picked up Sunday at 10:41 a.m., started and scored 0.00. Darren Waller was cut for him. Woody Marks (38) and Jahan Dotson (12) sat in favor of Ollie Gordon (34.25) and Williams. They won by 159.75, so it didn't matter, and that's the only reason it isn't the lead. 3-6, and next is Nuts, the one team that makes the Scallywags look organized.",
+   "0008": "Jordan Love scored 190.5 and Nuts scored 277.75. That's the game. Bijan Robinson (110.25) and Javonte Williams (92.75) piled on, and Wad of Hell won by 389.75, the biggest margin of the week. They also started Mike Washington Jr., who scored negative 1.50, and benched Chigoziem Okonkwo (42.75) and Jerry Jeudy (27.75). Starting a negative score in a 389-point win is like jaywalking at a parade. Nobody cares. 6-3, second place, and Trash is next, coming off two straight losses.",
+   "0009": "Joe Burrow scored 156.25 and Resistance lost to Prestige. Justice Hill, a $1 running back, scored 72.75 on the bench. Mike Gesicki started and scored 8.25. That's the whole game: swap the two and Resistance wins by 45.75. Brian Thomas Jr. ($9) scored 0.00, and both bench receivers, Cyrus Allen and Ja'Kobi Lane, also scored 0.00, so at least there was nobody to start instead. Gardner Minshew, the $212 waiver claim, scored 43.50, about $4.87 a point. MFL had Prestige favored last week and this publication laughed. 5-4, and BMB is next.",
+   "0010": "Two straight wins. Last week this publication said that if Prestige won two in a row it would be a trend. It's a trend. Prestige won 378.25–359.5, the lowest winning score of the week, with a lineup 6.5 points from perfect. Michael Penix Jr. (75.5) and Matthew Stafford (67.5) did the heavy lifting, Colston Loveland (40.5) and Tyler Warren (33) helped, and Alvin Kamara (28.75) was the only miss on the bench. Prestige won by not making mistakes against a team that made one. 2-7, and the Diamond Dogs are next.",
+   "0011": "Five straight wins, over. BMB benched Malik Willis in Week 8 when he scored 83.75. This week it started him. He scored 25.50. Demario Douglas, a $1 receiver, scored 76.5 on the bench, and Jadarian Price, a $22 running back, scored 52.5 next to him. Tucker Kraft started and scored 4.75. Greg Dulcich, claimed Sunday seven minutes after Bloodfeast cut him, sat and scored 10.50, which still beat Kraft. Drake Maye (106.25) and Luther Burden (87.75) were good. The optimal lineup, 590.25, still loses by 106.25. 5-4, the most points allowed in the league, and Resistance is next.",
+   "0012": "They started Bo Nix. He scored 90.25. They won. This publication would like it noted. Bryce Young added 115.5 for $4, Ja'Marr Chase 166.25, and the Diamond Dogs beat BMB 696.5–513.25 to end its five-game streak. Old habits: Jakobi Meyers (48.75), Breece Hall (50) and Xavier Hutchinson (46.75) sat while Quinshon Judkins (23), D'Andre Swift (15.50) and Jaxon Smith-Njigba (38.25) started. 145.5 points that belonged in the lineup, which by Diamond Dogs standards is restraint. Three straight wins, 5-4, and Prestige is next."
   },
-  "previews": {
-    "9": {
-      "0004-0002": {
-        "head": "Game of the Week: the new leader hosts the week's high scorer",
-        "text": "720 (6-2) just beat Trash by 288 with a perfect lineup and leads the league with 5,469 points. The Wet Bandits (5-3) just scored 793, the best of the week. MFL has 720 by 15.8, the closest spread of the week. The Wet Bandits lead the series 10-6, but 720 has won the last two, 822.25–510.75 last year and 817.75–683.25 in Week 3. Gibbs, Pollard and Geno Smith against Tee Higgins, Patrick Mahomes and Michael Wilson. The Wet Bandits' tiebreaker: start Emmett Johnson this time."
-      },
-      "0001-0003": {
-        "head": "Bloodfeast faces its own quarterback",
-        "text": "Bloodfeast (2-6) sold Jayden Daniels and Stefon Diggs to the Ligers (6-2) on Wednesday. Now it plays them. MFL has the Ligers by 205.5, the biggest spread of the week. Bloodfeast leads the series 19-15, but the Ligers won the last two, 773–491.25 last year and 608–442.5 in Week 3. The Ligers' biggest threat is their own lineup decisions: Josh Allen, Daniels or Kirk Cousins, who scored 148.25 on the bench last week. Bloodfeast has Daniel Jones."
-      },
-      "0012-0011": {
-        "head": "The hottest team in the league against the most frustrating one",
-        "text": "BMB (5-3) has won five straight. The Diamond Dogs (4-4) have won two straight while benching 479.25 points over those two weeks. MFL has BMB by 44.4. BMB leads the series 14-12, but the Diamond Dogs won Week 3 679–413. Bhayshul Tuten, Drake Maye and Demario Douglas against Ja'Marr Chase, Harold Fannin and Jaxon Smith-Njigba. If the Diamond Dogs ever start Bo Nix, this could get ugly."
-      },
-      "0005-0007": {
-        "head": "Trash needs a bounce-back, and the Scallywags are right there",
-        "text": "Trash (6-2) lost by 288 with a perfect lineup. The Scallywags (2-6) benched Tyler Allgeier's 181.5. MFL has Trash by 153.3. The series is 2-2, and Trash won Week 3 786.5–610.25. Dak Prescott, James Cook and Josh Jacobs should be enough, as long as Tre Tucker remembers how to score. For the Scallywags: start Allgeier."
-      },
-      "0009-0010": {
-        "head": "Prestige is favored. Really.",
-        "text": "Prestige (1-7) just won its first game. Resistance (5-3) just got 240.5 from Joe Burrow. MFL has Prestige by 81.7 anyway. Resistance leads the series 17-15 and won Week 3 637.75–507, but Prestige took last year's game 569–461. Braelon Allen and Kyler Murray against Burrow, Jaylen Warren and Mike Gesicki. If Prestige wins two straight, it's no longer a fluke. It's a trend."
-      },
-      "0006-0008": {
-        "head": "Nuts try to stop the bleeding",
-        "text": "Nuts (1-7) have lost seven straight, scored 327 and traded away Tony Pollard. Wad of Hell (5-3) benched Cam Ward's 138.5 last week. MFL has Wad by 123.8. Nuts lead the series 15-12, but Wad has won the last four, including 785.75–577.5 in Week 3. Jordan Love, Trey McBride and Bijan Robinson against Trevor Lawrence, Ashton Jeanty and Jaylen Waddle. Nuts: start D.J. Moore."
-      }
-    }
+  "awards": {
+   "Team of the Week": {
+    "id": "0002",
+    "text": "800.75, the week's best, 12.25 from perfect. Shedeur Sanders, a Thursday pickup, scored 128.25 for $2. Lamb 186.25, Watson 178.25."
+   },
+   "Biggest Bust": {
+    "id": "0006",
+    "text": "277.75, the week's low, lost by 389.75. Started Emanuel Wilson, who didn't play, for the second straight week. Even the perfect lineup loses by 367."
+   },
+   "Luckiest Win": {
+    "id": "0010",
+    "text": "Won with 378.25, the lowest winning score of the week, because Resistance benched Justice Hill's 72.75 and started Mike Gesicki's 8.25."
+   }
   }
+ },
+ "threads": [
+  "Standings after Wk 9: E720 7-2 (alone in first); Wad, Ligers and FBT 6-3; Wet Bandits, DD, BMB and Viva 5-4; Scally and Bloodfeast 3-6; Prestige 2-7; Nuts 1-8.",
+  "Streaks: DD W3, E720 W2, Prestige W2, Wad, Scally, Bloodfeast W1; Nuts L8, Ligers L2, FBT L2; BMB's W5 snapped; Wet Bandits, Viva L1.",
+  "Wk 9 high: E720 800.75 (opt 813). Low: Nuts 277.75 (bitcoin pool, second straight week). Biggest margin: Wad +389.75. Closest: Prestige over Viva by 18.75.",
+  "E720: Shedeur Sanders picked up Thu (64 minutes after adding and dropping Carson Wentz), 128.25 for $2. Lamb 186.25, Watson 178.25, Shough 111.75. Most PF in league.",
+  "Wet Bandits: benched Emmett Johnson (42) again after the Wk 9 preview told them to start him. Adonai Mitchell ($51 waiver, the player Bloodfeast cut) started, 0.00. FAAB $312.",
+  "Nuts: 277.75, opt 300.5. Emanuel Wilson started DNP after starting for 0.00 in Wk 8. Zay Flowers ($32) 13 after 0.00. Jeanty ($30) 8.75. Jordan Love alone scored 190.5.",
+  "Bloodfeast beat the Ligers, who got Jayden Daniels and Diggs from them (Daniels 86.5, Diggs 38.25). Puka 162.5, Concepcion 90.25, Joe Milton ($36 waiver) 70.25. Four FA moves Sunday morning; FAAB $4. Benched Kenyon Sadiq when he belonged in the lineup in Wks 8 and 9.",
+  "DJ Giddens: added by Prestige Thu, cut Sun 8:30 a.m.; added by Bloodfeast 10:55, cut 12:06. Greg Dulcich: cut by Bloodfeast 12:50 Sun, claimed by BMB 12:57.",
+  "Ligers: L2, out of first. Opt 606.25 still lost to Bloodfeast. Started Aaron Jones 11.75 and Malik Washington 15.75; benched McGowan 45.25 and Rodriguez 44.25. Cousins 69 on bench (not optimal this time).",
+  "Viva: lost to Prestige 378.25-359.5. Justice Hill ($1) 72.75 bench, Gesicki 8.25 started; swap wins by 45.75. BTJ 0.00. Minshew ($212 waiver) 43.50. Burrow 156.25.",
+  "Prestige: W2, opt 384.75 (6.5 off). Wk 9 preview: 'If Prestige wins two straight, it's a trend.' It did.",
+  "Scally: C.J. Stroud 221 (week's best player), Golden 173, Bucky 119.5. Benched Herbert 61.75 for Goff 35. Kyle Williams added Sun 10:41, started, 0.00 (cut Waller).",
+  "FBT: L2. Started McConkey ($21, DNP) and Jacobs 2.50; benched Kupp 24 and Rachaad White 34.75. Opt 656 loses.",
+  "DD: started Bo Nix (90.25) for once and won. Still benched Meyers 48.75, Hall 50, Hutchinson 46.75 (145.5 belonged in lineup; 241 Wk 7, 238.25 Wk 8 on bench). Chase 166.25, Bryce Young 115.5.",
+  "BMB: W5 snapped. Started Malik Willis (25.50) the week after benching his 83.75. Benched Demario Douglas 76.5 and Jadarian Price 52.5; started Kraft 4.75. Most PA in league (6,054.25).",
+  "Wad: Love 190.5, Bijan 110.25, Javonte 92.75. Started Mike Washington Jr. (-1.50). 6-3, second.",
+  "Trade deadline has passed. Earlier: Bloodfeast sent Diggs + Daniels to Ligers for Daniel Jones + Adonai Mitchell + $13 2027 auction + 2027 rookie pick (cut Mitchell a day later); E720 got Pollard from Nuts for Pierre Strong Jr."
+ ],
+ "previews": {
+  "9": {
+   "0004-0002": {
+    "head": "Game of the Week: the new leader hosts the week's high scorer",
+    "text": "720 (6-2) just beat Trash by 288 with a perfect lineup and leads the league with 5,469 points. The Wet Bandits (5-3) just scored 793, the best of the week. MFL has 720 by 15.8, the closest spread of the week. The Wet Bandits lead the series 10-6, but 720 has won the last two, 822.25–510.75 last year and 817.75–683.25 in Week 3. Gibbs, Pollard and Geno Smith against Tee Higgins, Patrick Mahomes and Michael Wilson. The Wet Bandits' tiebreaker: start Emmett Johnson this time."
+   },
+   "0001-0003": {
+    "head": "Bloodfeast faces its own quarterback",
+    "text": "Bloodfeast (2-6) sold Jayden Daniels and Stefon Diggs to the Ligers (6-2) on Wednesday. Now it plays them. MFL has the Ligers by 205.5, the biggest spread of the week. Bloodfeast leads the series 19-15, but the Ligers won the last two, 773–491.25 last year and 608–442.5 in Week 3. The Ligers' biggest threat is their own lineup decisions: Josh Allen, Daniels or Kirk Cousins, who scored 148.25 on the bench last week. Bloodfeast has Daniel Jones."
+   },
+   "0012-0011": {
+    "head": "The hottest team in the league against the most frustrating one",
+    "text": "BMB (5-3) has won five straight. The Diamond Dogs (4-4) have won two straight while benching 479.25 points over those two weeks. MFL has BMB by 44.4. BMB leads the series 14-12, but the Diamond Dogs won Week 3 679–413. Bhayshul Tuten, Drake Maye and Demario Douglas against Ja'Marr Chase, Harold Fannin and Jaxon Smith-Njigba. If the Diamond Dogs ever start Bo Nix, this could get ugly."
+   },
+   "0005-0007": {
+    "head": "Trash needs a bounce-back, and the Scallywags are right there",
+    "text": "Trash (6-2) lost by 288 with a perfect lineup. The Scallywags (2-6) benched Tyler Allgeier's 181.5. MFL has Trash by 153.3. The series is 2-2, and Trash won Week 3 786.5–610.25. Dak Prescott, James Cook and Josh Jacobs should be enough, as long as Tre Tucker remembers how to score. For the Scallywags: start Allgeier."
+   },
+   "0009-0010": {
+    "head": "Prestige is favored. Really.",
+    "text": "Prestige (1-7) just won its first game. Resistance (5-3) just got 240.5 from Joe Burrow. MFL has Prestige by 81.7 anyway. Resistance leads the series 17-15 and won Week 3 637.75–507, but Prestige took last year's game 569–461. Braelon Allen and Kyler Murray against Burrow, Jaylen Warren and Mike Gesicki. If Prestige wins two straight, it's no longer a fluke. It's a trend."
+   },
+   "0006-0008": {
+    "head": "Nuts try to stop the bleeding",
+    "text": "Nuts (1-7) have lost seven straight, scored 327 and traded away Tony Pollard. Wad of Hell (5-3) benched Cam Ward's 138.5 last week. MFL has Wad by 123.8. Nuts lead the series 15-12, but Wad has won the last four, including 785.75–577.5 in Week 3. Jordan Love, Trey McBride and Bijan Robinson against Trevor Lawrence, Ashton Jeanty and Jaylen Waddle. Nuts: start D.J. Moore."
+   }
+  },
+  "10": {
+   "0003-0002": {
+    "head": "Game of the Week: the leader hosts the team that fell out of first",
+    "text": "720 (7-2) just scored 800.75, the best of the week, and sits alone in first. The Ligers (6-3) have lost two straight, the second to the team that sold them their quarterback. MFL has 720 by 52.1. The Ligers won both meetings last year, 877.25–630.5 and 670.5–511.75. CeeDee Lamb, Christian Watson and a $2 Shedeur Sanders against Josh Allen, Jayden Daniels and Brock Bowers. The Ligers' biggest opponent remains the Ligers' lineup."
+   },
+   "0005-0008": {
+    "head": "Two 6-3 teams, one going the wrong way",
+    "text": "Trash (6-3) has lost two straight and started a player who didn't play. Wad of Hell (6-3) just won by 389.75. MFL has Trash by 96.5 anyway. Last year they split three games: Wad 551.75–423.25, Trash 889.5–525.5, Wad 782.25–689. Brock Purdy, Dak Prescott and James Cook against Jordan Love, Bijan Robinson and Javonte Williams. Trash: check the injury report this time."
+   },
+   "0011-0009": {
+    "head": "The closest spread of the week",
+    "text": "BMB (5-4) just saw its five-game streak end. Resistance (5-4) just lost to Prestige by benching a $1 running back's 72.75. MFL has BMB by 9.1. Resistance won both meetings last year, 626.5–512 and 682–653.5. Drake Maye and Luther Burden against Joe Burrow and Justice Hill, assuming Resistance has learned where Hill goes. BMB: Demario Douglas scored 76.5 on your bench. Start him."
+   },
+   "0001-0004": {
+    "head": "Bloodfeast tries for two straight",
+    "text": "Bloodfeast (3-6) just beat the Ligers with a $36 waiver quarterback. The Wet Bandits (5-4) just lost to 720 with Emmett Johnson on the bench again. MFL has the Wet Bandits by 20.9. Bloodfeast won 755–576 in 2024 and both meetings last year, the second 624.5–610. Puka Nacua against Kenneth Walker III and Patrick Mahomes. Wet Bandits: we've stopped asking about Emmett Johnson."
+   },
+   "0012-0010": {
+    "head": "Prestige goes for three",
+    "text": "Prestige (2-7) has won two straight. The Diamond Dogs (5-4) have won three straight and finally started Bo Nix. MFL has the Diamond Dogs by 51.6. Prestige won both meetings last year, 850.5–635.25 and 727.25–709.75. Ja'Marr Chase and Bo Nix against Michael Penix Jr. and Matthew Stafford. If the Diamond Dogs bench 145 points again, this one gets interesting."
+   },
+   "0007-0006": {
+    "head": "Nuts host the one team that might let them win",
+    "text": "Nuts (1-8) have lost eight straight and just scored 277.75. The Scallywags (3-6) just got 221 from C.J. Stroud. MFL has the Scallywags by 92.7. Nuts won last year's second meeting 513.25–419.25, which is the most encouraging thing anyone can say about Nuts right now. Trevor Lawrence and Ashton Jeanty against Stroud, Matthew Golden and Bucky Irving. Nuts: maybe not Emanuel Wilson."
+   }
+  }
+ }
 }
