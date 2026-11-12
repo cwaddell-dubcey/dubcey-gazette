@@ -60,4 +60,5 @@
     var k = e.target.closest('[data-k]'); if(k){ S.f = k.getAttribute('data-k'); draw(); return; }
     var t = e.target.closest('[data-team]'); if(t){ var id = t.getAttribute('data-team'); S.team = S.team === id ? '' : id; draw(); side(); }
   });
+  D.pressMount();
 })();

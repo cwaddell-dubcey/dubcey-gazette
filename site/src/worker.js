@@ -39,7 +39,21 @@ const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(','
 const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
 // one line per page for link previews
 const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.' };
-const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1 };
+const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1, stories:1, hits:1, pgfx:1 };
+// what a media ("press pass") member may write; everything else stays commissioner-only
+const MEDIA_OK = { column:1, stories:1, hits:1, pgfx:1 };
+
+// ---- press passes: media members who post but control no team ----
+const mediaList = async env => { try { return JSON.parse((env.DC && await env.DC.get('media:accts')) || '[]'); } catch (e) { return []; } };
+const mediaSave = (env, L) => env.DC.put('media:accts', JSON.stringify(L));
+const isMedia = (s) => !!(s && s.m);
+const rnd = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
+async function pwHash(pw, salt) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 100000 }, key, 256);
+  return b64u(bits);
+}
+const sha = async t => b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
 const txt = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 
 // MFL's per-player weekly box ("detailed") page → short stat line, e.g. "245 PASS YDS · 2 PASS TD"
@@ -247,7 +261,56 @@ export default {
       const v = encodeURIComponent(await signV(env, btoa(JSON.stringify({ t: tok, f: fid, u: String(b.username).slice(0, 60) }))));
       return json({ ok: true, franchise: fid }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
     }
-    if (p === '/auth/me') { const s = (await session(req, env)); return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env), clerk: isClerk(s, env) } : {}); }
+    if (p === '/auth/me') {
+      const s = (await session(req, env));
+      if (isMedia(s)) { const a = (await mediaList(env)).find(x => x.id === s.m && x.on !== false); return json(a ? { user: a.name, franchise: '', media: true, title: a.title || 'Dubcey Media', mid: a.id } : {}, 200, a ? {} : { 'Set-Cookie': cookie('', 0) }); }
+      return json(s ? { user: s.u, franchise: s.f, commish: isCommish(s, env), clerk: isClerk(s, env) } : {});
+    }
+    // ---- press passes ----
+    if (p === '/press/admin') {
+      const s = (await session(req, env)); if (!isCommish(s, env)) return json({ ok: false, error: 'Commissioner only.' }, 403);
+      if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
+      let L = await mediaList(env);
+      const pub = a => ({ id: a.id, name: a.name, title: a.title || '', on: a.on !== false, set: !!a.hash, invited: !!a.inv, at: a.at, last: a.last || 0 });
+      if (req.method === 'GET') return json({ ok: true, items: L.map(pub) });
+      if (!sameOrigin(req, u)) return json({ ok: false }, 403);
+      const b = await req.json().catch(() => ({})), a = L.find(x => x.id === b.id);
+      if (b.action === 'create') {
+        const name = String(b.name || '').trim().slice(0, 40); if (!name) return json({ ok: false, error: 'Give him a name.' }, 400);
+        if (L.some(x => x.name.toLowerCase() === name.toLowerCase())) return json({ ok: false, error: 'That name is taken.' }, 400);
+        const tok = rnd(18), n = { id: 'm' + rnd(5), name, title: String(b.title || '').trim().slice(0, 40), inv: await sha(tok), invExp: Date.now() + 14 * 864e5, at: Date.now() };
+        L.push(n); await mediaSave(env, L); return json({ ok: true, item: pub(n), invite: `${u.origin}/press?invite=${tok}` });
+      }
+      if (!a) return json({ ok: false, error: 'Not found.' }, 404);
+      if (b.action === 'invite') { const tok = rnd(18); a.inv = await sha(tok); a.invExp = Date.now() + 14 * 864e5; await mediaSave(env, L); return json({ ok: true, item: pub(a), invite: `${u.origin}/press?invite=${tok}` }); }
+      if (b.action === 'toggle') { a.on = a.on === false; await mediaSave(env, L); return json({ ok: true, item: pub(a) }); }
+      if (b.action === 'title') { a.title = String(b.title || '').trim().slice(0, 40); await mediaSave(env, L); return json({ ok: true, item: pub(a) }); }
+      if (b.action === 'remove') { L = L.filter(x => x.id !== a.id); await mediaSave(env, L); return json({ ok: true }); }
+      return json({ ok: false, error: 'Unknown action.' }, 400);
+    }
+    if (p === '/press/claim' && req.method === 'POST') {
+      if (!sameOrigin(req, u)) return json({ ok: false }, 403);
+      const b = await req.json().catch(() => ({})), pw = String(b.password || '');
+      if (pw.length < 8) return json({ ok: false, error: 'Use at least 8 characters.' }, 400);
+      const L = await mediaList(env), h = await sha(String(b.invite || '')), a = L.find(x => x.inv && x.inv === h);
+      if (!a || (a.invExp && a.invExp < Date.now())) return json({ ok: false, error: 'That invite link is used up or expired. Ask the commissioner for a new one.' }, 400);
+      a.salt = rnd(12); a.hash = await pwHash(pw, a.salt); delete a.inv; delete a.invExp; a.last = Date.now(); await mediaSave(env, L);
+      const v = encodeURIComponent(await signV(env, btoa(JSON.stringify({ m: a.id, u: a.name }))));
+      return json({ ok: true, name: a.name }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
+    }
+    if (p === '/press/login' && req.method === 'POST') {
+      if (!sameOrigin(req, u)) return json({ ok: false }, 403);
+      const b = await req.json().catch(() => ({})), name = String(b.name || '').trim().toLowerCase();
+      const L = await mediaList(env), a = L.find(x => x.name.toLowerCase() === name);
+      // slow down guessing: 8 tries per name per 15 minutes
+      const tk = 'media:try:' + name, tries = +((env.DC && await env.DC.get(tk)) || 0);
+      if (tries >= 8) return json({ ok: false, error: 'Too many tries. Wait 15 minutes.' }, 429);
+      const ok = a && a.on !== false && a.hash && (await pwHash(String(b.password || ''), a.salt)) === a.hash;
+      if (!ok) { if (env.DC) ctx.waitUntil(env.DC.put(tk, String(tries + 1), { expirationTtl: 900 })); return json({ ok: false, error: a && a.on === false ? 'This press pass is turned off.' : 'Wrong name or password.' }, 401); }
+      a.last = Date.now(); ctx.waitUntil(mediaSave(env, L));
+      const v = encodeURIComponent(await signV(env, btoa(JSON.stringify({ m: a.id, u: a.name }))));
+      return json({ ok: true, name: a.name }, 200, { 'Set-Cookie': cookie(v, 60 * 60 * 24 * 90) });
+    }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
     // ---- suggestion box: any signed-in owner files bugs/ideas; commish sets status ----
@@ -279,9 +342,13 @@ export default {
     if (p.startsWith('/content/')) {
       const key = p.slice(9);
       if (key.startsWith('img/')) {
-        const id = key.slice(4).replace(/[^0-9_]/g, '').slice(0, 7);
+        const id = key.slice(4).replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+        if (!id) return json({ error: 'bad id' }, 400);
         if (req.method === 'PUT') {
-          const s = (await session(req, env)); if (!isCommish(s, env) || !sameOrigin(req, u)) return json({ ok: false, error: 'Commissioner only.' }, 403);
+          const s = (await session(req, env));
+          // team helmets (numeric ids) stay commissioner-only; press photos and player graphics (s…/p…) also allow media
+          const mayImg = isCommish(s, env) || (isMedia(s) && /^[sp]/i.test(id) && (await mediaList(env)).some(x => x.id === s.m && x.on !== false));
+          if (!mayImg || !sameOrigin(req, u)) return json({ ok: false, error: 'Not allowed.' }, 403);
           if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
           const buf = await req.arrayBuffer(); if (buf.byteLength > 2e6) return json({ ok: false, error: 'Image too big.' }, 400);
           await env.DC.put('img:' + id, buf, { metadata: { type: req.headers.get('Content-Type') || 'image/webp' } });
@@ -293,7 +360,10 @@ export default {
       }
       if (!CONTENT[key]) return json({ error: 'unknown' }, 404);
       if (req.method === 'PUT') {
-        const s = (await session(req, env)), may = key === 'clerk' ? isClerk(s, env) : isCommish(s, env); if (!may || !sameOrigin(req, u)) return json({ ok: false, error: key === 'clerk' ? 'Clerk only.' : 'Commissioner only.' }, 403);
+        const s = (await session(req, env));
+        let may = key === 'clerk' ? isClerk(s, env) : isCommish(s, env);
+        if (!may && MEDIA_OK[key] && isMedia(s)) may = (await mediaList(env)).some(x => x.id === s.m && x.on !== false);
+        if (!may || !sameOrigin(req, u)) return json({ ok: false, error: key === 'clerk' ? 'Clerk only.' : 'Not allowed.' }, 403);
         if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
         const t = await req.text(); try { JSON.parse(t); } catch (e) { return json({ ok: false, error: 'Bad data.' }, 400); }
         await env.DC.put('c:' + key, t);
@@ -452,7 +522,7 @@ export default {
     if (p.startsWith('/api/')) {
       const type = p.slice(5), s = (await session(req, env));
       if (!PUB[type] && !PRIV[type]) return json({ error: 'unknown' }, 404);
-      if (PRIV[type] && !s) return json({ error: 'sign in' }, 401);
+      if (PRIV[type] && (!s || !s.t)) return json({ error: 'sign in' }, 401);
       const q = new URLSearchParams(u.search);
       // ME=1 on transactions: fetch with the owner's login so their own pending blind-bid requests are included
       const asMe = type === 'transactions' && q.get('ME') === '1' && !!s;
@@ -499,7 +569,7 @@ export default {
     if (p.startsWith('/act/') && req.method === 'POST') {
       const type = p.slice(5), s = (await session(req, env));
       if (!ACT[type]) return json({ ok: false, error: 'unknown action' }, 404);
-      if (!s) return json({ ok: false, error: 'Sign in first.' }, 401);
+      if (!s || !s.t) return json({ ok: false, error: 'Sign in with an owner account first.' }, 401);
       if (!sameOrigin(req, u)) return json({ ok: false }, 403);
       const b = await req.json().catch(() => ({}));
       if (b.FRANCHISE_ID && b.FRANCHISE_ID !== s.f && !isCommish(s, env)) return json({ ok: false, error: 'Commissioner only.' }, 403);

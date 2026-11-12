@@ -82,4 +82,5 @@
     $('awards').hidden = !ak.length;
     $('awards').innerHTML = '<div class="bar mono"><span>WEEK ' + esc(w) + ' AWARDS</span></div>' + ak.map(function(k){ var A = D.award(aw[k]), id = A.id || AWID[k]; return '<div class="aw">' + (id ? '<img src="' + helm(id) + '" alt="">' : '<span></span>') + '<b class="mono">' + esc(k) + '</b><span>' + esc(A.text) + '</span></div>'; }).join('');
   }
+  D.pressMount({ open:true });
 })();

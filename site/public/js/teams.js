@@ -83,9 +83,12 @@
     }
     if(!cmp && S.fut) led += futCard(f);
     if(S.fut) pnl += '<div class="fut2">' + futCard(f) + '</div>';
+    var inp = S.press ? S.press.stories.filter(function(s){ return (s.teams || []).indexOf(f) >= 0; }).slice(0, 4) : [];
+    if(inp.length) pnl += '<div class="tpress"><div class="kk mono"><img class="ppass xs" src="' + D.PRESS_SM + '" alt="">IN THE PRESS</div>' + inp.map(function(s){ return D.storyCard(s, true); }).join('') + '</div>';
     $('tr').innerHTML = '<div class="trail">' + rail + '</div><div class="tpnl">' + pnl + '</div><div class="tled">' + led + '</div>';
   }
   D.future().then(function(m){ S.fut = D.futureCalc(m); if(S.d) draw(); });
+  D.press().then(function(P){ S.press = P; if(S.d && P.stories.length) draw(); });
   function lux(n){ var d = 250; return '$' + (Math.min(n, 10) * d / 10 + Math.max(0, n - 10) * d / 5); }
   function futCard(f){
     var N = D.NEXT, x = S.fut[f], b = x.budget, pct = function(v){ return Math.max(0, Math.min(100, (v - N.min) / (N.max - N.min) * 100)); };

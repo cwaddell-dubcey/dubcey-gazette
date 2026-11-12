@@ -7,13 +7,57 @@
   function teamSel(name, val, blank){ return '<select name="' + name + '">' + (blank ? '<option value="">\u2014 none \u2014</option>' : '') + D.IDS.map(function(id){ return '<option value="' + id + '"' + (id === val ? ' selected' : '') + '>' + esc(D.NAME[id]) + '</option>'; }).join('') + '</select>'; }
 
   D.shell('commish').then(function(me){
+    S.me = me;
+    if(me.media && !me.commish){ S.tab = 'dispatch'; [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ if(a.getAttribute('data-t') !== 'dispatch') a.hidden = true; }); $('ctabs').hidden = false; draw(); return; }
     if(!me.commish){ $('cb').innerHTML = '<div class="gate card"><img src="img/hocking-hills-2026.webp" alt=""><div><div class="kick mono">COMMISSIONER ONLY</div><h2>Nothing to see here</h2><p>This desk is for the commissioner. ' + (me.franchise ? 'Your login isn\u2019t set up as commissioner.' : 'Sign in first.') + '</p>' + (me.franchise ? '' : '<button class="btn" type="button" id="gi">SIGN IN</button>') + '</div></div>'; if($('gi')) $('gi').addEventListener('click', D.signIn); return; }
     $('ctabs').hidden = false; draw();
   });
   function draw(){
     [].forEach.call(document.querySelectorAll('#ctabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups, health:health }[S.tab] || dispatch)();
+    if(S.me && S.me.media && !S.me.commish) S.tab = 'dispatch';
+    ({ media:media, dispatch:dispatch, teams:teams, bylaws:bylaws, lineups:lineups, popups:popups, health:health }[S.tab] || dispatch)();
   }
+
+  /* ---------- Dubcey Media press passes ---------- */
+  function padmin(body){
+    if(D.LOCAL){ // preview: keep the list in this browser
+      var L = []; try{ L = JSON.parse(localStorage.getItem('dcMediaAccts') || '[]'); }catch(e){}
+      var r = { ok:true, items:L };
+      if(body){ var a = L.filter(function(x){ return x.id === body.id; })[0], tok = Math.random().toString(36).slice(2, 14);
+        if(body.action === 'create'){ if(!body.name){ return Promise.resolve({ ok:false, error:'Give him a name.' }); } a = { id:'m' + Date.now().toString(36), name:body.name, title:body.title || '', on:true, set:false, invited:true, at:Date.now(), last:0 }; L.push(a); r.invite = location.origin + '/press?invite=' + tok; }
+        else if(body.action === 'invite'){ a.invited = true; r.invite = location.origin + '/press?invite=' + tok; }
+        else if(body.action === 'toggle') a.on = !a.on;
+        else if(body.action === 'title') a.title = body.title || '';
+        else if(body.action === 'remove') L = L.filter(function(x){ return x.id !== body.id; });
+        try{ localStorage.setItem('dcMediaAccts', JSON.stringify(L)); }catch(e){} r.items = L; }
+      return Promise.resolve(r);
+    }
+    return fetch('/press/admin', body ? { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) } : { credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return { ok:false, error:'Couldn\u2019t reach the server.' }; });
+  }
+  function media(){
+    if(!S.mp){ $('cb').innerHTML = '<div class="ld mono">LOADING PRESS PASSES\u2026</div>'; padmin().then(function(r){ S.mp = r.ok ? r.items : []; if(!r.ok) toast(r.error || 'COULDN\u2019T LOAD', true); media(); }); return; }
+    var inv = S.inv ? '<div class="minv"><div class="kick mono">SEND THIS LINK TO ' + esc(S.inv.name).toUpperCase() + '</div><div class="minvr"><input readonly id="minvl" value="' + esc(S.inv.url) + '"><button class="btn" type="button" id="minvc">COPY</button></div><div class="note mono">IT WORKS ONCE AND EXPIRES IN 14 DAYS. HE OPENS IT, PICKS A PASSWORD, AND HE\u2019S IN. AFTER THAT HE SIGNS IN WITH HIS NAME + PASSWORD (SIGN IN \u2192 PRESS PASS).</div></div>' : '';
+    $('cb').innerHTML = '<div class="edgrid mgrid"><div><article class="card"><div class="bar mono"><span>PRESS PASSES</span><span>DUBCEY MEDIA \u00b7 NO TEAM, CAN POST</span></div>' + inv +
+      '<div class="mlist">' + (S.mp.length ? S.mp.map(function(a){
+        var st = !a.on ? '<span class="mst off">OFF</span>' : a.set ? '<span class="mst ok">ACTIVE</span>' : '<span class="mst pend">INVITE SENT</span>';
+        return '<div class="mrow' + (a.on ? '' : ' off') + '" data-mid="' + esc(a.id) + '"><img class="ppass xs" src="' + D.PRESS_SM + '" alt=""><div class="mn"><b>' + esc(a.name) + '</b><span class="mono">' + st + (a.last ? ' \u00b7 LAST IN ' + D.ago(a.last) : '') + '</span></div>' +
+          '<label class="mono mtl">TITLE<input name="mtitle" value="' + esc(a.title) + '" placeholder="Dubcey Media"></label>' +
+          '<div class="mact mono"><button type="button" data-ma="title">SAVE TITLE</button><button type="button" data-ma="invite">' + (a.set ? 'RESET PASSWORD LINK' : 'NEW INVITE LINK') + '</button><button type="button" data-ma="toggle">' + (a.on ? 'TURN OFF' : 'TURN ON') + '</button><button type="button" class="x" data-ma="remove">REMOVE</button></div></div>';
+      }).join('') : '<div class="ld mono">NO PRESS PASSES YET</div>') + '</div></article></div>' +
+      '<aside><article class="card"><div class="bar mono"><span>NEW PRESS PASS</span></div><div class="ef pad"><div class="gpass sm">' + D.pressPass('RDPC') + '</div><label class="mono">NAME (WHAT HE SIGNS IN WITH)<input id="mname" placeholder="RDPC"></label><label class="mono">TITLE ON HIS BYLINE<input id="mttl" placeholder="Dubcey Media"></label><button class="btn" type="button" id="mmake">CREATE + GET INVITE LINK</button>' +
+      '<div class="note mono">PRESS CAN WRITE STORIES, QUICK HITS AND PLAYER GRAPHICS, AND EDIT THE WEEKLY DISPATCH. NO TEAM, NO LINEUPS, NO TRADES. POSTS GO LIVE RIGHT AWAY.</div></div></article></aside></div>';
+  }
+  function mres(r, a){ if(!r.ok){ toast(r.error || 'COULDN\u2019T DO THAT', true); return; } if(r.items) S.mp = r.items; else S.mp = null; if(r.invite) S.inv = { name:(r.item && r.item.name) || (a && a.name) || '', url:r.invite }; if(r.item && S.mp){ S.mp = S.mp.map(function(x){ return x.id === r.item.id ? r.item : x; }); if(!S.mp.some(function(x){ return x.id === r.item.id; })) S.mp.push(r.item); } media(); }
+  document.addEventListener('click', function(e){
+    if(S.tab !== 'media') return; var t = e.target;
+    if(t.id === 'minvc'){ var i = $('minvl'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.reject()).then(function(){ toast('LINK COPIED'); }, function(){ document.execCommand('copy'); toast('LINK COPIED'); }); return; }
+    if(t.id === 'mmake'){ var n = $('mname').value.trim(); if(!n){ toast('GIVE HIM A NAME', true); return; } t.disabled = true; padmin({ action:'create', name:n, title:$('mttl').value.trim() }).then(function(r){ t.disabled = false; mres(r, { name:n }); }); return; }
+    var b = t.closest('[data-ma]'); if(!b) return;
+    var row = b.closest('[data-mid]'), id = row.getAttribute('data-mid'), act = b.getAttribute('data-ma'), a = (S.mp || []).filter(function(x){ return x.id === id; })[0] || {};
+    if(act === 'remove' && !confirm('Remove ' + a.name + '\u2019s press pass? His stories stay up.')) return;
+    if(act === 'invite' && a.set && !confirm('Make a new link for ' + a.name + '? It lets him set a new password.')) return;
+    b.disabled = true; padmin({ action:act, id:id, title:row.querySelector('[name=mtitle]').value.trim() }).then(function(r){ if(act === 'remove' && r.ok){ S.mp = S.mp.filter(function(x){ return x.id !== id; }); r = { ok:true, items:S.mp }; } if(act === 'title' && r.ok) toast('TITLE SAVED'); mres(r, a); });
+  });
 
   /* ---------- the Dispatch ---------- */
   function dispatch(){

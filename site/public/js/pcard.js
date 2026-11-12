@@ -51,6 +51,7 @@
   D.openCard = function(id){
     S.id = id; S.tab = 'news'; S.d = { id:id, load:1 };
     el(); document.documentElement.classList.add('nos'); draw();
+    D.press().then(function(P){ if(S.id !== id) return; var g = P.gfx[id]; S.d.gfx = g ? D.pressImg(g.url) : ''; S.d.gfxBy = g ? g.by : ''; S.d.press = P.stories.filter(function(s){ return (s.players || []).some(function(p){ return p.id === id; }); }); if(S.d.gfx || S.d.press.length) draw(); });
     Promise.all([D.me(), D.api('rosters').catch(no), D.api('liveScoring').catch(no), D.api('injuries', 'r=2').catch(no), D.players([id]), D.api('nflSchedule').catch(no)]).then(function(r){
       if(S.id !== id) return;
       var me = r[0] || {}, d = S.d, i = D.pinfo(id);
@@ -130,10 +131,12 @@
     var live = d.sec > 0 && d.sec < 3600, up = d.kick && d.kick > Date.now(), ln = [];
     if(live) ln.push('<em>LIVE</em>'); if(d.opp) ln.push(esc(d.opp)); if(up) ln.push('KICKOFF ' + esc(new Date(d.kick).toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }).toUpperCase())); if(d.sx) ln.push(esc(d.sx));
     var tabs = [['news', 'NEWS'], ['bio', 'BIO'], ['log', D.Y + ' STATS'], ['proj', 'PROJ.'], ['career', 'CAREER'], ['dubcey', 'IN DUBCEY']];
+    if(d.press && d.press.length) tabs.push(['press', 'PRESS (' + d.press.length + ')']);
     v.innerHTML = '<button type="button" class="wvx" data-pcx aria-label="Close">\u00d7</button>' +
       '<div class="pct2"><div class="pph">' + (photo ? '<img src="' + esc(photo) + '" alt="" onerror="this.onerror=null;this.src=\'' + D.nflLogo(d.team) + '\';this.className=\'lg\'">' : '') + '</div>' +
       '<div class="pin"><div class="kick mono">' + [d.pos ? '<span class="pos ' + esc(d.pos) + '">' + esc(d.pos) + '</span>' : '', d.team ? D.tlogo(d.team) + esc(d.team) : ''].filter(Boolean).join(' ') + (d.inj ? ' <span class="ij mono">' + esc(d.inj) + '</span>' : '') + '</div>' +
       '<h2>' + esc(d.name || 'Loading\u2026') + '</h2>' + own + '</div></div>' +
+      (d.gfx ? '<div class="pgfx"><img src="' + esc(d.gfx) + '" alt=""><span class="mono">' + D.esc(String(d.gfxBy || 'RDPC').toUpperCase()) + ' \u00b7 DUBCEY MEDIA</span></div>' : '') +
       '<div class="pstat">' + box(d.wk, d.week ? 'WEEK ' + d.week : 'WEEK', live) + box(d.proj, 'PROJ') + box(d.ytd, 'SEASON') + box(d.avg, 'AVG') + '</div>' +
       (ln.length ? '<div class="pline mono">' + ln.join(' \u00b7 ') + '</div>' : '') +
       '<div class="pact">' + acts() + '</div>' +
@@ -170,6 +173,7 @@
     var b = document.getElementById('pbody'); if(!b) return;
     [].forEach.call(document.querySelectorAll('[data-pct]'), function(t){ t.classList.toggle('on', t.getAttribute('data-pct') === S.tab); });
     var d = S.d, wait = '<div class="ld mono">LOADING\u2026</div>', none = function(m){ return '<div class="ld mono">' + m + '</div>'; };
+    if(S.tab === 'press'){ b.innerHTML = '<div class="psts">' + (d.press || []).map(function(s){ return D.storyCard(s, true); }).join('') + '</div>'; return; }
     if(S.tab === 'news'){
       b.innerHTML = !d.newsOk ? wait : d.news.length ? d.news.map(function(n){
         return '<div class="pnw"><span class="mono">' + esc([n.src, n.when ? n.when + ' ago' : ''].filter(Boolean).join(' \u00b7 ').toUpperCase()) + '</span><h4>' + esc(n.hl) + '</h4>' + (n.body ? '<p>' + esc(n.body) + '</p>' : '') + (n.an ? '<p><b>Analysis:</b> ' + esc(n.an) + '</p>' : '') + '</div>';

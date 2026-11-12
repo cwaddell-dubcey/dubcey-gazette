@@ -15,7 +15,7 @@
   D.L = '18919'; D.Y = String(D.SEASON.year);
   var W1 = D.SEASON.week1.split('-').map(Number);
   // deploy version, stamped into every page by the worker (used for scripts loaded later)
-  D.V = ((document.querySelector('meta[name="dc-v"]') || {}).content) || '20261106b';
+  D.V = ((document.querySelector('meta[name="dc-v"]') || {}).content) || '20261112a';
   D.RAW = 'https://raw.githubusercontent.com/cwaddell-dubcey/dubcey-gazette/main/assets/';
   D.LOCAL = !/dubcey\.party$|workers\.dev$/.test(location.hostname);
   D.IDS = ['0001','0002','0003','0004','0005','0006','0007','0008','0009','0010','0011','0012'];
@@ -541,7 +541,7 @@
   var ME = null;
   D.me = function(){
     if(ME) return ME;
-    if(D.LOCAL){ var f = ''; try{ f = localStorage.getItem('dcDemoMe') || ''; }catch(e){} ME = Promise.resolve(f ? { user:'demo', franchise:f, commish:D.COMMISH.indexOf(f) > -1, clerk:D.CLERK.indexOf(f) > -1 || D.COMMISH.indexOf(f) > -1 } : {}); return ME; }
+    if(D.LOCAL){ var f = ''; try{ f = localStorage.getItem('dcDemoMe') || ''; }catch(e){} if(f === 'media'){ ME = Promise.resolve({ user:'Demo Writer', franchise:'', media:true, title:'Senior Writer', mid:'mdemo' }); return ME; } ME = Promise.resolve(f ? { user:'demo', franchise:f, commish:D.COMMISH.indexOf(f) > -1, clerk:D.CLERK.indexOf(f) > -1 || D.COMMISH.indexOf(f) > -1 } : {}); return ME; }
     ME = fetch('/auth/me', { credentials:'same-origin' }).then(function(r){ return r.json(); }).catch(function(){ return {}; });
     return ME;
   };
@@ -554,16 +554,31 @@
       '<label class="mono">MFL email or username<input name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="you@example.com" required></label>' +
       '<label class="mono">Password<input name="password" type="password" autocomplete="current-password" required></label>' +
       '<button class="btn" type="submit">SIGN IN</button>' +
-      '<div class="fine mono">Your password goes straight to MFL to sign you in. This site never stores it.</div></form></div>';
+      '<div class="fine mono">Your password goes straight to MFL to sign you in. This site never stores it.</div><button type="button" class="pswap mono" data-press>DUBCEY MEDIA? SIGN IN WITH YOUR PRESS PASS \u2192</button></form></div>';
     document.body.appendChild(v);
     var form = v.querySelector('form'), err = v.querySelector('.err'), btn = form.querySelector('button');
     function close(){ v.remove(); }
     v.addEventListener('click', function(e){ if(e.target === v || e.target.hasAttribute('data-x')) close(); });
     document.addEventListener('keydown', function k(e){ if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', k); } });
     form.username.focus();
+    var press = false;
+    v.querySelector('[data-press]').addEventListener('click', function(){
+      press = !press; err.hidden = true;
+      form.querySelector('h2').textContent = press ? 'Dubcey Media' : 'Owners only';
+      form.querySelector('p').textContent = press ? 'Sign in with the name and password from your press pass to post stories, quick hits and player graphics.' : 'Sign in with the email and password you use for MyFantasyLeague to set lineups, bid on waivers and make trades right here.';
+      form.username.parentNode.firstChild.textContent = press ? 'Press name' : 'MFL email or username'; form.username.placeholder = press ? 'Your name' : 'you@example.com';
+      form.querySelector('.fine').hidden = press; this.textContent = press ? '\u2190 BACK TO OWNER SIGN-IN' : 'DUBCEY MEDIA? SIGN IN WITH YOUR PRESS PASS \u2192';
+      v.querySelector('.bar span').textContent = press ? 'PRESS SIGN-IN' : 'OWNER SIGN-IN'; form.username.focus();
+    });
     form.addEventListener('submit', function(e){
       e.preventDefault(); err.hidden = true; btn.disabled = true; btn.textContent = 'SIGNING IN\u2026';
       var body = { username:form.username.value.trim(), password:form.password.value };
+      if(press){
+        var pg = D.LOCAL ? Promise.resolve({ ok:true }) : fetch('/press/login', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ name:body.username, password:body.password }) }).then(function(r){ return r.json(); });
+        pg.then(function(r){ if(r && r.ok){ if(D.LOCAL){ try{ localStorage.setItem('dcDemoMe', 'media'); }catch(e){} } location.href = D.href('press'); return; } throw (r && r.error) || 'Sign-in failed.'; })
+          .catch(function(m){ err.textContent = typeof m === 'string' ? m : 'Couldn\u2019t reach the site. Try again.'; err.hidden = false; btn.disabled = false; btn.textContent = 'SIGN IN'; });
+        return;
+      }
       var go = D.LOCAL ? Promise.resolve({ ok:true, franchise:'0001' }) : fetch('/auth/login', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) }).then(function(r){ return r.json(); });
       go.then(function(r){
         if(r && r.ok){ if(D.LOCAL){ try{ localStorage.setItem('dcDemoMe', r.franchise); }catch(e){} } location.reload(); return; }
@@ -607,8 +622,11 @@
     return Promise.all([D.me(), D.teamsReady]).then(function(x){
       var me = x[0], w = D.$('who');
       var bi = top.querySelector('.brand img'); if(bi) bi.src = D.helm('x');
-      if(me && me.franchise){
-        w.innerHTML = '<a class="mine" href="' + D.href('myteam') + '" title="' + D.esc(D.NAME[me.franchise]) + '"><img src="' + D.helm(me.franchise) + '" alt=""><b>' + D.esc(D.SHORT[me.franchise] || 'MY TEAM') + '</b></a>' + '<span class="outs"><a class="out mono' + (active === 'ideas' ? ' on' : '') + '" href="' + D.href('ideas') + '" title="Report a bug or suggest a feature">SUGGEST</a>' + (me.commish ? '<a class="out mono' + (active === 'commish' ? ' on' : '') + '" href="' + D.href('commish') + '">COMMISH</a>' : '') + '<button class="out mono" type="button">SIGN OUT</button></span>';
+      if(me && me.media){
+        w.innerHTML = '<a class="mine press" href="' + D.href('press') + '" title="Press Desk"><img class="ppass xs" src="' + D.PRESS_SM + '" alt=""><b>' + D.esc(me.user) + '</b></a><span class="outs"><a class="out mono' + (active === 'press' ? ' on' : '') + '" href="' + D.href('press') + '">PRESS DESK</a><button class="out mono" type="button">SIGN OUT</button></span>';
+        w.querySelector('button.out').addEventListener('click', signOut);
+      } else if(me && me.franchise){
+        w.innerHTML = '<a class="mine" href="' + D.href('myteam') + '" title="' + D.esc(D.NAME[me.franchise]) + '"><img src="' + D.helm(me.franchise) + '" alt=""><b>' + D.esc(D.SHORT[me.franchise] || 'MY TEAM') + '</b></a>' + '<span class="outs"><a class="out mono' + (active === 'ideas' ? ' on' : '') + '" href="' + D.href('ideas') + '" title="Report a bug or suggest a feature">SUGGEST</a>' + (me.commish ? '<a class="out mono' + (active === 'commish' ? ' on' : '') + '" href="' + D.href('commish') + '">COMMISH</a><a class="out mono' + (active === 'press' ? ' on' : '') + '" href="' + D.href('press') + '">PRESS</a>' : '') + '<button class="out mono" type="button">SIGN OUT</button></span>';
         w.querySelector('button.out').addEventListener('click', signOut);
       } else {
         w.innerHTML = '<button class="btn" type="button">SIGN IN</button>';
@@ -641,15 +659,78 @@
   }
   function mobileMe(me, active){
     var m = document.getElementById('msme'); if(!m) return;
-    if(me && me.franchise){
+    if(me && me.media){
+      m.innerHTML = '<a class="msteam" href="' + D.href('press') + '"><img class="ppass xs" src="' + D.PRESS_SM + '" alt=""><span><b>' + D.esc(me.user) + '</b><i class="mono">' + D.esc((me.title || 'DUBCEY MEDIA').toUpperCase()) + ' \u00b7 PRESS DESK</i></span></a><div class="msrow mono"><button type="button" data-so>SIGN OUT</button></div>';
+      m.querySelector('[data-so]').addEventListener('click', signOut);
+    } else if(me && me.franchise){
       m.innerHTML = '<a class="msteam" href="' + D.href('myteam') + '"><img src="' + D.helm(me.franchise) + '" alt=""><span><b>' + D.esc(D.NAME[me.franchise]) + '</b><i class="mono">LINEUP · TRADES · WAIVERS</i></span></a>' +
-        '<div class="msrow mono">' + (me.commish ? '<a href="' + D.href('commish') + '" class="' + (active === 'commish' ? 'on' : '') + '">COMMISH TOOLS</a>' : '') + '<button type="button" data-so>SIGN OUT</button></div>';
+        '<div class="msrow mono">' + (me.commish ? '<a href="' + D.href('commish') + '" class="' + (active === 'commish' ? 'on' : '') + '">COMMISH TOOLS</a><a href="' + D.href('press') + '" class="' + (active === 'press' ? 'on' : '') + '">PRESS DESK</a>' : '') + '<button type="button" data-so>SIGN OUT</button></div>';
       m.querySelector('[data-so]').addEventListener('click', signOut);
     } else {
       m.innerHTML = '<button class="btn msin" type="button">SIGN IN WITH MFL</button>';
       m.querySelector('.msin').addEventListener('click', signIn);
     }
   }
+
+  /* ---------- Dubcey Media: bylined stories, quick hits and player graphics (posted from the Press Desk) ---------- */
+  D.PRESS_IMG = 'h/press-pass.webp';
+  D.PRESS_SM = 'h/press-pass-sm.webp';
+  // the RDPC press pass; 'sm' is the little header/byline version
+  D.pressPass = function(name, size){ return '<img class="ppass' + (size === 'sm' ? ' sm' : '') + '" src="' + (size === 'sm' ? D.PRESS_SM : D.PRESS_IMG) + '" alt="' + D.esc(name || 'RDPC') + ' press pass" title="' + D.esc(name || 'RDPC') + ' \u00b7 Dubcey Media">'; };
+  var PRESS = null;
+  D.press = function(){
+    if(!PRESS) PRESS = Promise.all([D.content('stories'), D.content('hits'), D.content('pgfx')]).then(function(r){
+      var st = (r[0] && r[0].items) || [], hi = (r[1] && r[1].items) || [], gx = (r[2] && r[2].map) || {};
+      st = st.filter(function(x){ return !x.draft; }).sort(function(a, b){ return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || b.at - a.at; });
+      hi = hi.filter(function(x){ return !x.exp || x.exp > Date.now(); }).sort(function(a, b){ return b.at - a.at; });
+      return { stories:st, hits:hi, gfx:gx };
+    }).catch(function(){ return { stories:[], hits:[], gfx:{} }; });
+    return PRESS;
+  };
+  D.pressImg = function(u){ return D.LOCAL && /^dcImg:/.test(u || '') ? (localStorage.getItem(u) || '') : u || ''; };
+  function ago(t){ var m = (Date.now() - t) / 6e4; if(m < 60) return Math.max(1, Math.round(m)) + 'M AGO'; if(m < 1440) return Math.round(m / 60) + 'H AGO'; if(m < 10080) return Math.round(m / 1440) + 'D AGO'; return new Date(t).toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase(); }
+  D.ago = ago;
+  function byline(s){ return '<span class="byl mono">BY ' + D.esc(String(s.by || 'DUBCEY MEDIA').toUpperCase()) + (s.byT ? ' \u00b7 ' + D.esc(String(s.byT).toUpperCase()) : '') + ' \u00b7 ' + ago(s.at) + '</span>'; }
+  function lede(t, n){ t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n).replace(/\s+\S*$/, '') + '\u2026' : t; }
+  // a story teaser; tap opens the full story
+  D.storyCard = function(s, small){
+    var im = D.pressImg(s.img), ph = im ? '<img class="psi" src="' + D.esc(im) + '" alt="" loading="lazy">' : (s.teams && s.teams[0] ? '<img class="psh" src="' + D.helm(s.teams[0]) + '" alt="" loading="lazy">' : '<span class="psn mono">DUBCEY<br>MEDIA</span>');
+    return '<a class="pst' + (small ? ' sm' : '') + (s.pin ? ' pinned' : '') + '" href="' + D.href('dispatch', 's=' + s.id) + '" data-story="' + D.esc(s.id) + '"><div class="psp">' + ph + '</div><div class="psb">' + (s.kick ? '<div class="kick mono">' + D.esc(s.kick) + '</div>' : '') + '<h3>' + D.esc(s.head) + '</h3>' + (small ? '' : '<p>' + D.esc(lede(s.body, 170)) + '</p>') + byline(s) + '</div></a>';
+  };
+  D.storyFull = function(s){
+    var im = D.pressImg(s.img), body = String(s.body || '').split(/\n\s*\n|\n/).filter(function(x){ return x.trim(); }).map(function(x){ return '<p>' + D.esc(x.trim()) + '</p>'; }).join('');
+    var tags = (s.teams || []).map(function(id){ return D.NAME[id] ? '<a class="ptag" href="' + D.href('teams', 'f=' + id) + '"><img src="' + D.helm(id) + '" alt="">' + D.esc(D.SHORT[id]) + '</a>' : ''; }).join('') +
+      (s.players || []).map(function(p){ return '<a class="ptag pl" href="#" data-card="' + D.esc(p.id) + '">' + D.esc(p.n) + '</a>'; }).join('');
+    return '<article class="pfull">' + (im ? '<img class="pfi" src="' + D.esc(im) + '" alt="">' : '') + '<div class="pfb">' + (s.kick ? '<div class="kick mono">' + D.esc(s.kick) + '</div>' : '') + '<h1>' + D.esc(s.head) + '</h1>' + byline(s) + '<div class="pft">' + body + '</div>' + (tags ? '<div class="ptags">' + tags + '</div>' : '') + '</div></article>';
+  };
+  D.openStory = function(id){
+    D.press().then(function(P){ var s = P.stories.filter(function(x){ return x.id === id; })[0]; if(!s) return;
+      var v = document.createElement('div'); v.className = 'veil pstv'; v.innerHTML = '<div class="pss" role="dialog" aria-modal="true" aria-label="Story"><button type="button" class="wvx" data-x aria-label="Close">\u00d7</button>' + D.storyFull(s) + '</div>';
+      document.body.appendChild(v); document.documentElement.classList.add('nos');
+      function close(){ v.remove(); document.documentElement.classList.remove('nos'); }
+      v.addEventListener('click', function(e){ if(e.target === v || e.target.closest('[data-x]')) close(); if(e.target.closest('[data-card]')) close(); });
+      document.addEventListener('keydown', function k(e){ if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', k); } });
+    });
+  };
+  document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-story]'); if(a && !e.metaKey && !e.ctrlKey){ e.preventDefault(); D.openStory(a.getAttribute('data-story')); } });
+  // drop the ticker + Press Box into any page that has #qhits / #pressSec
+  D.pressMount = function(o){
+    o = o || {};
+    return D.press().then(function(P){
+      var q = document.getElementById('qhits'); if(q) q.innerHTML = D.hitsHTML(P.hits);
+      var sec = document.getElementById('pressSec'), box = document.getElementById('press');
+      if(sec && box && P.stories.length){ var L = P.stories.slice(0, o.n || 99); box.innerHTML = L.map(function(s, i){ return D.storyCard(s, o.n && i > 0); }).join(''); sec.hidden = false; }
+      var m = /[?&]s=([^&]+)/.exec(location.search); if(o.open && m) D.openStory(decodeURIComponent(m[1]));
+      if(o.open && location.hash === '#press' && sec && !sec.hidden) sec.scrollIntoView();
+      return P;
+    });
+  };
+  // quick hits ticker
+  D.hitsHTML = function(H){
+    if(!H || !H.length) return '';
+    var items = H.slice(0, 12).map(function(h){ return '<span class="qh">' + (h.team && D.NAME[h.team] ? '<img src="' + D.helm(h.team) + '" alt="">' : '') + '<b>' + D.esc(h.text) + '</b><i class="mono">' + D.esc(String(h.by || '').toUpperCase()) + ' \u00b7 ' + ago(h.at) + '</i></span>'; }).join('');
+    return '<div class="qhbar"><span class="qhk mono">QUICK HITS</span><div class="qhw"><div class="qht">' + items + items + '</div></div></div>';
+  };
 
   // any element with data-card="MFL player id" opens the player card (loaded on first use)
   var PC = null;

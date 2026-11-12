@@ -19,10 +19,10 @@
 
   function view(n, i){
     return '<article class="ckn" style="background:' + esc(n.color || COLORS[0]) + ';--r:' + TILT[i % TILT.length] + '"><h2>' + esc(n.title || 'Untitled') + '</h2><ul>' +
-      arr(n.items).map(function(it){ return '<li>' + (it.f ? '<img src="' + D.helm(it.f) + '" alt="' + esc(D.SHORT[it.f] || '') + '" title="' + esc(D.NAME[it.f] || '') + '">' : '<span class="dash">\u2013</span>') + '<span>' + esc(it.t) + '</span></li>'; }).join('') +
+      arr(n.items).map(function(it){ return '<li>' + (it.f === 'media' ? '<img class="ckpress" src="' + D.PRESS_SM + '" alt="RDPC" title="RDPC \u00b7 Dubcey Media">' : it.f ? '<img src="' + D.helm(it.f) + '" alt="' + esc(D.SHORT[it.f] || '') + '" title="' + esc(D.NAME[it.f] || '') + '">' : '<span class="dash">\u2013</span>') + '<span>' + esc(it.t) + '</span></li>'; }).join('') +
       '</ul>' + (stamp(n) ? '<div class="ckt">' + stamp(n) + '</div>' : '') + '</article>';
   }
-  function teamSel(v){ return '<select name="f"><option value="">\u2013 NONE</option>' + D.IDS.map(function(id){ return '<option value="' + id + '"' + (id === v ? ' selected' : '') + '>' + esc((D.SHORT[id] || D.NAME[id]).toUpperCase()) + '</option>'; }).join('') + '</select>'; }
+  function teamSel(v){ return '<select name="f"><option value="">\u2013 NONE</option>' + D.IDS.map(function(id){ return '<option value="' + id + '"' + (id === v ? ' selected' : '') + '>' + esc((D.SHORT[id] || D.NAME[id]).toUpperCase()) + '</option>'; }).join('') + '<option value="media"' + (v === 'media' ? ' selected' : '') + '>RDPC (MEDIA)</option></select>'; }
   function edit(n, i){
     return '<article class="ckn" data-n="' + i + '" style="background:' + esc(n.color || COLORS[0]) + '"><input class="ckh" name="title" value="' + esc(n.title) + '" placeholder="NOTE TITLE"><div style="display:grid;gap:8px">' +
       arr(n.items).map(function(it, j){ return '<div class="cke" data-j="' + j + '">' + teamSel(it.f) + '<textarea name="t" rows="' + Math.max(1, Math.ceil((it.t || '').length / 28)) + '">' + esc(it.t) + '</textarea><button type="button" class="x" data-rmi="' + j + '" aria-label="Remove line">\u00d7</button></div>'; }).join('') +
