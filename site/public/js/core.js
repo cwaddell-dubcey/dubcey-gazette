@@ -165,6 +165,8 @@
 
   // league data via the site's own connection (local preview reads sample files)
   // injury designations (Q / D / OUT / IR / SUS…), loaded once and shown next to every player name via D.ij(id)
+  // request limiter state; set up before the first call below (the injury list) runs
+  var INF = 0, QUE = [];
   D.INJ = {};
   D.injCode = function(s){ s = String(s || '').toLowerCase().trim(); if(!s) return ''; if(/^q/.test(s)) return 'Q'; if(/^doubt/.test(s)) return 'D'; if(/^out/.test(s)) return 'OUT'; if(/^(ir|injured)/.test(s)) return 'IR'; if(/^susp/.test(s)) return 'SUS'; if(/^pup/.test(s)) return 'PUP'; if(/^hold/.test(s)) return 'HO'; if(/^retir/.test(s)) return ''; if(/^prob/.test(s)) return 'P'; if(/^(nfi|non)/.test(s)) return 'NFI'; return s.toUpperCase().slice(0, 4); };
   D.injReady = api('injuries', 'r=2').then(function(j){ D.arr(j && j.injuries && j.injuries.injury).forEach(function(i){ var k = D.injCode(i.status); if(k) D.INJ[i.id] = { k:k, full:i.status || '', det:[i.details, i.exp_return ? 'est. return ' + i.exp_return : ''].filter(Boolean).join(', ') }; }); }).catch(function(){});
@@ -173,13 +175,15 @@
   var INJW = Promise.race([D.injReady, new Promise(function(r){ setTimeout(r, 600); })]);
   D.api = function(t, q){ return Promise.all([D.teamsReady, INJW]).then(function(){ return api(t, q); }); };
   // no more than 4 MFL calls at a time from one page, so a busy page can't trip MFL's too-many-requests limit
-  var INF = 0, QUE = [];
   function slot(){ return new Promise(function(r){ if(INF < 4){ INF++; r(); } else QUE.push(r); }); }
   function done(){ var n = QUE.shift(); if(n) n(); else INF--; }
   function api(t, q){ if(D.LOCAL) return api0(t, q); return slot().then(function(){ return api0(t, q).then(function(v){ done(); return v; }, function(e){ done(); throw e; }); }); }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function api0(t, q){
     if(D.LOCAL) return fetch('demo/' + t + '.json').then(function(r){ if(!r.ok) throw 0; return r.json(); });
-    var url = '/api/' + t + (q ? '?' + q : '');
+    // right after a move (or on My Team), roster data skips the server's short cache so the change shows at once
+    var fr = /^(rosters|freeAgents|transactions)$/.test(t) && (/myteam/.test(location.pathname) || Date.now() - (+lsGet('dcFresh') || 0) < 3e5);
+    var url = '/api/' + t + (q ? '?' + q : '') + (fr ? (q ? '&' : '?') + 'fresh=1' : '');
     // give up on a slow answer after 15 seconds, and quietly try once more before the page shows an error
     function once(){
       var c = window.AbortController ? new AbortController() : null, tm = c ? setTimeout(function(){ c.abort(); }, 15000) : 0;
@@ -192,7 +196,7 @@
   // write actions (lineups, waivers, trades…) — owner must be signed in
   D.act = function(t, body){
     if(D.LOCAL) return Promise.resolve({ ok:true, demo:true });
-    return fetch('/act/' + t, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) }).then(function(r){ return r.json(); });
+    return fetch('/act/' + t, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) }).then(function(r){ return r.json(); }).then(function(j){ if(j && j.ok && t !== 'lineup'){ try{ localStorage.setItem('dcFresh', String(Date.now())); }catch(e){} } return j; });
   };
   D.columnFile = function(){ return fetch(D.LOCAL ? 'demo/column.json' : '/data/column.json?t=' + Math.floor(Date.now() / 300000)).then(function(r){ return r.json(); }); };
   // weeks published from Commish win; any week only in the file (e.g. a Dispatch Claude wrote) still shows, no Publish needed

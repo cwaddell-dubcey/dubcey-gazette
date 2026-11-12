@@ -3,10 +3,11 @@
 const L = '18919', Y = '2026', HOST = 'https://www45.myfantasyleague.com', API = 'https://api.myfantasyleague.com';
 
 // public league data: cached at the edge for N seconds
-const PUB = { salaries:300, liveScoring:12, leagueStandings:300, schedule:900, league:3600, rosters:120, players:86400, playerScores:60, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:20, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
+const PUB = { salaries:300, liveScoring:12, leagueStandings:300, schedule:900, league:3600, rosters:30, players:86400, playerScores:60, injuries:900, transactions:60, weeklyResults:600, nflByeWeeks:86400, nflSchedule:20, projectedScores:900, topAdds:900, topDrops:900, topStarters:900, topOwns:900, futureDraftPicks:3600, draftResults:3600, auctionResults:3600, freeAgents:300, salaryAdjustments:900, rules:86400, allRules:86400, calendar:3600, pointsAllowed:3600, playerRanks:3600, playerProfile:3600, appearance:86400, accounting:900, pool:900, playoffBrackets:600, playoffBracket:600, polls:120, siteNews:3600, survivorPool:900 };
 // owner-specific data: needs sign-in, never cached
 const PRIV = { myleagues:1, pendingWaivers:1, pendingTrades:1, myWatchList:1, tradeBait:1, assets:1, myDraftList:1, lineup:1 };
 // write actions passed through to MFL with the owner's own login
+const ROSTERISH = { rosters:1, freeAgents:1, transactions:1 };
 const ACT = { lineup:1, fcfsWaiver:1, blindBidWaiverRequest:1, waiverRequest:1, tradeProposal:1, tradeResponse:1, tradeBait:1, myWatchList:1, myDraftList:1, draftResults:1, auctionResults:1, pollVote:1, keepers:1 };
 
 const arr = x => x == null ? [] : Array.isArray(x) ? x : [x];
@@ -526,7 +527,9 @@ export default {
       const q = new URLSearchParams(u.search);
       // ME=1 on transactions: fetch with the owner's login so their own pending blind-bid requests are included
       const asMe = type === 'transactions' && q.get('ME') === '1' && !!s;
-      ['TYPE', 'L', 'JSON', 'APIKEY', 'ME'].forEach(k => q.delete(k));
+      // fresh=1 (signed-in owners, roster-type data only): skip the cache, e.g. right after an add/drop
+      const fresh = q.get('fresh') === '1' && !!(s && s.t) && !!ROSTERISH[type];
+      ['TYPE', 'L', 'JSON', 'APIKEY', 'ME', 'fresh'].forEach(k => q.delete(k));
       const extra = q.toString();
       // NFL-wide data lives on MFL's API host and must not carry the league id
       const NFLWIDE = { injuries:1, nflSchedule:1, nflByeWeeks:1, playerProfile:1, allRules:1, topAdds:1, topDrops:1, topStarters:1, topOwns:1 };
@@ -542,7 +545,7 @@ export default {
       let ttl = PUB[type];
       if (type === 'playerScores' || type === 'weeklyResults') { const wq = +q.get('W'), cur = Math.floor((Date.now() - Date.UTC(+Y, 8, 8, 12)) / 6048e5) + 1; if (wq && wq < cur - 1) ttl = 86400; }
       const cache = caches.default, key = new Request(target), lastKey = new Request(target + '&_lastgood=1');
-      let res = await cache.match(key);
+      let res = fresh ? null : await cache.match(key);
       if (!res) {
         let txt = '', st = 504, bad = true;
         const isBad = (m, t) => !m.ok || /^\s*\{[^{]*"error"/.test(t);
@@ -579,6 +582,8 @@ export default {
       const t = await r.text();
       const ok = /<status>\s*OK\s*<\/status>/i.test(t) || /"status"\s*:\s*"OK"/i.test(t);
       const err = (/<error[^>]*>([\s\S]*?)<\/error>/i.exec(t) || [])[1];
+      // a successful add/drop/trade changes rosters: drop the cached copies so the next page load is current
+      if (ok) ctx.waitUntil(Promise.all(Object.keys(ROSTERISH).map(k => caches.default.delete(new Request(`${HOST}/${Y}/export?TYPE=${k}&L=${L}&JSON=1`)))));
       return json({ ok, error: ok ? '' : (err || t.replace(/<[^>]+>/g, ' ').trim().slice(0, 200) || 'MFL rejected the request.') }, ok ? 200 : 400);
     }
 

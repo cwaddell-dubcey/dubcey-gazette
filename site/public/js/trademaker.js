@@ -122,7 +122,7 @@
   }
   D.tradeMaker = function(root){
     ROOT = root;
-    root.innerHTML = '<div class="tm"><div class="tmprev card"><div class="bar mono"><span>TRADE GRAPHIC</span><span>1600 × 1000</span></div><canvas id="tmcv" width="1600" height="1000"></canvas>' +
+    root.innerHTML = '<div class="trmk"><div class="tmprev card"><div class="bar mono"><span>TRADE GRAPHIC</span><span>1600 × 1000</span></div><canvas id="tmcv" width="1600" height="1000"></canvas>' +
       '<div class="pdact pad"><button class="btn" type="button" data-tmpost>POST TO PRESS PHOTOS</button><button class="btn ghost2" type="button" data-tmdl>DOWNLOAD PNG</button><button type="button" class="lnk mono" data-tmclr>START OVER</button></div></div>' +
       '<div class="pded card"><div class="bar mono"><span>BUILD IT</span><span>EVERYTHING UPDATES AS YOU GO</span></div><div class="ef pad" id="tmform"></div></div></div>';
     CV = root.querySelector('#tmcv'); form(); redraw();
