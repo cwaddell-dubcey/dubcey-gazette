@@ -21,7 +21,7 @@
       R.forEach(function(x){ x.L.forEach(function(t){ if(t.id > t.opp || !t.opp || !(t.s > 0)) return; var o = x.L.filter(function(y){ return y.id === t.opp; })[0]; if(!o) return;
         H.games.push([+D.Y, x.w, t.id, o.id, t.s, o.s]); add++;
         [[t, o], [o, t]].forEach(function(p){ var T = H.team[p[0].id]; if(!T) return; var r = T.h2h[p[1].id] = T.h2h[p[1].id] || [0, 0, 0, 0, 0]; if(p[0].s > p[1].s) r[0]++; else if(p[0].s < p[1].s) r[1]++; else r[2]++; r[3] += p[0].s; r[4] += p[1].s; }); }); });
-      if(add){ H.games.sort(function(x, y){ return x[0] - y[0] || x[1] - y[1]; }); if(S.tab === 'h2h') draw(); }
+      if(add){ H.games.sort(function(x, y){ return x[0] - y[0] || x[1] - y[1]; }); if(S.tab === 'h2h' || S.tab === 'teams') draw(); }
     }).catch(function(){});
   }
 
@@ -126,6 +126,38 @@
       }).join('') + '</aside></div>';
   }
 
+  /* ---------- trophy case: a season's games, week by week ---------- */
+  function seasonGames(id, y){
+    return H.games.filter(function(g){ return g[0] === y && (g[2] === id || g[3] === id); }).map(function(g){ var me = g[2] === id; return { g:g, w:g[1], opp:me ? g[3] : g[2], s:me ? g[4] : g[5], o:me ? g[5] : g[4] }; }).sort(function(x, z){ return x.w - z.w; });
+  }
+  // the saved season table stops when the history file was last refreshed; recount this season from the game log
+  function curSeason(s, G){
+    var had = String(s[1]).split('-').reduce(function(t, v){ return t + (+v || 0); }, 0); if(G.filter(function(x){ return x.w <= 13; }).length < had) return s;
+    var w = 0, l = 0, t = 0, pf = 0, pa = 0;
+    G.filter(function(x){ return x.w <= 13; }).forEach(function(x){ if(x.s > x.o) w++; else if(x.s < x.o) l++; else t++; pf += x.s; pa += x.o; });
+    var r = s.slice(), n = w + l + t; r[1] = w + '-' + l + (t ? '-' + t : ''); r[2] = (n ? ((w + t / 2) / n).toFixed(3) : '0.000').replace(/^0/, ''); r[3] = D.pts(Math.round(pf * 100) / 100); r[4] = D.pts(Math.round(pa * 100) / 100); return r;
+  }
+  function weekRows(id, y, G, s){
+    var rec = String(s[1]).split('-').map(Number), reg = (rec[0] || 0) + (rec[1] || 0) + (rec[2] || 0), has = gcHas(y), rw = 0, rl = 0;
+    var rows = G.map(function(x, i){
+      var po = y !== +D.Y && x.w > reg, win = x.s > x.o, tie = x.s === x.o, onm = D.NAME[x.opp] ? nameIn(x.opp, y) : x.opp, k = y + '|' + x.w, op = has && S.xg === k;
+      if(!po){ if(win) rw++; else if(!tie) rl++; }
+      return '<tr class="xwk' + (win ? ' w' : tie ? '' : ' l') + (po ? ' po' : '') + (op ? ' gold' : '') + '"><td class="mono xw">WK ' + x.w + (po ? '<i class="xpo">PLAYOFF</i>' : '') + '</td>' +
+        '<td class="l"><span class="tn3"><img src="' + hl(onm, y) + '" alt="" loading="lazy"><b>' + esc(onm) + (D.NAME[x.opp] && onm !== D.NAME[x.opp] ? '<i class="mono">NOW ' + esc(D.SHORT[x.opp]) + '</i>' : '') + '</b></span></td>' +
+        '<td class="xres mono">' + (win ? 'W' : tie ? 'T' : 'L') + '</td><td class="b">' + D.pts(x.s) + ' \u2013 ' + D.pts(x.o) + '</td><td class="mono xmg">' + (win ? '+' : tie ? '' : '\u2212') + D.pts(Math.round(Math.abs(x.s - x.o) * 100) / 100) + '</td>' +
+        '<td class="mono xrec">' + (po ? '' : rw + '-' + rl) + '</td>' +
+        '<td class="xbx">' + (has ? '<button type="button" class="xbtn mono" data-xg="' + k + '">' + (op ? 'HIDE \u25b4' : '<span class="xbl">BOX SCORE </span><span class="xbs">BOX </span>\u25be') + '</button>' : '') + (D.NAME[x.opp] ? '<a class="xh2 mono" href="#h2h/' + id + '/' + x.opp + '" title="Every game in this rivalry">H2H \u2192</a>' : '') + '</td></tr>' +
+        (op ? '<tr class="gcwrap"><td colspan="7">' + gcard(x.g, id, x.opp) + '</td></tr>' : '');
+    }).join('');
+    var nreg = G.filter(function(x){ return y === +D.Y || x.w <= reg; }).length, gap = y !== +D.Y && nreg < reg ? ' \u00b7 ' + nreg + ' OF ' + reg + ' REGULAR-SEASON GAMES ON FILE' : '';
+    var src = !has ? 'NO LINEUPS ON FILE FOR ' + y : y <= 2005 ? 'BOX SCORES FROM THE OLD DUBCEY SITE \u00b7 STARTERS ONLY' : isRT(y) ? 'BOX SCORES FROM RT SPORTS \u00b7 REGULAR SEASON' : 'BOX SCORES FROM MFL';
+    return '<tr class="xwrap"><td colspan="9"><div class="xin"><div class="xhd mono"><span>' + y + ' \u00b7 WEEK BY WEEK' + gap + '</span><span>' + src + '</span></div><div class="sx"><table class="ht xwt"><thead><tr><th>WEEK</th><th class="l">OPPONENT</th><th>RES</th><th>SCORE</th><th>MARGIN</th><th>RECORD</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div></td></tr>';
+  }
+
+  // on phones the season table scrolls sideways; keep the opened week-by-week panel the width of the screen
+  function fitWeeks(){ var x = document.querySelector('.xin'); if(!x) return; var sx = x.closest('.sx'); x.style.width = sx && sx.scrollWidth > sx.clientWidth + 2 ? sx.clientWidth + 'px' : ''; }
+  window.addEventListener('resize', function(){ if(S.tab === 'teams') fitWeeks(); });
+
   /* ---------- trophy case ---------- */
   function teams(){
     var id = S.team || D.IDS[0], T = H.team[id]; if(!T) return;
@@ -138,20 +170,26 @@
         '<div class="wrow"><div class="row6" style="--n:' + n + '">' + L.map(function(x, k){ var p = own(x[0], +x[1].split('-')[0]);
           return '<div class="trophy' + (k === n - 1 ? ' cur' : '') + '">' + (p ? '<img src="' + p + '" alt="" loading="lazy">' : '<div class="hwb"><b>?</b><span class="mono">HELMET WANTED</span></div>') + '<span class="nm3">' + esc(x[0]) + '</span><span class="hy mono">' + esc(x[1].replace('-', '\u2013')) + '</span>' + (k === n - 1 ? '<span class="now mono">TODAY</span>' : '') + '</div>';
         }).join('') + '</div><div class="plank"><div class="row6" style="--n:' + n + '">' + L.map(function(x){ return '<span class="plate">' + esc(x[1].replace('-', '\u2013')) + '</span>'; }).join('') + '</div></div></div></section>'; })() : '';
+    var cur = T.seasons.filter(function(s){ return +s[0] === +D.Y; })[0], reg0 = T.reg.slice();
+    if(cur){ var G0 = seasonGames(id, +D.Y), now0 = curSeason(cur, G0); if(now0 !== cur){ var a0 = String(cur[1]).split('-').map(Number), b0 = String(now0[1]).split('-').map(Number), cr = String(T.reg[0]).split('-').map(Number);
+      cr[0] += (b0[0] || 0) - (a0[0] || 0); cr[1] += (b0[1] || 0) - (a0[1] || 0); if(cr.length > 2 || b0[2]) cr[2] = (cr[2] || 0) + (b0[2] || 0) - (a0[2] || 0);
+      reg0[0] = cr.join('-'); reg0[1] = ((cr[0] + (cr[2] || 0) / 2) / (cr[0] + cr[1] + (cr[2] || 0))).toFixed(3).replace(/^0/, ''); } }
     var best = T.seasons.slice().sort(function(a, b){ return parseFloat(b[2]) - parseFloat(a[2]); })[0];
     $('hb').innerHTML = rail(id, 'data-team') +
       '<div class="case"><div class="cpnl"><div class="shf"><img src="' + D.helm(id) + '" alt=""><span class="plate">' + titles.length + (titles.length === 1 ? ' TITLE' : ' TITLES') + '</span></div>' +
       '<div class="inf"><div><div class="kk mono">SINCE ' + esc((names[names.length - 1] || ['', '2001'])[1].split('-')[0]) + '</div><div class="tn">' + esc(D.NAME[id]) + '</div></div>' +
       (titles.length ? '<div class="cups">' + titles.map(function(y){ return '<span class="cup mono">\ud83c\udfc6 ' + y + '</span>'; }).join('') + '</div>' : '<div class="tl mono">STILL CHASING THE FIRST ONE</div>') +
-      '<div class="cnt" style="grid-template-columns:repeat(3,1fr)"><div><b>' + esc(T.reg[0]) + '</b><span class="mono">REG SEASON</span></div><div><b>' + esc(T.post[0]) + '</b><span class="mono">PLAYOFFS</span></div><div><b>' + esc(T.reg[1]) + '</b><span class="mono">WIN PCT</span></div></div>' +
+      '<div class="cnt" style="grid-template-columns:repeat(3,1fr)"><div><b>' + esc(reg0[0]) + '</b><span class="mono">REG SEASON</span></div><div><b>' + esc(T.post[0]) + '</b><span class="mono">PLAYOFFS</span></div><div><b>' + esc(reg0[1]) + '</b><span class="mono">WIN PCT</span></div></div>' +
       (best ? '<div class="tl mono">BEST SEASON · ' + esc(best[0]) + ' · ' + esc(best[1]) + '</div>' : '') +
       (names.length > 1 ? '<div class="aka"><div class="kk mono">ALSO KNOWN AS</div>' + names.slice(1).map(function(n){ return '<div>' + hthumb(n[0], +n[1].split('-')[0], 'akh') + '<b>' + esc(n[0]) + '</b><span class="mono">' + esc(n[1]) + '</span></div>'; }).join('') + '</div>' : '') +
       '</div></div>' +
       '<div class="tled"><div class="lh"><span class="t">Season by Season</span><a class="btn ghost2" href="#h2h/' + id + '">HEAD-TO-HEAD \u2192</a></div><div class="sx">' +
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
-      T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]);
-        return '<tr class="' + (ch ? 'gold' : '') + '"><td class="y">' + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>';
+      T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]), yy = +s[0], G = seasonGames(id, yy), op = G.length && S.xy === yy;
+        if(yy === +D.Y && G.length) s = curSeason(s, G);
+        return '<tr class="' + (ch ? 'gold' : '') + (G.length ? ' ck2 xyr' : '') + (op ? ' xon' : '') + '"' + (G.length ? ' data-xy="' + yy + '" title="Week by week"' : '') + '><td class="y">' + (G.length ? '<i class="xcar">' + (op ? '\u25be' : '\u25b8') + '</i>' : '') + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>' + (op ? weekRows(id, yy, G, s) : '');
       }).join('') + '</tbody></table></div></div></div>' + evo + rushmore(id);
+    fitWeeks();
   }
 
 
@@ -166,20 +204,20 @@
   /* ---------- head to head ---------- */
   /* ---------- head-to-head scorecards: both lineups for a game, from data/cards/<season>.json ---------- */
   var GC = { idx:null, y:{}, open:'' };
-  fetch('data/cards/index.json?v=20261106b').then(function(r){ return r.json(); }).then(function(j){ GC.idx = j; if(H && S.tab === 'h2h') draw(); }).catch(function(){});
+  fetch('data/cards/index.json?v=20261106b').then(function(r){ return r.json(); }).then(function(j){ GC.idx = j; if(H && (S.tab === 'h2h' || S.tab === 'teams')) draw(); }).catch(function(){});
   function gcHas(y){ return +y === +D.Y || !!(GC.idx && GC.idx.years.indexOf(+y) > -1); }
   // 2003-05 scorecards: same-named older players who were folded into today's players
   var OLDP = { '12785':['Robinson, Marcus','WR','MIN',''], '13652':['Wilson Sr., Cedrick','WR','PIT',''], '16614':['Harrison, Marvin','WR','IND',''] };
   function gcLoad(y){
     if(GC.y[y]) return; GC.y[y] = 'loading';
-    if(+y === +D.Y){ D.seasonCards().then(function(j){ GC.y[y] = j && j.t ? j : 'none'; if(S.tab === 'h2h') draw(); }); return; }
-    fetch('data/cards/' + y + '.json?v=' + (GC.idx && GC.idx.v || '1')).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){ if(+y <= 2005 && j.p) j.p = j.p.map(function(e){ return OLDP[e[3]] || e; }); GC.y[y] = j; if(S.tab === 'h2h') draw(); })
-      .catch(function(){ GC.y[y] = 'none'; if(S.tab === 'h2h') draw(); });
+    if(+y === +D.Y){ D.seasonCards().then(function(j){ GC.y[y] = j && j.t ? j : 'none'; if(S.tab === 'h2h' || S.tab === 'teams') draw(); }); return; }
+    fetch('data/cards/' + y + '.json?v=' + (GC.idx && GC.idx.v || '1')).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){ if(+y <= 2005 && j.p) j.p = j.p.map(function(e){ return OLDP[e[3]] || e; }); GC.y[y] = j; if(S.tab === 'h2h' || S.tab === 'teams') draw(); })
+      .catch(function(){ GC.y[y] = 'none'; if(S.tab === 'h2h' || S.tab === 'teams') draw(); });
   }
-  function nameIn(id, y){ var nm = ''; (H.lineage[id] || []).forEach(function(e){ var r = String(e[1]).split('-'), lo = +r[0], hi = +(r[1] || r[0]); if(y >= lo && y <= hi) nm = e[0]; }); return nm || D.NAME[id]; }
+  function nameIn(id, y){ var nm = ''; (H.lineage[id] || []).forEach(function(e){ var r = String(e[1]).split('-'), lo = +r[0], hi = +(r[1] || r[0]); if(y >= lo && y <= hi) nm = e[0]; }); return nm || D.NAME[id] || id; }
   function gcSide(C, id, y, w, score, win){
     var nm = nameIn(id, y), L = C.t[id] && C.t[id][w];
-    var head = '<div class="gch' + (win ? ' w' : '') + '"><img src="' + hl(nm, y) + '" alt=""><span><b>' + esc(nm) + '</b>' + (nm !== D.NAME[id] ? '<i class="mono">NOW ' + esc(D.SHORT[id]) + '</i>' : '') + '</span><em>' + D.pts(score) + '</em></div>';
+    var head = '<div class="gch' + (win ? ' w' : '') + '"><img src="' + hl(nm, y) + '" alt=""><span><b>' + esc(nm) + '</b>' + (D.NAME[id] && nm !== D.NAME[id] ? '<i class="mono">NOW ' + esc(D.SHORT[id]) + '</i>' : '') + '</span><em>' + D.pts(score) + '</em></div>';
     if(!L) return '<div class="gct">' + head + '<div class="gce mono">NO LINEUP ON FILE FOR THIS WEEK</div></div>';
     var rows = L[1], st = rows.filter(function(r){ return r[2]; }), bn = rows.filter(function(r){ return !r[2]; }), top = Math.max.apply(null, st.map(function(r){ return r[1]; }).concat([0]));
     function row(r){ var p = C.p[r[0]], pos = rvPos(p[1]), nm2 = rvName(p[0]);
@@ -459,8 +497,10 @@
 
   window.addEventListener('hashchange', function(){ hash(); if(H){ draw(); window.scrollTo(0, 0); } });
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-team]'); if(t){ S.team = t.getAttribute('data-team'); history.replaceState(null, '', '#teams/' + S.team); draw(); return; }
+    var t = e.target.closest('[data-team]'); if(t){ S.team = t.getAttribute('data-team'); S.xy = 0; S.xg = ''; history.replaceState(null, '', '#teams/' + S.team); draw(); return; }
     var bt = e.target.closest('[data-bt]'); if(bt && S.tab === 'records'){ e.preventDefault(); var v = bt.getAttribute('data-bt'); S.bt = S.bt === v ? '' : v; draw(); return; }
+    var xg = e.target.closest('[data-xg]'); if(xg){ var kk = xg.getAttribute('data-xg'); S.xg = S.xg === kk ? '' : kk; draw(); return; }
+    var xy = e.target.closest('[data-xy]'); if(xy && S.tab === 'teams' && !e.target.closest('a')){ var yv = +xy.getAttribute('data-xy'); S.xy = S.xy === yv ? 0 : yv; S.xg = ''; draw(); return; }
     var hg = e.target.closest('[data-hg]'); if(hg && !e.target.closest('[data-card]')){ var k = hg.getAttribute('data-hg'); GC.open = GC.open === k ? '' : k; draw(); return; }
     var rv = e.target.closest('[data-rv]'); if(rv){ e.preventDefault(); var q = rv.getAttribute('data-rv').split('/'); S.a = q[0]; S.b = q[1]; history.replaceState(null, '', '#h2h/' + S.a + '/' + S.b); draw(); window.scrollTo(0, 0); return; }
     var a = e.target.closest('[data-ha]'); if(a){ GC.open = ''; S.a = a.getAttribute('data-ha'); if(S.b === S.a) S.b = ''; history.replaceState(null, '', '#h2h/' + S.a + (S.b ? '/' + S.b : '')); draw(); return; }

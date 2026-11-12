@@ -98,6 +98,8 @@
   function weeks(){
     var h = ''; for(var i = 1; i <= Math.max(S.cur, LAST); i++) h += '<a class="' + (i === S.w ? 'on' : i > S.cur ? 'wfut' : '') + '" href="' + D.href('scores', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
     $('weeks').innerHTML = h;
+    // phones: the week strip scrolls sideways; bring the selected week into view
+    var wk = $('weeks'), on = wk.querySelector('.on'); if(on && wk.scrollWidth > wk.clientWidth) wk.scrollLeft = Math.max(0, on.offsetLeft - wk.clientWidth / 2 + on.offsetWidth / 2);
   }
 
   function draw(){

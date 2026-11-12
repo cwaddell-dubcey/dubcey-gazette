@@ -2618,3 +2618,91 @@ a.rsh:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #c8282d}
 .tegot input{width:18px !important;height:18px;padding:0 !important;accent-color:#c8282d}
 .tego .hpick img{width:70px;height:50px}
 @media (max-width:760px){.tego{grid-template-columns:70px minmax(0,1fr)}.tego label.tegot{grid-column:1/-1}}
+
+/* trophy case: season rows open to show the week-by-week games */
+.ht tr.xyr td.y{position:relative}
+.xcar{font-style:normal;font-size:10px;color:#B08A2E;margin-right:7px;display:inline-block;width:9px}
+.ht tr.xon td{background:#EFE3BF}
+.ht tr.xwrap>td{padding:0;background:#EDE3C6;border-bottom:2px solid #102542;white-space:normal}
+.ht tr.xwrap:hover>td{background:#EDE3C6}
+.xin{padding:10px 14px 14px 26px;position:sticky;left:0;box-sizing:border-box}
+.xhd{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:9px;letter-spacing:.14em;color:#6B6455;padding:4px 4px 8px}
+.xhd span:first-child{color:#102542;font-weight:700}
+.xwt{background:#FBF6E8;border:1px solid #D9CCA6}
+.xwt th{font-size:8px;padding:8px 8px 6px;border-bottom:1px solid #102542}
+.xwt td{padding:6px 8px;font-size:12px}
+.xwt td.l{font-size:13.5px}
+.xwt .tn3 img{width:34px;height:25px;object-fit:contain}
+.xwt td.xw{font-size:10px;letter-spacing:.1em;color:#6B6455}
+.xpo{font-style:normal;display:inline-block;margin-left:6px;padding:2px 5px;background:#E0A72B;color:#102542;font-size:8px;letter-spacing:.12em;border-radius:2px;vertical-align:1px}
+.xwt tr.po td{background:#F6ECCF}
+.xwt td.xres{font-weight:700;font-size:12px;text-align:center}
+.xwt tr.w td.xres{color:#1F7A3A}
+.xwt tr.l td.xres{color:#c8282d}
+.xwt td.b{font-size:13px}
+.xwt td.xmg{color:#6B6455;font-size:11px}
+.xwt tr.l td.xmg{color:#c8282d}
+.xwt td.xrec{color:#6B6455;font-size:11px}
+.xwt td.xbx{white-space:nowrap}
+.xbs{display:none}
+.xwt td.xw{text-align:left}
+.xwt th:first-child{text-align:left}
+.xbtn{background:#102542;color:#F7EFDB;border:0;border-radius:3px;padding:5px 9px;font-size:9px;letter-spacing:.12em;cursor:pointer}
+.xbtn:hover{background:#c8282d}
+.xwt tr.gold .xbtn{background:#c8282d}
+.xh2{margin-left:8px;font-size:9px;letter-spacing:.12em;color:#6B6455;text-decoration:none}
+.xh2:hover{color:#c8282d}
+.xwt tr.gcwrap>td{padding:0;white-space:normal}
+@media (max-width:760px){
+  .xin{padding:8px 6px 10px}
+  .xin .gcs{grid-template-columns:1fr}
+  .xwt .xbtn{padding:5px 7px}
+  .xwt td,.xwt th{padding:6px 5px}
+  .xwt td.xmg,.xwt th:nth-child(5),.xwt td.xrec,.xwt th:nth-child(6),.xh2{display:none}
+  .xwt,.xwt tbody,.xwt tr,.xwt td{display:block}
+  .xwt thead{display:none}
+  .xwt tr.xwk{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto;align-items:center;column-gap:6px;border-bottom:1px solid #E0D6B8;padding:6px 6px}
+  .xwt tr.xwk td{border:0;padding:0;background:transparent!important;position:static!important}
+  .xwt tr.xwk td.xres{display:none}
+  .xwt td.l{white-space:normal;font-size:12px}
+  .xwt .tn3{gap:5px;min-width:0}
+  .xwt .tn3 b{white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+  .xwt .tn3 b i{display:block;margin:2px 0 0}
+  .xwt td.xw{font-size:9px;white-space:normal;line-height:1.3}
+  .xpo{margin:2px 0 0;display:block;width:max-content;font-size:7px;padding:1px 4px}
+  .xwt td.b{font-size:11.5px;white-space:nowrap}
+  .xwt tr.w td.b{color:#1F7A3A}.xwt tr.l td.b{color:#c8282d}
+  .xbl{display:none}.xbs{display:inline}
+  .xwt .xbtn{padding:5px 6px;font-size:8.5px}
+  .xin .sx{overflow:visible}
+  .xin .gck{flex-wrap:wrap;gap:4px}
+  .xin .gcd{position:static;width:auto;padding:8px 4px 12px}
+  .xhd{font-size:8px;letter-spacing:.1em}
+  .xwt .tn3 img{width:26px;height:19px}
+  .xwt td.l{font-size:12.5px}
+}
+
+/* mobile sweep fixes */
+@media (max-width:760px){
+  .pagehd>div{max-width:100%;min-width:0}
+  .pagehd>div:has(>.weeks){width:100%;align-items:stretch!important}
+  .pagehd .weeks{justify-content:flex-start}
+  .pagehd .stat,.pagehd .upd{align-self:flex-start}
+  /* finances: weekly penalty table in edit mode fits the screen */
+  .ft th,.ft td{padding-left:6px;padding-right:6px}
+  .ft th:first-child,.ft td:first-child{padding-left:10px}
+  .ft th:last-child,.ft td:last-child{padding-right:10px}
+  .ft select.fin{width:100%;max-width:150px;min-width:0}
+  .ft input.fin{width:76px;min-width:0}
+  .ft tr.lkd .ftm img{width:34px;height:26px}
+  .ft tr.lkd .ftm b{font-size:13px}
+  .ft .amt{font-size:13px}
+  /* bigger tap targets for small controls */
+  .vtog button{min-height:32px;padding-left:12px;padding-right:12px}
+  .shr{min-height:32px;padding:7px 12px}
+  .ft td.amt .funl{padding:8px 9px}
+  .fadd{padding:8px 12px}
+  .fx{min-width:32px;min-height:32px}
+  .eb button{min-height:32px;min-width:32px;padding:6px 9px}
+  input[type=checkbox]{width:20px;height:20px}
+}
