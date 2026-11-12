@@ -2726,7 +2726,7 @@ a.rsh:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #c8282d}
 span.dfat.hw{display:inline-grid;place-items:center;border:1px dashed #9FB4CC;color:#6F8AAE;font:700 11px/1 'Zilla Slab',Georgia,serif;border-radius:4px}
 
 /* ---------- grouped top menu ---------- */
-.nav.navg{overflow:visible!important;justify-content:flex-end;gap:2px}
+.nav.navg{overflow:visible!important;flex:1 1 auto;min-width:0;justify-content:center!important;gap:2px}
 .navg .ng{position:relative;display:flex;align-items:stretch}
 .navg .nt{display:flex;align-items:center;gap:6px;padding:0 14px!important;font-size:11px!important;letter-spacing:.12em!important;color:#9FB4CC;border-bottom:3px solid transparent;white-space:nowrap}
 .navg .nt.on{color:#F7EFDB;border-bottom-color:#E0A72B}
@@ -2742,11 +2742,28 @@ span.dfat.hw{display:inline-grid;place-items:center;border:1px dashed #9FB4CC;co
 .navg .ndd a[href*="ideas"]{display:block!important}
 .navg .ngmt .nt{color:#E0A72B}
 .navg .ngmt .nt:hover{color:#F7C75A}
-@media (max-width:1180px){ .navg .nt{padding:0 clamp(5px,.9vw,14px)!important;letter-spacing:.06em!important;font-size:clamp(9.5px,.95vw,11px)!important} }
-@media (min-width:761px) and (max-width:1040px){ .navg .ngmt{display:none} .nav.navg{justify-content:center} }
+@media (max-width:1379px){ .navg .nt{padding:0 clamp(5px,.9vw,13px)!important;letter-spacing:.07em!important;font-size:clamp(10px,.92vw,11.5px)!important} }
+@media (min-width:761px) and (max-width:1379px){ .navg .ngmt{display:none} .nav.navg{justify-content:center} }
 /* phone "More" sheet: grouped like the top menu */
 @media (max-width:760px){
   .msgh{font-size:9.5px;letter-spacing:.16em;color:#E0A72B;margin:16px 2px 8px}
   .msgh:first-of-type{margin-top:4px}
   .msg a{min-height:46px!important;font-size:13.5px!important}
 }
+/* desktop header: logo left, menu centered on the page, team badge right */
+@media (min-width:761px){
+  #top>.in{display:grid!important;grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);align-items:stretch;column-gap:16px}
+  #top>.in>.brand{justify-self:start}
+  #top>.in>.nav.navg{flex:none;justify-self:center}
+  #top>.in>#who{justify-self:end}
+}
+/* top menu: bigger, brighter labels */
+@media (min-width:1380px){
+  .navg .nt{font-size:12px!important;letter-spacing:.12em!important;padding:0 13px!important}
+}
+@media (min-width:1560px){
+  .navg .nt{font-size:13px!important;letter-spacing:.14em!important;padding:0 18px!important}
+}
+.navg .nt{color:#DCE6F2;font-weight:700}
+.navg .nt.on,.navg .ng:hover>.nt{color:#fff}
+.navg .ngmt .nt{color:#E0A72B}
