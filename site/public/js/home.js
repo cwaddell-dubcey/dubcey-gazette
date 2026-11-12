@@ -197,5 +197,5 @@
       }).join('');
     });
   }).catch(function(){ $('wire').innerHTML = '<div class="ld mono">NO RECENT MOVES</div>'; });
-  D.pressMount({ n:3 });
+  D.pressMount({ n:3, np:6 });
 })();

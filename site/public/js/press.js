@@ -38,7 +38,7 @@
 
   function load(){
     return Promise.all([D.content('stories'), D.content('hits'), D.content('pgfx')]).then(function(r){
-      S.st = (r[0] && r[0].items) || []; S.hi = (r[1] && r[1].items) || []; S.gx = (r[2] && r[2].map) || {};
+      S.st = (r[0] && r[0].items) || []; S.hi = (r[1] && r[1].items) || []; S.gx = r[2] || {}; S.ph = D.photoList(r[2]);
     });
   }
   function save(key, obj, what){ return D.save(key, obj).then(function(r){ if(r && r.ok) toast(r.demo ? 'SAVED IN THIS BROWSER (PREVIEW)' : what); else toast((r && r.error) || 'COULDN’T SAVE', true); return r && r.ok; }); }
@@ -49,7 +49,7 @@
 
   function draw(){
     [].forEach.call(document.querySelectorAll('#ptabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ stories:stories, hits:hits, gfx:gfx, weekly:weekly }[S.tab] || stories)();
+    ({ stories:stories, hits:hits, gfx:gfx, weekly:weekly, trade:function(){ if(D.tradeMaker) D.tradeMaker($('pb')); else { $('pb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; setTimeout(draw, 60); } } }[S.tab] || stories)();
   }
 
   /* ---------- players for tagging and graphics (rostered + free agents) ---------- */
@@ -106,16 +106,27 @@
       '<div class="pdl hl">' + (L.map(function(h){ var gone = h.exp && h.exp < Date.now(); return '<div class="pdh' + (gone ? ' gone' : '') + '">' + (h.team ? '<img src="' + D.helm(h.team) + '" alt="">' : '<span></span>') + '<div><b>' + esc(h.text) + '</b><i class="mono">' + esc(String(h.by).toUpperCase()) + ' · ' + D.ago(h.at) + (gone ? ' · EXPIRED' : h.exp ? ' · UNTIL ' + new Date(h.exp).toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase() : '') + '</i></div>' + (mine(h) ? '<button type="button" class="x mono" data-qdel="' + esc(h.id) + '">DELETE</button>' : '') + '</div>'; }).join('') || '<div class="ld mono">NO QUICK HITS YET.</div>') + '</div>';
   }
 
-  /* ---------- player graphics ---------- */
+  /* ---------- press photos: trade graphics, player edits, anything ---------- */
   function gfx(){
-    var ids = Object.keys(S.gx);
-    $('pb').innerHTML = '<div class="pded card"><div class="bar mono"><span>ADD A PLAYER GRAPHIC</span><span>SHOWS AT THE TOP OF THAT PLAYER’S CARD, EVERYWHERE ON THE SITE</span></div><div class="ef pad"><div class="pdsrch"><input data-gs placeholder="Find a player…" autocomplete="off"><div class="pdsr" id="gsr"></div></div><div id="gpick"></div></div></div>' +
-      '<div class="pdg">' + (ids.map(function(id){ var g = S.gx[id], i = D.pinfo(id); return '<div class="pdgi"><img src="' + esc(D.pressImg(g.url)) + '" alt=""><div><a href="#" data-card="' + esc(id) + '"><b>' + esc(g.n || i[0]) + '</b></a><i class="mono">' + esc(String(g.by || '').toUpperCase()) + ' · ' + D.ago(g.at) + '</i></div>' + (S.me.commish || g.mid === S.me.mid ? '<button type="button" class="x mono" data-gdel="' + esc(id) + '">REMOVE</button>' : '') + '</div>'; }).join('') || '<div class="ld mono">NO PLAYER GRAPHICS YET.</div>') + '</div>';
+    if(S.pe) return photoEd();
+    $('pb').innerHTML = '<div class="pdbar"><label class="btn">+ NEW PHOTO<input type="file" accept="image/*" data-phnew hidden></label><span class="mono">' + S.ph.length + ' PHOTOS \u00b7 THEY SHOW ON THE DISPATCH, HOME PAGE, THE WIRE, AND THE CARD OF EVERY PLAYER AND TEAM YOU TAG</span></div>' +
+      '<div class="pdg">' + (S.ph.map(function(x){ return '<div class="pdgi"><img src="' + esc(D.pressImg(x.url)) + '" alt=""><div><b>' + esc(x.cap || (x.players || []).map(function(q){ return q.n; }).join(' \u00b7 ') || 'Untitled') + '</b><i class="mono">' + esc(String(x.by || '').toUpperCase()) + ' \u00b7 ' + D.ago(x.at) + ' \u00b7 ' + ((x.players || []).length + (x.teams || []).length) + ' TAGS</i>' + (mine(x) ? '<span class="pdgb mono"><button type="button" data-phedit="' + esc(x.id) + '">EDIT</button><button type="button" class="x" data-phdel="' + esc(x.id) + '">REMOVE</button></span>' : '') + '</div></div>'; }).join('') || '<div class="ld mono">NO PRESS PHOTOS YET. TRADE GRAPHICS, PLAYER EDITS, ANYTHING.</div>') + '</div>';
+  }
+  function photoEd(){
+    var x = S.pe;
+    $('pb').innerHTML = '<div class="pded card"><div class="bar mono"><span>' + (x.saved ? 'EDIT PHOTO' : 'NEW PHOTO') + '</span><button type="button" class="lnk mono" data-phback>\u2190 ALL PHOTOS</button></div><div class="ef pad">' +
+      '<div class="pdph wide"><img src="' + esc(D.pressImg(x.url)) + '" alt=""><label class="btn ghost2 sm">REPLACE IMAGE<input type="file" accept="image/*" data-phrep hidden></label></div>' +
+      '<label class="mono">CAPTION (OPTIONAL)<input name="cap" maxlength="140" value="' + esc(x.cap || '') + '" placeholder="Breaking: Pollard to the Nuts for Pierre Strong"></label>' +
+      '<div class="mono pdlab">TEAMS IN THIS PHOTO \u00b7 IT SHOWS ON EACH TEAM\u2019S PAGE</div><div class="pdteams">' + D.IDS.map(function(id){ var on = (x.teams || []).indexOf(id) > -1; return '<button type="button" class="pdt' + (on ? ' on' : '') + '" data-pht="' + id + '" title="' + esc(D.NAME[id]) + '"><img src="' + D.helm(id) + '" alt=""><span class="mono">' + esc(D.SHORT[id]) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="mono pdlab">PLAYERS IN THIS PHOTO \u00b7 A \u201cPRESS PHOTO\u201d TILE SHOWS ON EACH PLAYER\u2019S CARD</div><div class="pdpl">' + (x.players || []).map(function(q, k){ return '<span class="ptag pl">' + esc(q.n) + '<button type="button" data-phrmp="' + k + '" aria-label="Remove">\u00d7</button></span>'; }).join('') + '<div class="pdsrch"><input data-phps placeholder="Add a player\u2026" autocomplete="off"><div class="pdsr" id="phsr"></div></div></div>' +
+      '<div class="pdact"><button class="btn" type="button" data-phsave>' + (x.saved ? 'SAVE CHANGES' : 'POST PHOTO') + '</button></div></div></div>';
     players();
   }
-  function gpick(p){
-    S.gp = p;
-    $('gpick').innerHTML = '<div class="pdgp"><div><b>' + esc(p.n) + '</b><i class="mono">' + esc(p.pos + ' · ' + p.tm) + (p.own ? ' · ' + esc(D.SHORT[p.own]).toUpperCase() : ' · FREE AGENT') + '</i></div><label class="btn">' + (S.gx[p.id] ? 'REPLACE GRAPHIC' : 'UPLOAD GRAPHIC') + '<input type="file" accept="image/*" data-gfile hidden></label></div><div class="fine mono">WIDE IMAGES LOOK BEST (ABOUT 16:9). THEY’RE SHRUNK TO 1600PX AND SAVED AS WEBP.</div>';
+  function readPh(){ var c = document.querySelector('#pb [name=cap]'); if(c && S.pe) S.pe.cap = c.value.trim(); }
+  function savePh(){
+    readPh(); var x = S.pe, b = by(); if(!x.saved){ x.at = Date.now(); x.by = b.by; x.mid = b.mid; }
+    var keep = { id:x.id, url:x.url, cap:x.cap || '', players:x.players || [], teams:x.teams || [], at:x.at, by:x.by, mid:x.mid };
+    update('pgfx', function(cur){ var L = cur.items = arr(cur.items), k = L.map(function(y){ return y.id; }).indexOf(keep.id); if(k > -1) L[k] = keep; else L.unshift(keep); cur.items = L.slice(0, 300); if(/^old/.test(keep.id) && cur.map) delete cur.map[keep.id.slice(3)]; }, x.saved ? 'PHOTO SAVED' : 'PHOTO POSTED').then(function(){ S.pe = null; draw(); });
   }
 
   /* ---------- weekly Dispatch: same editor the commissioner uses ---------- */
@@ -140,17 +151,25 @@
     if(t.closest('[data-qpost]')){ var p2 = $('pb'), tx = p2.querySelector('[name=qh]').value.trim(); if(!tx){ toast('WRITE SOMETHING FIRST', true); return; } var d = +p2.querySelector('[name=qd]').value, b = by(), h = { id:uid('h'), text:tx, team:p2.querySelector('[name=qt]').value, at:Date.now(), exp:d ? Date.now() + d * 864e5 : 0, by:b.by, mid:b.mid };
       update('hits', function(cur){ cur.items = [h].concat(arr(cur.items)).slice(0, 200); }, 'QUICK HIT POSTED').then(draw); return; }
     var qd = t.closest('[data-qdel]'); if(qd){ var qid = qd.getAttribute('data-qdel'); update('hits', function(cur){ cur.items = arr(cur.items).filter(function(x){ return x.id !== qid; }); }, 'DELETED').then(draw); return; }
-    var gp = t.closest('[data-gpick]'); if(gp){ var pp = S.pl.filter(function(x){ return x.id === gp.getAttribute('data-gpick'); })[0]; if(pp){ $('gsr').innerHTML = ''; document.querySelector('[data-gs]').value = pp.n; gpick(pp); } return; }
-    var gd = t.closest('[data-gdel]'); if(gd){ if(!confirm('Remove this graphic?')) return; var gid = gd.getAttribute('data-gdel'); update('pgfx', function(cur){ cur.map = cur.map || {}; delete cur.map[gid]; }, 'GRAPHIC REMOVED').then(draw); return; }
+    if(t.closest('[data-phback]')){ S.pe = null; draw(); return; }
+    if(t.closest('[data-phsave]')){ savePh(); return; }
+    var pe = t.closest('[data-phedit]'); if(pe){ var y = S.ph.filter(function(z){ return z.id === pe.getAttribute('data-phedit'); })[0]; if(y){ S.pe = JSON.parse(JSON.stringify(y)); S.pe.saved = true; S.pe.players = S.pe.players || []; S.pe.teams = S.pe.teams || []; draw(); } return; }
+    var pdl = t.closest('[data-phdel]'); if(pdl){ if(!confirm('Remove this photo?')) return; var did = pdl.getAttribute('data-phdel'); update('pgfx', function(cur){ cur.items = arr(cur.items).filter(function(z){ return z.id !== did; }); if(/^old/.test(did) && cur.map) delete cur.map[did.slice(3)]; }, 'PHOTO REMOVED').then(draw); return; }
+    var pht = t.closest('[data-pht]'); if(pht && S.pe){ readPh(); var tid2 = pht.getAttribute('data-pht'), T2 = S.pe.teams, k2 = T2.indexOf(tid2); if(k2 > -1) T2.splice(k2, 1); else T2.push(tid2); pht.classList.toggle('on', k2 < 0); return; }
+    var prm = t.closest('[data-phrmp]'); if(prm && S.pe){ readPh(); S.pe.players.splice(+prm.getAttribute('data-phrmp'), 1); photoEd(); return; }
+    var pad = t.closest('[data-phaddp]'); if(pad && S.pe){ readPh(); var q = S.pl.filter(function(z){ return z.id === pad.getAttribute('data-phaddp'); })[0]; if(q && !S.pe.players.some(function(z){ return z.id === q.id; })){ S.pe.players.push({ id:q.id, n:q.n }); if(q.own && S.pe.teams.indexOf(q.own) < 0) S.pe.teams.push(q.own); } photoEd(); var ip = document.querySelector('[data-phps]'); if(ip) ip.focus(); return; }
   });
   document.addEventListener('input', function(e){
     var t = e.target;
     if(t.matches('[data-ps]')){ players().then(function(){ $('psr').innerHTML = find(t.value).map(function(p){ return '<button type="button" data-addp="' + esc(p.id) + '"><b>' + esc(p.n) + '</b><i class="mono">' + esc(p.pos + ' · ' + p.tm) + (p.own ? ' · ' + esc(D.SHORT[p.own]).toUpperCase() : '') + '</i></button>'; }).join(''); }); }
-    if(t.matches('[data-gs]')){ players().then(function(){ $('gsr').innerHTML = find(t.value).map(function(p){ return '<button type="button" data-gpick="' + esc(p.id) + '"><b>' + esc(p.n) + '</b><i class="mono">' + esc(p.pos + ' · ' + p.tm) + (S.gx[p.id] ? ' · HAS A GRAPHIC' : '') + '</i></button>'; }).join(''); }); }
+    if(t.matches('[data-phps]')){ players().then(function(){ $('phsr').innerHTML = find(t.value).map(function(p){ return '<button type="button" data-phaddp="' + esc(p.id) + '"><b>' + esc(p.n) + '</b><i class="mono">' + esc(p.pos + ' · ' + p.tm) + (p.own ? ' · ' + esc(D.SHORT[p.own]).toUpperCase() : '') + '</i></button>'; }).join(''); }); }
   });
   document.addEventListener('change', function(e){
     var t = e.target;
     if(t.matches('[data-photo]') && t.files[0] && S.ed){ readEd(); toast('UPLOADING…'); var sid = S.ed.pid || (S.ed.pid = uid('s')); upload(t.files[0], sid, 1600).then(function(u){ S.ed.img = u + (D.LOCAL ? '' : ''); toast('PHOTO ADDED'); editor(); }).catch(function(m){ toast(typeof m === 'string' ? m : 'UPLOAD FAILED', true); }); }
-    if(t.matches('[data-gfile]') && t.files[0] && S.gp){ var p = S.gp, b = by(); toast('UPLOADING…'); upload(t.files[0], 'p' + p.id, 1600).then(function(u){ return update('pgfx', function(cur){ cur.map = cur.map || {}; cur.map[p.id] = { url:u, n:p.n, at:Date.now(), by:b.by, mid:b.mid }; }, 'GRAPHIC SAVED'); }).then(function(){ S.gp = null; draw(); }).catch(function(m){ toast(typeof m === 'string' ? m : 'UPLOAD FAILED', true); }); }
+    if((t.matches('[data-phnew]') || t.matches('[data-phrep]')) && t.files[0]){ var isNew = t.matches('[data-phnew]'), pid = isNew ? uid('p') : (S.pe.iid || uid('p')); if(!isNew) readPh(); toast('UPLOADING…');
+      upload(t.files[0], pid, 1800).then(function(u){ if(isNew) S.pe = { id:pid, iid:pid, url:u, cap:'', players:[], teams:[] }; else { S.pe.url = u; S.pe.iid = pid; } toast('NOW TAG IT AND POST'); draw(); }).catch(function(m){ toast(typeof m === 'string' ? m : 'UPLOAD FAILED', true); }); }
   });
+  // shared with the trade maker
+  D.pressDesk = { players:players, find:find, upload:upload, update:update, by:by, toast:toast, uid:uid, mine:function(){ return S.me; }, reload:function(){ S.pe = null; location.hash = '#gfx'; } };
 })();

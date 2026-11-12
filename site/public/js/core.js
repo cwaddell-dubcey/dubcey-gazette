@@ -680,13 +680,42 @@
   var PRESS = null;
   D.press = function(){
     if(!PRESS) PRESS = Promise.all([D.content('stories'), D.content('hits'), D.content('pgfx')]).then(function(r){
-      var st = (r[0] && r[0].items) || [], hi = (r[1] && r[1].items) || [], gx = (r[2] && r[2].map) || {};
+      var st = (r[0] && r[0].items) || [], hi = (r[1] && r[1].items) || [], ph = D.photoList(r[2]), by = {};
       st = st.filter(function(x){ return !x.draft; }).sort(function(a, b){ return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || b.at - a.at; });
       hi = hi.filter(function(x){ return !x.exp || x.exp > Date.now(); }).sort(function(a, b){ return b.at - a.at; });
-      return { stories:st, hits:hi, gfx:gx };
-    }).catch(function(){ return { stories:[], hits:[], gfx:{} }; });
+      ph.forEach(function(x){ (x.players || []).forEach(function(q){ (by[q.id] = by[q.id] || []).push(x); }); });
+      return { stories:st, hits:hi, photos:ph, gfx:by };
+    }).catch(function(){ return { stories:[], hits:[], photos:[], gfx:{} }; });
     return PRESS;
   };
+  // press photos (trade graphics, edits, anything): { items:[{ id, url, cap, players:[{id,n}], teams:[], at, by, mid }] }; older single-graphic map still read
+  D.photoList = function(raw){
+    raw = raw || {}; var L = (raw.items || []).slice();
+    Object.keys(raw.map || {}).forEach(function(pid){ var g = raw.map[pid]; if(g && g.url) L.push({ id:'old' + pid, url:g.url, cap:'', players:[{ id:pid, n:g.n || '' }], teams:[], at:g.at || 0, by:g.by || '', mid:g.mid || '' }); });
+    return L.sort(function(a, b){ return b.at - a.at; });
+  };
+  // a row of photo thumbnails; tapping one opens the viewer with the whole row
+  D.photoStrip = function(L, cls){
+    if(!L || !L.length) return '';
+    var set = L.map(function(x){ return x.id; }).join(',');
+    return '<div class="phs' + (cls ? ' ' + cls : '') + '" data-pset="' + D.esc(set) + '">' + L.map(function(x){ return '<button type="button" class="phx" data-photo="' + D.esc(x.id) + '"><img src="' + D.esc(D.pressImg(x.url)) + '" alt="" loading="lazy">' + (x.cap ? '<span>' + D.esc(x.cap) + '</span>' : '') + '</button>'; }).join('') + '</div>';
+  };
+  D.openPhotos = function(ids, id){
+    D.press().then(function(P){
+      var L = (ids && ids.length ? ids.map(function(k){ return P.photos.filter(function(x){ return x.id === k; })[0]; }).filter(Boolean) : P.photos), i = Math.max(0, L.map(function(x){ return x.id; }).indexOf(id));
+      if(!L.length) return;
+      var v = document.createElement('div'); v.className = 'phv'; document.body.appendChild(v); document.documentElement.classList.add('nos');
+      function tags(x){ return (x.teams || []).map(function(t){ return D.NAME[t] ? '<a class="ptag" href="' + D.href('teams', 'f=' + t) + '"><img src="' + D.helm(t) + '" alt="">' + D.esc(D.SHORT[t]) + '</a>' : ''; }).join('') + (x.players || []).map(function(q){ return '<a class="ptag pl" href="#" data-card="' + D.esc(q.id) + '">' + D.esc(q.n) + '</a>'; }).join(''); }
+      function show(){ var x = L[i];
+        v.innerHTML = '<button type="button" class="phc" data-x aria-label="Close">\u00d7</button>' + (L.length > 1 ? '<button type="button" class="phn pv" data-pv aria-label="Previous">\u2039</button><button type="button" class="phn nx" data-nx aria-label="Next">\u203a</button>' : '') +
+          '<figure><img src="' + D.esc(D.pressImg(x.url)) + '" alt="' + D.esc(x.cap || 'Press photo') + '"><figcaption>' + (x.cap ? '<b>' + D.esc(x.cap) + '</b>' : '') + '<span class="mono">' + D.esc(String(x.by || 'DUBCEY MEDIA').toUpperCase()) + ' \u00b7 ' + ago(x.at) + (L.length > 1 ? ' \u00b7 ' + (i + 1) + ' / ' + L.length : '') + '</span><div class="phtg">' + tags(x) + '</div></figcaption></figure>'; }
+      function close(){ v.remove(); if(!document.querySelector('.pstv,#pcard:not([hidden])')) document.documentElement.classList.remove('nos'); document.removeEventListener('keydown', key); }
+      function key(e){ if(e.key === 'Escape') close(); if(e.key === 'ArrowRight' && L.length > 1){ i = (i + 1) % L.length; show(); } if(e.key === 'ArrowLeft' && L.length > 1){ i = (i + L.length - 1) % L.length; show(); } }
+      v.addEventListener('click', function(e){ var t = e.target; if(t === v || t.closest('[data-x]') || t.closest('[data-card]') || (t.tagName === 'FIGURE')) close(); else if(t.closest('[data-nx]')){ i = (i + 1) % L.length; show(); } else if(t.closest('[data-pv]')){ i = (i + L.length - 1) % L.length; show(); } });
+      document.addEventListener('keydown', key); show();
+    });
+  };
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-photo]'); if(!b || b.closest('.pdg')) return; e.preventDefault(); var c = b.closest('[data-pset]'); D.openPhotos(c ? c.getAttribute('data-pset').split(',') : null, b.getAttribute('data-photo')); });
   D.pressImg = function(u){ return D.LOCAL && /^dcImg:/.test(u || '') ? (localStorage.getItem(u) || '') : u || ''; };
   function ago(t){ var m = (Date.now() - t) / 6e4; if(m < 60) return Math.max(1, Math.round(m)) + 'M AGO'; if(m < 1440) return Math.round(m / 60) + 'H AGO'; if(m < 10080) return Math.round(m / 1440) + 'D AGO'; return new Date(t).toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase(); }
   D.ago = ago;
@@ -720,6 +749,8 @@
       var q = document.getElementById('qhits'); if(q) q.innerHTML = D.hitsHTML(P.hits);
       var sec = document.getElementById('pressSec'), box = document.getElementById('press');
       if(sec && box && P.stories.length){ var L = P.stories.slice(0, o.n || 99); box.innerHTML = L.map(function(s, i){ return D.storyCard(s, o.n && i > 0); }).join(''); sec.hidden = false; }
+      var ps = document.getElementById('photoSec'), pb = document.getElementById('photos');
+      if(ps && pb && P.photos.length){ pb.innerHTML = D.photoStrip(P.photos.slice(0, o.np || 24)); ps.hidden = false; }
       var m = /[?&]s=([^&]+)/.exec(location.search); if(o.open && m) D.openStory(decodeURIComponent(m[1]));
       if(o.open && location.hash === '#press' && sec && !sec.hidden) sec.scrollIntoView();
       return P;

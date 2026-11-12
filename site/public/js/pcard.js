@@ -51,7 +51,7 @@
   D.openCard = function(id){
     S.id = id; S.tab = 'news'; S.d = { id:id, load:1 };
     el(); document.documentElement.classList.add('nos'); draw();
-    D.press().then(function(P){ if(S.id !== id) return; var g = P.gfx[id]; S.d.gfx = g ? D.pressImg(g.url) : ''; S.d.gfxBy = g ? g.by : ''; S.d.press = P.stories.filter(function(s){ return (s.players || []).some(function(p){ return p.id === id; }); }); if(S.d.gfx || S.d.press.length) draw(); });
+    D.press().then(function(P){ if(S.id !== id) return; S.d.photos = P.gfx[id] || []; S.d.press = P.stories.filter(function(s){ return (s.players || []).some(function(p){ return p.id === id; }); }); if(S.d.photos.length || S.d.press.length) draw(); });
     Promise.all([D.me(), D.api('rosters').catch(no), D.api('liveScoring').catch(no), D.api('injuries', 'r=2').catch(no), D.players([id]), D.api('nflSchedule').catch(no)]).then(function(r){
       if(S.id !== id) return;
       var me = r[0] || {}, d = S.d, i = D.pinfo(id);
@@ -135,8 +135,7 @@
     v.innerHTML = '<button type="button" class="wvx" data-pcx aria-label="Close">\u00d7</button>' +
       '<div class="pct2"><div class="pph">' + (photo ? '<img src="' + esc(photo) + '" alt="" onerror="this.onerror=null;this.src=\'' + D.nflLogo(d.team) + '\';this.className=\'lg\'">' : '') + '</div>' +
       '<div class="pin"><div class="kick mono">' + [d.pos ? '<span class="pos ' + esc(d.pos) + '">' + esc(d.pos) + '</span>' : '', d.team ? D.tlogo(d.team) + esc(d.team) : ''].filter(Boolean).join(' ') + (d.inj ? ' <span class="ij mono">' + esc(d.inj) + '</span>' : '') + '</div>' +
-      '<h2>' + esc(d.name || 'Loading\u2026') + '</h2>' + own + '</div></div>' +
-      (d.gfx ? '<div class="pgfx"><img src="' + esc(d.gfx) + '" alt=""><span class="mono">' + D.esc(String(d.gfxBy || 'RDPC').toUpperCase()) + ' \u00b7 DUBCEY MEDIA</span></div>' : '') +
+      '<h2>' + esc(d.name || 'Loading\u2026') + '</h2>' + own + '</div>' + (d.photos && d.photos.length ? '<div class="pcph" data-pset="' + esc(d.photos.map(function(x){ return x.id; }).join(',')) + '"><button type="button" data-photo="' + esc(d.photos[0].id) + '"><img src="' + esc(D.pressImg(d.photos[0].url)) + '" alt=""><span class="mono">' + (d.photos.length > 1 ? d.photos.length + ' PRESS PHOTOS' : 'PRESS PHOTO') + '</span></button></div>' : '') + '</div>' +
       '<div class="pstat">' + box(d.wk, d.week ? 'WEEK ' + d.week : 'WEEK', live) + box(d.proj, 'PROJ') + box(d.ytd, 'SEASON') + box(d.avg, 'AVG') + '</div>' +
       (ln.length ? '<div class="pline mono">' + ln.join(' \u00b7 ') + '</div>' : '') +
       '<div class="pact">' + acts() + '</div>' +
