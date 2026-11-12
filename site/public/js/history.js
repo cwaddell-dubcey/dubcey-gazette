@@ -428,7 +428,7 @@
   var RSORT = [['st', 'STARTS'], ['wk', 'WEEKS'], ['sp', 'POINTS'], ['tm', 'TEAMS'], ['yr', 'SEASONS']];
   function rvLoad(){
     if(RV || RVL) return; RVL = 1;
-    Promise.all([fetch('data/rosters.json?v=20261109a').then(function(r){ return r.json(); }), D.seasonCards()]).then(function(X){ var j = D.mergeSeason(X[0], X[1]); RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
+    Promise.all([fetch('data/rosters.json?v=20261112b').then(function(r){ return r.json(); }), D.seasonCards()]).then(function(X){ var j = D.mergeSeason(X[0], X[1]); RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
       .catch(function(){ RVL = 0; if(S.tab === 'rosters') $('hb').innerHTML = '<div class="ld mono">COULDN’T OPEN THE ROSTER VAULT.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   function rvName(n, pos){ var m = /^(.*?),\s*(.*)$/.exec(String(n)); return m ? m[2] + ' ' + m[1] : String(n); }
