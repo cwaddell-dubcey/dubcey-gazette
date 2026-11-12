@@ -7,7 +7,7 @@
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
-  fetch('data/history.json?v=20261015a').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); live(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.</div>'; });
+  fetch('data/history.json?v=20261015a').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); live(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 
   // lineup-based extras (bench blunders, Mount Rushmore, every-era player records), built from data/cards
   var EX = null;
@@ -16,13 +16,27 @@
   // the file is refreshed now and then; add this season's finished weeks it doesn't have yet (regular season only)
   function live(){
     var have = {}; H.games.forEach(function(g){ if(g[0] === +D.Y) have[g[1]] = 1; });
-    D.doneWeek().then(function(d){ var ws = []; for(var w = 1; w <= Math.min(d.w, 13); w++) if(!have[w]) ws.push(w); return Promise.all(ws.map(function(w){ return D.week(w).then(function(L){ return { w:w, L:L }; }); })); }).then(function(R){
-      var add = 0;
-      R.forEach(function(x){ x.L.forEach(function(t){ if(t.id > t.opp || !t.opp || !(t.s > 0)) return; var o = x.L.filter(function(y){ return y.id === t.opp; })[0]; if(!o) return;
-        H.games.push([+D.Y, x.w, t.id, o.id, t.s, o.s]); add++;
-        [[t, o], [o, t]].forEach(function(p){ var T = H.team[p[0].id]; if(!T) return; var r = T.h2h[p[1].id] = T.h2h[p[1].id] || [0, 0, 0, 0, 0]; if(p[0].s > p[1].s) r[0]++; else if(p[0].s < p[1].s) r[1]++; else r[2]++; r[3] += p[0].s; r[4] += p[1].s; }); }); });
-      if(add){ H.games.sort(function(x, y){ return x[0] - y[0] || x[1] - y[1]; }); if(S.tab === 'h2h' || S.tab === 'teams') draw(); }
-    }).catch(function(){});
+    var KEY = 'dcLiveG' + D.Y;
+    function addWeek(w, L){ var add = 0;
+      L.forEach(function(t){ if(t.id > t.opp || !t.opp || !(t.s > 0)) return; var o = L.filter(function(y){ return y.id === t.opp; })[0]; if(!o) return;
+        H.games.push([+D.Y, w, t.id, o.id, t.s, o.s]); add++;
+        [[t, o], [o, t]].forEach(function(p){ var T = H.team[p[0].id]; if(!T) return; var r = T.h2h[p[1].id] = T.h2h[p[1].id] || [0, 0, 0, 0, 0]; if(p[0].s > p[1].s) r[0]++; else if(p[0].s < p[1].s) r[1]++; else r[2]++; r[3] += p[0].s; r[4] += p[1].s; }); });
+      if(add) have[w] = 1; return add; }
+    function redraw(){ H.games.sort(function(x, y){ return x[0] - y[0] || x[1] - y[1]; }); if(S.tab === 'h2h' || S.tab === 'teams') draw(); }
+    // show last visit's results right away, then refresh from MFL
+    var C = null; try { C = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){}
+    if(C && C.w){ var n0 = 0; Object.keys(C.w).forEach(function(w){ if(!have[w]) n0 += addWeek(+w, C.w[w]); }); if(n0) redraw(); }
+    var save = (C && C.w) || {};
+    S.liveBusy = true;
+    D.doneWeek().then(function(d){ var ws = []; for(var w = 1; w <= Math.min(d.w, 13); w++) if(!have[w]) ws.push(w);
+      // each week on its own, so one slow or failed week doesn't throw away the rest
+      return Promise.all(ws.map(function(w){ return D.week(w).then(function(L){ return { w:w, L:L }; }).catch(function(){ return null; }); })); }).then(function(R){
+      var add = 0; R.forEach(function(x){ if(!x || !x.L || !x.L.length) return; var a = addWeek(x.w, x.L); if(a){ add += a; save[x.w] = x.L.map(function(t){ return { id:t.id, opp:t.opp, s:t.s }; }); } });
+      try { localStorage.setItem(KEY, JSON.stringify({ w:save })); } catch(e){}
+      S.liveBusy = false; if(add) redraw(); else if(S.tab === 'teams') draw();
+      // MFL sometimes refuses a burst of requests; try the missing weeks once more a few seconds later
+      if(R.some(function(x){ return !x || !x.L || !x.L.length; }) && !S.liveRetry){ S.liveRetry = 1; setTimeout(live, 4000); }
+    }).catch(function(){ S.liveBusy = false; if(S.tab === 'teams') draw(); });
   }
 
   /* ---------- rivalries: every pair of current franchises, from the game log ---------- */
@@ -93,7 +107,7 @@
     L.forEach(function(e){ var r = String(e[1]).split('-'), a = +r[0], b = +(r[1] || r[0]); if(y >= a && y <= b) nm = e[0]; }); return nm ? s.replace(/Bad Hombres(?!\))/g, nm) : s; }
   function rowYr(r, yc, ty){ if(yc > -1) return r[yc]; if(ty) return ty; for(var i = 0; i < r.length; i++){ var m = /^((19|20)\d{2})(,|$)/.exec(String(r[i])); if(m) return m[1]; } return ''; }
   function hl(n, y){ y = +y || 0; if(/^Bad Hombres\b/i.test(n) && !(y && (y < 2017 || y > 2020))) return 'h/helmet-badhombres.webp'; return hl0(n); }
-  function hl0(n){ if(/^Alcoholic All-?Stars\b/i.test(n)) return 'h/helmet-alcoholic.webp'; if(/^Bad Newz Karens\b/i.test(n)) return 'h/helmet-karens.webp'; if(/^Bad Newz Kennels\b/i.test(n)) return 'h/helmet-kennels.webp'; if(/^Luck\/Wayne Enterprises\b/i.test(n)) return 'h/helmet-luckwayne.webp'; if(/^Pick (A|a) Switch\b/i.test(n)) return 'h/helmet-pickaswitch.webp'; if(/^Bath Salt Zombies\b/i.test(n)) return 'h/helmet-bathsalt.webp'; if(/^Gotham Rogues\b/i.test(n)) return 'h/helmet-gotham.webp'; if(/^Boats ['\u2019]?n['\u2019]? Hoes\b/i.test(n)) return 'h/helmet-boatsnhoes.webp'; if(/^(The )?Medieval Midgets\b/i.test(n)) return 'h/helmet-midgets.webp'; if(/^(The )?Roman Eagles\b/i.test(n)) return 'h/helmet-romaneagles.webp'; if(/^(The )?Little Asian Kids\b/i.test(n)) return 'h/helmet-asiankids.webp'; if(/^(The )?Jumping Drews\b/i.test(n)) return 'h/helmet-jumpingdrews.webp'; if(/^Outlaws\b/i.test(n)) return 'h/helmet-outlaws.webp'; if(/^The Box Socials\b/i.test(n)) return 'h/helmet-boxsocials.webp'; if(/^18th Street Gangsters\b/i.test(n)) return 'h/helmet-18street.webp'; if(/^River Terrace Crew\b/i.test(n)) return 'h/helmet-rtc.webp'; if(/^The Fighting Moose\b/i.test(n)) return 'h/helmet-moose.webp'; if(/^Swinging G-String\b/i.test(n)) return 'h/helmet-swingin.webp'; if(/^Team Remix\b/i.test(n)) return 'h/helmet-teamremix.webp'; if(/^Gnomes in Disguise\b/i.test(n)) return 'h/helmet-gnomes.webp'; if(/^Bojangles Jive Turkeys\b/i.test(n)) return 'h/helmet-bojangles.webp'; if(/^Bushw?h?ackers\b/i.test(n)) return 'h/helmet-bushwhackers.webp'; if(/^Radioactive Rats\b/i.test(n)) return 'h/helmet-rats.webp'; if(/^10\.5 Inch\b/i.test(n)) return 'h/helmet-105inch.webp'; if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.webp'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.webp'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.webp'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.webp'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.webp'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.webp'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.webp'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.webp'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.webp'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.webp'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.webp'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.webp'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
+  function hl0(n){ if(/^Alcoholic All-?Stars\b/i.test(n)) return 'h/helmet-alcoholic.webp'; if(/^Bad Newz Karens\b/i.test(n)) return 'h/helmet-karens.webp'; if(/^Bad Newz Kennels\b/i.test(n)) return 'h/helmet-kennels.webp'; if(/^Luck\/Wayne Enterprises\b/i.test(n)) return 'h/helmet-luckwayne.webp'; if(/^Pick (A|a) Switch\b/i.test(n)) return 'h/helmet-pickaswitch.webp'; if(/^Bath Salt Zombies\b/i.test(n)) return 'h/helmet-bathsalt.webp'; if(/^Gotham Rogues\b/i.test(n)) return 'h/helmet-gotham.webp'; if(/^Boats ['\u2019]?n['\u2019]? Hoes\b/i.test(n)) return 'h/helmet-boatsnhoes.webp'; if(/^(The )?Medieval Midgets\b/i.test(n)) return 'h/helmet-midgets.webp'; if(/^(The )?Roman Eagles\b/i.test(n)) return 'h/helmet-romaneagles.webp'; if(/^(The )?Little Asian Kids\b/i.test(n)) return 'h/helmet-asiankids.webp'; if(/^Wishard Gun\b/i.test(n)) return 'h/helmet-wishard.webp'; if(/^(The )?Jumping Drews\b/i.test(n)) return 'h/helmet-jumpingdrews.webp'; if(/^Outlaws\b/i.test(n)) return 'h/helmet-outlaws.webp'; if(/^The Box Socials\b/i.test(n)) return 'h/helmet-boxsocials.webp'; if(/^18th Street Gangsters\b/i.test(n)) return 'h/helmet-18street.webp'; if(/^River Terrace Crew\b/i.test(n)) return 'h/helmet-rtc.webp'; if(/^The Fighting Moose\b/i.test(n)) return 'h/helmet-moose.webp'; if(/^Swinging G-String\b/i.test(n)) return 'h/helmet-swingin.webp'; if(/^Team Remix\b/i.test(n)) return 'h/helmet-teamremix.webp'; if(/^Gnomes in Disguise\b/i.test(n)) return 'h/helmet-gnomes.webp'; if(/^Bojangles Jive Turkeys\b/i.test(n)) return 'h/helmet-bojangles.webp'; if(/^Bushw?h?ackers\b/i.test(n)) return 'h/helmet-bushwhackers.webp'; if(/^Radioactive Rats\b/i.test(n)) return 'h/helmet-rats.webp'; if(/^10\.5 Inch\b/i.test(n)) return 'h/helmet-105inch.webp'; if(/Endzone Molesters/i.test(n)) return 'h/helmet-endzone.webp'; if(/Prostate Playaz/i.test(n)) return 'h/helmet-prostate.webp'; if(/Grundle Lickers/i.test(n)) return 'h/helmet-grundle.webp'; if(/Super Hero Rescue Squadron/i.test(n)) return 'h/helmet-superhero.webp'; if(/High Octane Bohemoths/i.test(n)) return 'h/helmet-hob.webp'; if(/Cascadia Wet Bandidos/i.test(n)) return 'h/helmet-cascadia.webp'; if(/Naptown Ryderz/i.test(n)) return 'h/helmet-naptown.webp'; if(/Little Executive Rough Riders/i.test(n)) return 'h/helmet-lerr.webp'; if(/Shaved Beavers/i.test(n)) return 'h/helmet-shavedbeavers.webp'; if(/^(Big Pimpin['\u2019]? Pirates|BPP)\b/i.test(String(n).trim())) return 'h/helmet-bpp.webp'; if(/^F\.?I\.?G\.?A\.?\b/i.test(n)) return 'h/helmet-figa.webp'; if(/^God['\u2019]s Little Miracles(?!\s*\()/i.test(n)) return 'h/helmet-glm.webp'; var id = idOf(n); return id ? D.helm(id) : n === 'DD Allstars' ? 'h/helmet-ddallstars.webp' : 'h/logo.webp'; }
   function now(n){ var id = idOf(n); return id && D.NAME[id] !== n ? D.NAME[id] : ''; }
   function rec(a){ return a[0] + '-' + a[1] + (a[2] ? '-' + a[2] : ''); }
   function pct(a){ var g = a[0] + a[1] + a[2]; return g ? ((a[0] + a[2] / 2) / g).toFixed(3).replace(/^0/, '') : '\u2013'; }
@@ -186,8 +200,8 @@
       '<div class="tled"><div class="lh"><span class="t">Season by Season</span><a class="btn ghost2" href="#h2h/' + id + '">HEAD-TO-HEAD \u2192</a></div><div class="sx">' +
       '<table class="ht"><thead><tr><th>YEAR</th><th class="l">TEAM NAME</th><th>W-L</th><th>PCT</th><th>PF</th><th>PA</th><th>SEED</th><th>PLAYOFFS</th><th class="l">NOTES</th></tr></thead><tbody>' +
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]), yy = +s[0], G = seasonGames(id, yy), op = G.length && S.xy === yy;
-        if(yy === +D.Y && G.length) s = curSeason(s, G);
-        return '<tr class="' + (ch ? 'gold' : '') + (G.length ? ' ck2 xyr' : '') + (op ? ' xon' : '') + '"' + (G.length ? ' data-xy="' + yy + '" title="Week by week"' : '') + '><td class="y">' + (G.length ? '<i class="xcar">' + (op ? '\u25be' : '\u25b8') + '</i>' : '') + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + notes(s[7]) + '</td></tr>' + (op ? weekRows(id, yy, G, s) : '');
+        if(yy === +D.Y && G.length) s = curSeason(s, G); var upd = yy === +D.Y && S.liveBusy;
+        return '<tr class="' + (ch ? 'gold' : '') + (G.length ? ' ck2 xyr' : '') + (op ? ' xon' : '') + '"' + (G.length ? ' data-xy="' + yy + '" title="Week by week"' : '') + '><td class="y">' + (G.length ? '<i class="xcar">' + (op ? '\u25be' : '\u25b8') + '</i>' : '') + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + (upd ? '<span class="xupd mono">UPDATING\u2026</span>' : '') + notes(s[7]) + '</td></tr>' + (op ? weekRows(id, yy, G, s) : '');
       }).join('') + '</tbody></table></div></div></div>' + evo + rushmore(id);
     fitWeeks();
   }
@@ -352,12 +366,17 @@
   function defunct(){
     var L = defunctList();
     $('hb').innerHTML = '<div class="dfh mono"><span>' + L.length + ' FRANCHISES</span><span>GONE BUT NOT FORGOTTEN</span></div><div class="dfg">' + L.map(function(o){
-      var img = hl(o.n, o.y[0]), none = /logo\.webp$/.test(img);
-      return '<article class="dfc"><div class="dfi' + (none ? ' none' : '') + '">' + (none ? '<span class="mono">HELMET WANTED</span>' : '<img src="' + img + '" alt="">') + '</div><div class="dfb">' +
+      // every name the franchise used, oldest first, each with its own helmet
+      var akaY = [], eras = Object.keys(o.aka).map(function(k){ var ys = o.aka[k].filter(function(y, i, l){ return l.indexOf(y) === i; }).sort(); akaY = akaY.concat(ys); return { n:k, y:ys }; });
+      var mainY = o.y.filter(function(y){ return akaY.indexOf(y) < 0; }); eras.push({ n:o.n, y:mainY.length ? mainY : o.y, cur:1 }); eras.sort(function(a, b){ return a.y[0] - b.y[0]; });
+      var pic = function(e){ var im = hl(e.n, e.y[0]); return /logo\.webp$/.test(im) ? '' : im; }, img = pic(eras[eras.length - 1]), none = !img, multi = eras.length > 1;
+      var head = multi ? '<div class="dfi dfm">' + eras.map(function(e){ var im = pic(e); return '<div class="dfe' + (e.cur ? ' cur' : '') + '" title="' + esc(e.n) + '">' + (im ? '<img src="' + im + '" alt="" loading="lazy">' : '<span class="dfw mono">?</span>') + '<i class="mono">' + span(e.y) + '</i></div>'; }).join('<b class="dfar">\u2192</b>') + '</div>'
+        : '<div class="dfi' + (none ? ' none' : '') + '">' + (none ? '<span class="mono">HELMET WANTED</span>' : '<img src="' + img + '" alt="">') + '</div>';
+      return '<article class="dfc">' + head + '<div class="dfb">' +
         '<div class="mono dfy">' + span(o.y) + ' \u00b7 ' + o.y.length + (o.y.length === 1 ? ' SEASON' : ' SEASONS') + '</div><h3>' + esc(o.n) + '</h3>' +
         (o.ti ? '<div class="dft">' + o.ti.map(function(y){ return '<span class="mono">\u2605 ' + y + '</span>'; }).join('') + '</div>' : '') +
         '<div class="dfs"><div><b>' + rec([o.w, o.l, o.t]) + '</b><span class="mono">RECORD</span></div><div><b>' + pct([o.w, o.l, o.t]) + '</b><span class="mono">PCT</span></div><div><b>' + Math.round(o.pf).toLocaleString('en-US') + '</b><span class="mono">PF</span></div></div>' +
-        (Object.keys(o.aka).length ? '<div class="dfa"><span class="mono">ALSO KNOWN AS</span>' + Object.keys(o.aka).map(function(a){ var ys = o.aka[a].filter(function(y, i, l){ return l.indexOf(y) === i; }).sort(); return '<div><b>' + esc(a) + '</b><i class="mono">' + span(ys) + '</i></div>'; }).join('') + '</div>' : '') +
+        (Object.keys(o.aka).length ? '<div class="dfa"><span class="mono">ALSO KNOWN AS</span>' + Object.keys(o.aka).map(function(a){ var ys = o.aka[a].filter(function(y, i, l){ return l.indexOf(y) === i; }).sort(), im = hl(a, ys[0]); return '<div>' + (/logo\.webp$/.test(im) ? '<span class="dfat hw">?</span>' : '<img class="dfat" src="' + im + '" alt="" loading="lazy">') + '<b>' + esc(a) + '</b><i class="mono">' + span(ys) + '</i></div>'; }).join('') + '</div>' : '') +
         (o.y.length > 1 && o.best ? '<div class="mono dfx">BEST \u00b7 ' + o.best.y + ' \u00b7 ' + o.best.rec + '</div>' : '') + '</div></article>';
     }).join('') + '</div>';
   }
@@ -410,7 +429,7 @@
   function rvLoad(){
     if(RV || RVL) return; RVL = 1;
     Promise.all([fetch('data/rosters.json?v=20261109a').then(function(r){ return r.json(); }), D.seasonCards()]).then(function(X){ var j = D.mergeSeason(X[0], X[1]); RV = rvPrep(j); if(S.tab === 'rosters') rosters(); })
-      .catch(function(){ RVL = 0; if(S.tab === 'rosters') $('hb').innerHTML = '<div class="ld mono">COULDN’T OPEN THE ROSTER VAULT.</div>'; });
+      .catch(function(){ RVL = 0; if(S.tab === 'rosters') $('hb').innerHTML = '<div class="ld mono">COULDN’T OPEN THE ROSTER VAULT.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   function rvName(n, pos){ var m = /^(.*?),\s*(.*)$/.exec(String(n)); return m ? m[2] + ' ' + m[1] : String(n); }
   function rvPos(p){ p = String(p || '').toUpperCase(); return p === 'D/ST' || p === 'DST' ? 'DEF' : p === 'K' ? 'PK' : p; }

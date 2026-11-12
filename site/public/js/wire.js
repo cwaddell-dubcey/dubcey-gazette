@@ -26,7 +26,7 @@
   }
   function nm(l){ return l.map(function(id){ var a = asset(id); return a || '<span class="pk" data-card="' + esc(id) + '">' + esc(D.pinfo(id)[0]) + '</span>' + D.ij(id); }).join(', '); }
   function report(){
-    if(!S.wm){ $('feed').innerHTML = '<div class="ld mono">LOADING THE WAIVER REPORT\u2026</div>'; D.waiverReport(S.run).then(function(m){ S.wm = m; if(S.f === 'REPORT') report(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WAIVER REPORT ISN\u2019T AVAILABLE RIGHT NOW.</div>'; }); return; }
+    if(!S.wm){ $('feed').innerHTML = '<div class="ld mono">LOADING THE WAIVER REPORT\u2026</div>'; D.waiverReport(S.run).then(function(m){ S.wm = m; if(S.f === 'REPORT') report(); }).catch(function(){ $('feed').innerHTML = '<div class="ld mono">THE WAIVER REPORT ISN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; }); return; }
     var m = S.wm;
     $('feed').innerHTML = '<div class="bar mono"><span>THE WAIVER REPORT' + (S.team ? ' \u00b7 ' + esc(D.SHORT[S.team]).toUpperCase() : '') + '</span>' + (m.runs.length > 1 ? '<select id="wrun" class="mono">' + m.runs.map(function(x){ return '<option value="' + esc(x.v) + '"' + (x.v === m.run ? ' selected' : '') + '>' + esc(x.t.replace(/(\d+:\d+):\d+/, '$1')) + '</option>'; }).join('') + '</select>' : '<span>' + esc(m.label) + '</span>') + '</div>' + D.waiverFull(m, S.team);
   }

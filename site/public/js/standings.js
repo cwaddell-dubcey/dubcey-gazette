@@ -130,5 +130,5 @@
           x.o.slice(0, 5).map(function(p){ return '<span title="Week ' + p[0] + ': ' + esc(D.NAME[p[1]]) + '"><img src="' + helm(p[1]) + '" alt=""><i class="mono">W' + p[0] + '</i></span>'; }).join('') + '</div></div>';
       }).join('');
     } else $('sos').hidden = true;
-  }).catch(function(){ $('tbl').innerHTML = '<div class="ld mono">STANDINGS AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+  }).catch(function(){ $('tbl').innerHTML = '<div class="ld mono">STANDINGS AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 })();

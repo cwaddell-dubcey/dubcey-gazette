@@ -172,10 +172,23 @@
   // data calls wait for team names, but only up to 0.6 s for the injury list (badges fill in when it lands)
   var INJW = Promise.race([D.injReady, new Promise(function(r){ setTimeout(r, 600); })]);
   D.api = function(t, q){ return Promise.all([D.teamsReady, INJW]).then(function(){ return api(t, q); }); };
-  function api(t, q){
+  // no more than 4 MFL calls at a time from one page, so a busy page can't trip MFL's too-many-requests limit
+  var INF = 0, QUE = [];
+  function slot(){ return new Promise(function(r){ if(INF < 4){ INF++; r(); } else QUE.push(r); }); }
+  function done(){ var n = QUE.shift(); if(n) n(); else INF--; }
+  function api(t, q){ if(D.LOCAL) return api0(t, q); return slot().then(function(){ return api0(t, q).then(function(v){ done(); return v; }, function(e){ done(); throw e; }); }); }
+  function api0(t, q){
     if(D.LOCAL) return fetch('demo/' + t + '.json').then(function(r){ if(!r.ok) throw 0; return r.json(); });
-    return fetch('/api/' + t + (q ? '?' + q : ''), { credentials:'same-origin', cache:'no-cache' }).then(function(r){ if(!r.ok) throw r.status; return r.json(); });
+    var url = '/api/' + t + (q ? '?' + q : '');
+    // give up on a slow answer after 15 seconds, and quietly try once more before the page shows an error
+    function once(){
+      var c = window.AbortController ? new AbortController() : null, tm = c ? setTimeout(function(){ c.abort(); }, 15000) : 0;
+      return fetch(url, { credentials:'same-origin', cache:'no-cache', signal:c ? c.signal : undefined }).then(function(r){ clearTimeout(tm); if(!r.ok) throw r.status; return r.json(); }, function(e){ clearTimeout(tm); throw e; });
+    }
+    return once().catch(function(e){ if(e === 401 || e === 403 || e === 404) throw e; return new Promise(function(r){ setTimeout(r, 900); }).then(once); });
   }
+  // "TRY AGAIN" on any load error reloads the page
+  document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-reload]')) location.reload(); });
   // write actions (lineups, waivers, trades…) — owner must be signed in
   D.act = function(t, body){
     if(D.LOCAL) return Promise.resolve({ ok:true, demo:true });
@@ -259,7 +272,7 @@
         });
       });
       return out;
-    }).catch(function(){ return []; });
+    }).catch(function(){ delete WKR[w]; return []; });  // don't remember a failed lookup; the next call tries again
     return WKR[w];
   };
   // the week fans should see by default: last week until Tuesday 8 p.m. ET, then the coming week
@@ -504,7 +517,13 @@
     if(s == null){ for(var k in c.o){ if(k.split('|')[0] === nm){ s = c.o[k]; break; } } }
     return s && s !== 'NO STATS' ? s : '';
   };
+  // a whole week is one MFL call for every player who scored, shared by every page and player card
+  var WSC = {};
   D.scores = function(w, ids){
+    if(/^\d+$/.test(String(w))){
+      var k = String(w); WSC[k] = WSC[k] || D.api('playerScores', 'W=' + w + '&YEAR=' + D.Y).then(function(j){ var o = {}; D.arr(j && j.playerScores && j.playerScores.playerScore).forEach(function(s){ if(s.score !== '' && s.score != null) o[s.id] = D.num(s.score); }); return o; }).catch(function(){ delete WSC[k]; return null; });
+      return WSC[k].then(function(all){ var o = {}; if(all) ids.forEach(function(id){ if(id in all) o[id] = all[id]; }); return o; });
+    }
     var jobs = []; for(var i = 0; i < ids.length; i += 100) jobs.push(D.api('playerScores', 'W=' + w + '&YEAR=' + D.Y + '&PLAYERS=' + ids.slice(i, i + 100).join(',')).catch(function(){ return null; }));
     return Promise.all(jobs).then(function(rs){ var o = {}; rs.forEach(function(j){ D.arr(j && j.playerScores && j.playerScores.playerScore).forEach(function(s){ if(s.score !== '' && s.score != null) o[s.id] = D.num(s.score); }); }); return o; });
   };
@@ -560,10 +579,29 @@
 
   // ---------- header ----------
   var NAV = [['scores', 'SCORES'], ['nfl', 'NFL GAMES'], ['standings', 'STANDINGS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['players', 'PLAYERS'], ['wire', 'THE WIRE'], ['dispatch', 'DISPATCH'], ['history', 'HISTORY'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['myteam', 'MY TEAM'], ['ideas', 'SUGGESTION BOX'], ['clerk', 'CLERK\u2019S OFFICE']];
+  // top menu: six sections, most with a dropdown of their pages and tabs
+  var GROUPS = [
+    { t:'SCORES', p:['scores', 'nfl'], items:[['scores', 'LEAGUE SCORES'], ['nfl', 'NFL GAMES']] },
+    { t:'LEAGUE', p:['standings', 'schedule', 'teams'], items:[['standings', 'STANDINGS'], ['standings#power', 'POWER RANKINGS'], ['standings#odds', 'PLAYOFF ODDS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS']] },
+    { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
+    { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
+    { t:'HISTORY', p:['history'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#defunct', 'DEFUNCT']] },
+    { t:'CLUBHOUSE', p:['finances', 'rules', 'clerk', 'ideas'], items:[['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['ideas', 'SUGGESTION BOX']] },
+    { t:'MY TEAM', p:['myteam'], href:'myteam', cls:'ngmt' }
+  ];
+  function gHref(x){ var i = x.indexOf('#'); return i < 0 ? D.href(x) : D.href(x.slice(0, i)) + x.slice(i); }
+  function navHTML(active){
+    return GROUPS.map(function(g){ var on = g.p.indexOf(active) > -1;
+      if(!g.items) return '<div class="ng' + (g.cls ? ' ' + g.cls : '') + '"><a class="nt' + (on ? ' on' : '') + '" href="' + gHref(g.href) + '">' + g.t + '</a></div>';
+      return '<div class="ng"><a class="nt' + (on ? ' on' : '') + '" href="' + gHref(g.items[0][0]) + '" aria-haspopup="true">' + g.t + '<i class="car" aria-hidden="true">\u25be</i></a><div class="ndd" role="menu">' +
+        g.items.map(function(x){ var pg = x[0].split('#')[0], cur = pg === active && (x[0].indexOf('#') < 0 ? !location.hash || location.hash === '#' : location.hash.indexOf(x[0].slice(x[0].indexOf('#'))) === 0);
+          return '<a role="menuitem" class="' + (cur ? 'on' : '') + '" href="' + gHref(x[0]) + '">' + x[1] + '</a>'; }).join('') + '</div></div>';
+    }).join('');
+  }
   D.shell = function(active){
     var top = D.$('top');
     top.innerHTML = '<div class="in"><a class="brand" href="' + D.href('') + '" aria-label="Dubcey Chronicle home"><span class="bh"><img src="' + D.helm('x') + '" alt=""><span class="bp mono">EST. 2001</span></span><span class="wm"><b>Dubcey</b><span class="wmr"><span class="b26 mono">\u201926</span><i class="mono">Chronicle</i></span></span></a>' +
-      '<nav class="nav mono">' + NAV.map(function(n){ return '<a class="' + (n[0] === active ? 'on' : '') + (n[2] ? ' soon' : '') + '" href="' + D.href(n[0]) + '">' + n[1] + '</a>'; }).join('') + '</nav>' +
+      '<nav class="nav navg mono">' + navHTML(active) + '</nav>' +
       '<div class="who" id="who"></div></div>';
     mobileNav(active);
     return Promise.all([D.me(), D.teamsReady]).then(function(x){
@@ -592,12 +630,13 @@
       '<button type="button" class="' + (inMore ? 'on' : '') + '" data-more aria-expanded="false">' + ico('M4 7h16M4 12h16M4 17h16') + '<span>MORE</span></button>';
     var sh = document.createElement('div'); sh.id = 'msheet'; sh.className = 'msheet'; sh.hidden = true;
     sh.innerHTML = '<div class="msb"><div class="msh mono"><span>THE DUBCEY CHRONICLE · ’26</span><button type="button" data-close aria-label="Close">×</button></div>' +
-      '<div class="msg">' + NAV.map(function(n){ return '<a href="' + D.href(n[0]) + '" class="' + (n[0] === active ? 'on' : '') + '">' + n[1].replace('THE ', '') + '</a>'; }).join('') + '</div>' +
+      GROUPS.filter(function(g){ return g.items; }).map(function(g){ return '<div class="msgh mono">' + g.t + '</div><div class="msg">' + g.items.map(function(x){ var pg = x[0].split('#')[0]; return '<a href="' + gHref(x[0]) + '" class="' + (pg === active && x[0].indexOf('#') < 0 ? 'on' : '') + '">' + x[1].replace('THE ', '') + '</a>'; }).join('') + '</div>'; }).join('') +
+      '<div class="msgh mono">MORE</div><div class="msg"><a href="' + D.href('dispatch') + '" class="' + (active === 'dispatch' ? 'on' : '') + '">DISPATCH</a></div>' +
       '<div class="msme" id="msme"></div></div>';
     document.body.appendChild(bar); document.body.appendChild(sh); document.body.classList.add('hasmbar');
     function set(open){ sh.hidden = !open; bar.querySelector('[data-more]').setAttribute('aria-expanded', open ? 'true' : 'false'); document.documentElement.classList.toggle('mlock', open); }
     bar.querySelector('[data-more]').addEventListener('click', function(){ set(sh.hidden); });
-    sh.addEventListener('click', function(e){ if(e.target === sh || e.target.closest('[data-close]')) set(false); });
+    sh.addEventListener('click', function(e){ if(e.target === sh || e.target.closest('[data-close]') || e.target.closest('.msg a')) set(false); });
     document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !sh.hidden) set(false); });
   }
   function mobileMe(me, active){

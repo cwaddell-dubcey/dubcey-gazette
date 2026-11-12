@@ -31,7 +31,7 @@
         return Promise.all(ws.map(function(w){ return D.scores(w, ids).then(function(o){ return [w, o || {}]; }); }));
       }).then(function(L){ L.forEach(function(x){ Object.keys(x[1]).forEach(function(id){ (S.wp[id] = S.wp[id] || {})[x[0]] = num(x[1][id]); }); }); list(); }).catch(function(){});
     });
-  }).catch(function(){ $('plist').innerHTML = '<div class="ld mono">PLAYERS AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+  }).catch(function(){ $('plist').innerHTML = '<div class="ld mono">PLAYERS AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 
   function trend(){
     Promise.all([D.api('topAdds').catch(function(){ return null; }), D.api('topDrops').catch(function(){ return null; })]).then(function(r){

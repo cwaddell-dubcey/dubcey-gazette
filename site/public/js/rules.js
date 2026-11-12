@@ -25,7 +25,7 @@
   function scoringHTML(r){
     var N = {}; arr(r[1] && r[1].allRules && r[1].allRules.rule).forEach(function(x){ N[v(x.abbreviation)] = v(x.shortDescription) || v(x.detailedDescription); });
     var P = arr(r[0] && r[0].rules && r[0].rules.positionRules);
-    if(!P.length) return '<div class="ld mono">COULDN\u2019T LOAD THE SCORING RULES.</div>';
+    if(!P.length) return '<div class="ld mono">COULDN\u2019T LOAD THE SCORING RULES.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>';
     function pts(p, rg){
       p = String(p); rg = String(rg || '');
       var full = !rg || /^0-(99|999|9999)$/.test(rg);

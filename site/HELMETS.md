@@ -4,7 +4,7 @@ Drop the image in `assets/` on GitHub, tick the box, and send Claude the file na
 
 **Specs:** transparent PNG, helmet facing right, roughly square (1800px is plenty). Claude makes a small web copy (~50 KB) for the site.
 
-_Checked against the site on Nov 6, 2026: 7 names below still show the current team's helmet or the league logo._
+_Checked against the site on Nov 6, 2026: 6 names below still show the current team's helmet or the league logo._
 
 ## Done
 - [x] The Shaved Beavers (2001–03) — `ShavedBeavers.png`
@@ -63,7 +63,7 @@ _Bad Newz Karens (`helmet-karens.png`) is the Diamond Dogs’ alter ego, switche
 
 ## Defunct franchises
 - [x] Bath Salt Zombies (2014–15) — `helmet-bathsalt`
-- [ ] Wishard Gun & Knife Club (2008–13; later Bath Salt Zombies)
+- [x] Wishard Gun & Knife Club (2008–13; later Bath Salt Zombies) — `helmet-wishard`
 - [x] The Roman Eagles (2003; later Little Executive Rough Riders) — `helmet-romaneagles`
 - [x] The Little Asian Kids (later Naptown Ryderz) — `helmet-asiankids`
 - [ ] Pigskin Pussycats (2003)

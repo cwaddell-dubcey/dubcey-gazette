@@ -10,7 +10,7 @@
   function load(){
     if(D.LOCAL){ S.items = []; list(); return; }
     fetch('/data/feedback', { cache:'no-store', credentials:'same-origin' }).then(function(r){ return r.json(); }).then(function(d){ S.items = d.items || []; S.me = d.me; S.commish = d.commish; list(); })
-      .catch(function(){ $('fbl').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD THE SUGGESTION BOX.</div>'; });
+      .catch(function(){ $('fbl').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD THE SUGGESTION BOX.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   function form(){
     if(!S.signed){ $('fbf').innerHTML = '<div class="bar mono"><span>DROP ONE IN</span></div><div class="fbf"><p style="margin:0;color:#C9D6E6;font-size:15px">Sign in with your MFL account to report a bug or suggest a feature.</p><button class="btn" type="button" id="fsi">SIGN IN</button></div>'; $('fsi').addEventListener('click', D.signIn); return; }

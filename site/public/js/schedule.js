@@ -9,7 +9,7 @@
     }).filter(function(w){ return w.ms.length; }).sort(function(a, b){ return a.n - b.n; });
     S.rec = r[1].rec; S.order = r[1].order; S.st = r[1].st || {}; S.lg = (r[2] && r[2].league) || {};
     draw();
-  }).catch(function(){ $('sb2').innerHTML = '<div class="ld mono">THE SCHEDULE ISN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+  }).catch(function(){ $('sb2').innerHTML = '<div class="ld mono">THE SCHEDULE ISN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 
   function nm(id, s){ return id === 'AVG' ? (s ? 'Play-In' : 'Play-In Week · free-for-all') : (s ? D.SHORT[id] : D.NAME[id]) || id; }
   function played(w){ return w.ms.some(function(m){ return m[0].s != null || m[1].s != null; }); }

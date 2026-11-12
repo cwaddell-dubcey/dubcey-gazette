@@ -2706,3 +2706,47 @@ a.rsh:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #c8282d}
   .eb button{min-height:32px;min-width:32px;padding:6px 9px}
   input[type=checkbox]{width:20px;height:20px}
 }
+
+.xupd{font-size:9px;letter-spacing:.14em;color:#B08A2E;animation:xupd 1.2s ease-in-out infinite}
+@keyframes xupd{50%{opacity:.35}}
+.rtry{margin-top:12px;display:inline-block}
+
+/* defunct: franchises that changed names show every helmet, oldest first */
+.dfi.dfm{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 8px}
+.dfe{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.dfe img{width:100%;max-width:150px;max-height:96px;object-fit:contain;filter:grayscale(.15)}
+.dfe:not(.cur) img{max-height:78px;opacity:.92}
+.dfe i{font-style:normal;font-size:9px;letter-spacing:.12em;color:#9FB4CC}
+.dfe.cur i{color:#E0A72B}
+.dfw{width:90px;height:68px;display:grid;place-items:center;border:1.5px dashed #2C4C78;color:#6F8AAE;font:700 22px/1 'Zilla Slab',Georgia,serif}
+.dfar{color:#4A6A94;font-weight:400;font-size:14px;flex:none}
+.dfa>div{display:flex;align-items:center;gap:8px}
+.dfa>div b{flex:1;min-width:0}
+.dfat{width:38px;height:28px;object-fit:contain;flex:none}
+span.dfat.hw{display:inline-grid;place-items:center;border:1px dashed #9FB4CC;color:#6F8AAE;font:700 11px/1 'Zilla Slab',Georgia,serif;border-radius:4px}
+
+/* ---------- grouped top menu ---------- */
+.nav.navg{overflow:visible!important;justify-content:flex-end;gap:2px}
+.navg .ng{position:relative;display:flex;align-items:stretch}
+.navg .nt{display:flex;align-items:center;gap:6px;padding:0 14px!important;font-size:11px!important;letter-spacing:.12em!important;color:#9FB4CC;border-bottom:3px solid transparent;white-space:nowrap}
+.navg .nt.on{color:#F7EFDB;border-bottom-color:#E0A72B}
+.navg .ng:hover>.nt,.navg .ng:focus-within>.nt{color:#fff}
+.navg .car{font-style:normal;font-size:8px;opacity:.7;transition:transform .15s}
+.navg .ng:hover .car,.navg .ng:focus-within .car{transform:rotate(180deg)}
+.navg .ndd{display:none;position:absolute;top:100%;left:0;min-width:210px;z-index:80;background:#0D1F38;border:1px solid #2C4C78;border-top:3px solid #E0A72B;box-shadow:0 18px 34px rgba(0,0,0,.45);padding:6px 0}
+.navg .ng:last-child .ndd,.navg .ng:nth-last-child(2) .ndd{left:auto;right:0}
+.navg .ng:hover>.ndd,.navg .ng:focus-within>.ndd{display:block}
+.navg .ndd a{display:block!important;height:auto!important;padding:11px 18px!important;border:0!important;font-size:10.5px!important;letter-spacing:.12em!important;color:#C9D6E6!important;white-space:nowrap}
+.navg .ndd a:hover,.navg .ndd a:focus{background:#16304F;color:#fff!important;outline:0}
+.navg .ndd a.on{color:#E0A72B!important}
+.navg .ndd a[href*="ideas"]{display:block!important}
+.navg .ngmt .nt{color:#E0A72B}
+.navg .ngmt .nt:hover{color:#F7C75A}
+@media (max-width:1180px){ .navg .nt{padding:0 clamp(5px,.9vw,14px)!important;letter-spacing:.06em!important;font-size:clamp(9.5px,.95vw,11px)!important} }
+@media (min-width:761px) and (max-width:1040px){ .navg .ngmt{display:none} .nav.navg{justify-content:center} }
+/* phone "More" sheet: grouped like the top menu */
+@media (max-width:760px){
+  .msgh{font-size:9.5px;letter-spacing:.16em;color:#E0A72B;margin:16px 2px 8px}
+  .msgh:first-of-type{margin-top:4px}
+  .msg a{min-height:46px!important;font-size:13.5px!important}
+}

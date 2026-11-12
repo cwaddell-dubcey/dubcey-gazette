@@ -104,10 +104,21 @@ async function buildSeasonCards(env) {
   return out;
 }
 
+// MFL reads: give up after a few seconds instead of hanging, and try once more if MFL refuses or errors
+async function mflGet(url, headers, ms = 6000) {
+  for (let i = 0; ; i++) {
+    try {
+      const r = await fetch(url, { headers, signal: AbortSignal.timeout(ms) });
+      if (i === 0 && (r.status === 429 || r.status >= 500)) { await new Promise(x => setTimeout(x, 700)); continue; }
+      return r;
+    } catch (e) { if (i) throw e; await new Promise(x => setTimeout(x, 400)); }
+  }
+}
+
 async function cachedJSON(ctx, url, ttl) {
   const key = new Request(url), hit = await caches.default.match(key);
   if (hit) return hit.json();
-  const r = await fetch(url, { headers: UA }); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const r = await mflGet(url, UA); if (!r.ok) throw new Error('HTTP ' + r.status);
   const t = await r.text();
   ctx.waitUntil(caches.default.put(key, new Response(t, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=' + ttl } })));
   return JSON.parse(t);
@@ -162,7 +173,7 @@ async function mflPage(env, ctx, s, kind, id) {
   const key = new Request(`https://mflp.dubcey/${kind}/${id}`);
   const hit = await caches.default.match(key); if (hit) return hit.text();
   const tok = (s && s.t) || (env.DC && await env.DC.get('svc'));
-  const r = await fetch(`${HOST}/${Y}/${MFLP[kind](id)}`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
+  const r = await mflGet(`${HOST}/${Y}/${MFLP[kind](id)}`, tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA);
   let h = await r.text();
   h = h.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
   if (r.ok) ctx.waitUntil(caches.default.put(key, new Response(h, { headers: { 'Cache-Control': 'public, max-age=' + (kind === 'news' ? 600 : 1800) } })));
@@ -176,7 +187,7 @@ async function waivers(env, s, run, fk) {
   // the run picker is a form on MFL's page: replay it with the chosen run (fk = "action|selectName|hidden=..&..")
   let url = `${HOST}/${Y}/processed_waivers?L=${L}`;
   if (run && fk) { const [act, nm, hid] = fk.split('|'); const q = new URLSearchParams(hid || ''); q.set('L', L); q.set(nm, run); url = new URL(act || 'processed_waivers', `${HOST}/${Y}/`).href.split('?')[0] + '?' + q.toString(); }
-  const r = await fetch(url, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + tok } });
+  const r = await mflGet(url, { ...UA, Cookie: 'MFL_USER_ID=' + tok });
   const h = await r.text();
   const fm = /<form([^>]*)>([\s\S]*?)<\/form>/gi; let form = '';
   for (const m of h.matchAll(fm)) { if (!/<select/i.test(m[2])) continue; const act = (/action="([^"]*)"/i.exec(m[1]) || [])[1] || ''; const nm = (/<select[^>]*name="([^"]+)"/i.exec(m[2]) || [])[1] || '';
@@ -365,7 +376,7 @@ export default {
       if (hit) return new Response(hit.body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
       try {
         const tok = env.DC && await env.DC.get('svc');
-        const r = await fetch(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, { headers: tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA });
+        const r = await mflGet(`${HOST}/${Y}/news_articles?L=${L}&DAYS=3`, tok ? { ...UA, Cookie: 'MFL_USER_ID=' + tok } : UA);
         const html = r.ok ? await r.text() : '';
         // commissioner-only: show what MFL actually sent (scripts/styles stripped) so a changed page can be diagnosed
         if (u.searchParams.get('raw')) { const s = await session(req, env); if (!isCommish(s, env)) return json({ error: 'Commissioner only.' }, 403); return new Response('HTTP ' + r.status + ' · ' + html.length + ' chars · ' + newsRows(html).length + ' rows parsed\n\n' + html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/\n\s*\n+/g, '\n').slice(0, 12000), { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } }); }
@@ -452,18 +463,33 @@ export default {
       const scoped = q.get('LG') === '1' && /^top(Owns|Adds|Drops)$/.test(type); q.delete('LG'); const extra2 = q.toString();
       const target = scoped ? `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra2 ? '&' + extra2 : ''}` : NFLWIDE[type] ? `${API}/${Y}/export?TYPE=${type}&JSON=1${extra ? '&' + extra : ''}` : `${HOST}/${Y}/export?TYPE=${type}&L=${L}&JSON=1${extra ? '&' + extra : ''}`;
       if (PRIV[type] || asMe) {
-        const r = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + s.t } });
+        const r = await mflGet(target, { ...UA, Cookie: 'MFL_USER_ID=' + s.t }).catch(() => null);
+        if (!r) return json({ error: 'MFL did not answer' }, 504);
         return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
       }
-      const cache = caches.default, key = new Request(target);
+      // a fresh copy for PUB[type] seconds, plus a "last good" copy kept for a week to fall back on when MFL is slow or down
+      // finished weeks never change: keep their scores and results for a day instead of a minute
+      let ttl = PUB[type];
+      if (type === 'playerScores' || type === 'weeklyResults') { const wq = +q.get('W'), cur = Math.floor((Date.now() - Date.UTC(+Y, 8, 8, 12)) / 6048e5) + 1; if (wq && wq < cur - 1) ttl = 86400; }
+      const cache = caches.default, key = new Request(target), lastKey = new Request(target + '&_lastgood=1');
       let res = await cache.match(key);
       if (!res) {
-        let m = await fetch(target, { headers: UA });
-        let txt = await m.text(), bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt);
-        // private-league exports (e.g. calendar) need a member login: retry with the commissioner's saved one
-        if (bad && !NFLWIDE[type]) { const svc = env.DC && await env.DC.get('svc'); if (svc) { m = await fetch(target, { headers: { ...UA, Cookie: 'MFL_USER_ID=' + svc } }); txt = await m.text(); bad = !m.ok || /^\s*\{[^{]*"error"/.test(txt); } }
-        res = new Response(txt, { status: m.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': bad ? 'no-store' : 'public, max-age=' + PUB[type] } });
-        if (!bad) ctx.waitUntil(cache.put(key, res.clone()));
+        let txt = '', st = 504, bad = true;
+        const isBad = (m, t) => !m.ok || /^\s*\{[^{]*"error"/.test(t);
+        try {
+          let m = await mflGet(target, UA); txt = await m.text(); st = m.status; bad = isBad(m, txt);
+          // private-league exports (e.g. calendar) need a member login: retry with the commissioner's saved one
+          if (bad && !NFLWIDE[type]) { const svc = env.DC && await env.DC.get('svc'); if (svc) { m = await mflGet(target, { ...UA, Cookie: 'MFL_USER_ID=' + svc }); txt = await m.text(); st = m.status; bad = isBad(m, txt); } }
+        } catch (e) { bad = true; }
+        if (!bad) {
+          res = new Response(txt, { status: st, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=' + ttl } });
+          ctx.waitUntil(cache.put(key, res.clone()));
+          ctx.waitUntil(cache.put(lastKey, new Response(txt, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=604800' } })));
+        } else {
+          const old = await cache.match(lastKey);
+          if (old) { res = new Response(old.body, { status: 200, headers: { 'Content-Type': 'application/json', 'Date': old.headers.get('Date') || '', 'X-Stale': '1' } }); }
+          else res = new Response(txt || JSON.stringify({ error: 'MFL did not answer' }), { status: st >= 400 ? st : 504, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+        }
       }
       const out = new Response(res.body, res); out.headers.set('Cache-Control', 'no-cache'); out.headers.set('X-Fetched', res.headers.get('Date') || new Date().toUTCString());
       return out;

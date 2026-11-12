@@ -28,7 +28,7 @@
       arr(ps && ps.playerScores && ps.playerScores.playerScore).forEach(function(s){ if(s.score !== '') S.d.PTS[s.id] = s.score; });
       draw();
     }).catch(function(){});
-  }).catch(function(){ $('tr').innerHTML = '<div class="ld mono" style="grid-column:1/-1">ROSTERS AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+  }).catch(function(){ $('tr').innerHTML = '<div class="ld mono" style="grid-column:1/-1">ROSTERS AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 
   function team(f){
     var d = S.d, pl = (d.R[f] || []).map(function(p){

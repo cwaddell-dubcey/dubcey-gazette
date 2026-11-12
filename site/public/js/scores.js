@@ -37,7 +37,7 @@
       return Promise.all([D.players(ids), nfl(S.w), S.w === S.cur ? projs(S.w, ids) : null, S.w === S.cur ? pvText(S.w) : null]).then(function(){ S.data = d; draw(); schedule(); });
     }).catch(function(){
       if(S.w && S.w !== S.cur) return Promise.all([D.api('weeklyResults', 'W=' + S.w), nfl(S.w)]).then(function(x){ var d = norm(x[0]); if(!d) throw 0; S.data = d; draw(); });
-      $('mu').innerHTML = '<div class="ld mono">SCORES AREN\u2019T AVAILABLE RIGHT NOW.</div>';
+      $('mu').innerHTML = '<div class="ld mono">SCORES AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>';
     });
   }
   // the Dispatch's written preview for each matchup, shown on the current week until kickoff

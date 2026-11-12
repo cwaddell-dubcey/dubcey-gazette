@@ -27,7 +27,7 @@
       if(!d || !d.games || !d.games.length) throw 0;
       S.data = d;
       weeks(); draw(); fillML(d);
-    }).catch(function(){ $('games').innerHTML = '<div class="ld mono">NFL GAMES AREN\u2019T AVAILABLE RIGHT NOW.</div>'; });
+    }).catch(function(){ $('games').innerHTML = '<div class="ld mono">NFL GAMES AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   // moneylines straight from ESPN in the browser, in case the server copy comes back without them
   function fillML(d){

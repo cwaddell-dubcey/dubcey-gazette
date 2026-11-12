@@ -40,7 +40,7 @@
       (S.R[S.me] || []).forEach(function(id){ if(!(id in S.start)) S.start[id] = false; });
       var ids = Object.keys(S.start); Object.keys(S.R).forEach(function(k){ ids = ids.concat(S.R[k]); });
       return Promise.all([D.players(ids), extras()]);
-    }).then(function(){ kickLock(); draw(); }).catch(function(){ $('mtb').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD YOUR TEAM. TRY AGAIN IN A MINUTE.</div>'; });
+    }).then(function(){ S.bootTry = 0; kickLock(); draw(); }).catch(function(){ if(!S.bootTry){ S.bootTry = 1; $('mtb').innerHTML = '<div class="ld mono">MFL IS SLOW \u2014 TRYING AGAIN\u2026</div>'; setTimeout(function(){ boot(w); }, 2000); return; } S.bootTry = 0; $('mtb').innerHTML = '<div class="ld mono">COULDN\u2019T LOAD YOUR TEAM. TRY AGAIN IN A MINUTE.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   // a player locks (starter or bench) once his NFL game kicks off
   function kickLock(){
@@ -125,7 +125,7 @@
           (D.futText(t.comments) ? '<p class="cm">\u201c' + esc(D.futText(t.comments)) + '\u201d</p>' : '') +
           '<div class="tra">' + (mine ? '<button class="btn ghost2" data-resp="revoke" data-id="' + esc(t.trade_id) + '">WITHDRAW</button>' : '<button class="btn" data-resp="accept" data-id="' + esc(t.trade_id) + '">ACCEPT</button><button class="btn ghost2" data-resp="reject" data-id="' + esc(t.trade_id) + '">DECLINE</button>') + '</div></div>';
       }).join('') || '<div class="ld mono">NO PENDING OFFERS</div>');
-    }).catch(function(){ $('pend').innerHTML = '<div class="bar mono"><span>TRADE OFFERS</span></div><div class="ld mono">COULDN\u2019T LOAD OFFERS</div>'; });
+    }).catch(function(){ $('pend').innerHTML = '<div class="bar mono"><span>TRADE OFFERS</span></div><div class="ld mono">COULDN\u2019T LOAD OFFERS<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
     propose();
   }
   D.future().then(function(x){ S.fut = D.futureCalc(x); if(S.tab === 'trades' && $('prop')) propose(); });
@@ -145,7 +145,7 @@
             '<input id="bwant" maxlength="200" placeholder="What you want back (e.g. RB help, 2027 $)" value="' + esc(mine.inExchangeFor || '') + '"><button class="btn" type="button" id="bsave">SAVE MY BLOCK</button></div>' +
           '<div class="bto"><div class="sub mono">AROUND THE LEAGUE</div>' + (others.map(function(b){ return '<div class="btt"><div class="trh"><img src="' + helm(b.franchise_id) + '" alt=""><div><b>' + esc(D.NAME[b.franchise_id]) + '</b>' + (b.inExchangeFor ? '<span class="mono">WANTS: ' + esc(String(b.inExchangeFor).toUpperCase()) + '</span>' : '') + '</div><button type="button" class="btn sm ghost2" data-to="' + esc(b.franchise_id) + '">MAKE OFFER</button></div><ul>' + String(b.willGiveUp).split(',').filter(Boolean).map(pl).join('') + '</ul></div>'; }).join('') || '<div class="ld mono">NOBODY HAS ANYONE ON THE BLOCK YET.</div>') + '</div></div>';
       });
-    }).catch(function(){ $('bait').innerHTML = '<div class="bar mono"><span>THE TRADE BLOCK</span></div><div class="ld mono">COULDN\u2019T LOAD THE TRADE BLOCK</div>'; });
+    }).catch(function(){ $('bait').innerHTML = '<div class="bar mono"><span>THE TRADE BLOCK</span></div><div class="ld mono">COULDN\u2019T LOAD THE TRADE BLOCK<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   function propose(){
     var t = S.trade, others = D.IDS.filter(function(id){ return id !== S.me; });
