@@ -2996,3 +2996,42 @@ img.ckpress{aspect-ratio:880/1400}
   .phs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .phx span{font-size:11px}
 }
+
+/* ---------- teams: all 12 rosters on one screen ---------- */
+.tr.all{display:block;background:none;border:0}
+.allhd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.allhd .kk{font-size:9.5px;color:#E0A72B}
+.allhd h2{margin:4px 0 0;font:400 34px/1 'Alfa Slab One',serif;text-transform:uppercase;color:#F7EFDB}
+.allc{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.allc .seg button{min-width:44px}
+.alhd{display:none}
+.allg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+.alc{background:#F7EFDB;color:#102542;border:2px solid #102542;box-shadow:4px 4px 0 #c8282d;min-width:0}
+.alc.me{box-shadow:4px 4px 0 #E0A72B;border-color:#E0A72B}
+.alh{display:grid;grid-template-columns:auto 58px minmax(0,1fr);align-items:center;gap:8px;width:100%;padding:8px 10px;background:#102542;border:0;color:#F7EFDB;cursor:pointer;text-align:left}
+.alh:hover{background:#16304F}
+.alh img{width:58px;height:44px;object-fit:contain}
+.alrk{font-size:10px;color:#9FB4CC;min-width:14px}
+.alt b{display:block;font:400 15px/1.1 'Alfa Slab One',serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alt i{display:block;font-style:normal;font-size:8.5px;color:#E0A72B;margin-top:3px}
+.alg{display:flex;align-items:center;justify-content:space-between;padding:5px 10px 3px;font-size:8.5px;color:#6B6455;background:#EFE4C8;border-top:1px solid #D9CBA8}
+.alg .pos{font-size:8px;padding:2px 5px}
+.alr{display:grid;grid-template-columns:minmax(0,1fr) auto auto 44px 30px;align-items:center;gap:5px;padding:4px 10px;border-top:1px solid #EAE0C6;font-size:13.5px;line-height:1.2}
+.alr.none{display:block;text-align:center;font-size:9px;color:#6B6455;padding:10px}
+.aln{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:600}
+.aln:hover{color:#c8282d}
+.alr .ij{font-size:8px;padding:1px 4px}
+.altg{font-size:7.5px;padding:1px 4px;background:#6F8BAD;color:#fff}
+.alnfl{font-size:8.5px;color:#6B6455;min-width:26px;text-align:right}
+.alp{font-size:9.5px;color:#2A3442;text-align:right}
+.als{font:400 13px/1 'Alfa Slab One',serif;text-align:right}
+@media (max-width:1180px){ .allg{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:900px){ .allg{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:560px){
+  .allg{grid-template-columns:1fr}
+  .allhd h2{font-size:26px}
+  .allc{width:100%}
+  .allc .seg{flex:1;display:flex}
+  .allc .seg button{flex:1;min-width:0}
+}
+@media (max-width:760px){ .allv{padding:14px 14px 0} }

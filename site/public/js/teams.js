@@ -4,7 +4,7 @@
   var PFULL = { QB:'Quarterbacks', RB:'Running Backs', WR:'Wide Receivers', TE:'Tight Ends', PK:'Kickers', K:'Kickers', Def:'Defense', DEF:'Defense' };
   var IW = { questionable:'Q', doubtful:'D', out:'O', 'injured reserve':'IR', ir:'IR', suspended:'SUS', probable:'P' };
   var qs = new URLSearchParams(location.search);
-  var S = { sel:D.NAME[qs.get('f')] ? qs.get('f') : '', cmp:'', pick:false, d:null, me:'', kp:false, keep:{} };
+  var S = { all:location.hash === '#all', apos:'', sel:D.NAME[qs.get('f')] ? qs.get('f') : '', cmp:'', pick:false, d:null, me:'', kp:false, keep:{} };
   try{ S.keep = JSON.parse(localStorage.getItem('dcKeep') || '{}') || {}; }catch(e){}
   function saveKeep(){ try{ localStorage.setItem('dcKeep', JSON.stringify(S.keep)); }catch(e){} }
   function kept(f, x){ var K = S.keep[f] || {}, on = x.pl.filter(function(p){ return K[p.id]; }), n = on.length, bump = n ? n + 1 : 0; return { list:on, n:n, bump:bump, cost:on.reduce(function(a, p){ return a + kSal(p, bump); }, 0) }; }
@@ -52,7 +52,22 @@
     }).join('');
   }
 
+  // every roster on one screen (teams#all); a position filter lines up one position across the league
+  function allView(){
+    var d = S.d, P = S.apos, pos = ['', 'QB', 'RB', 'WR', 'TE'];
+    var cards = IDS().map(function(f, i){
+      var x = team(f), rec = d.REC[f] || '', G = x.groups.filter(function(g){ return !P || g.pos === P; });
+      return '<section class="alc' + (f === S.me ? ' me' : '') + '"><button type="button" class="alh" data-one="' + f + '" title="Open ' + esc(D.NAME[f]) + '"><span class="alrk mono">' + (Object.keys(d.REC).length === 12 ? i + 1 : '') + '</span><img src="' + helm(f) + '" alt=""><span class="alt"><b>' + esc(D.SHORT[f] || D.NAME[f]) + '</b><i class="mono">' + [rec, money(x.tot), x.pl.length + ' PL'].filter(Boolean).join(' \u00b7 ') + '</i></span></button>' +
+        G.map(function(g){ return (P ? '' : '<div class="alg mono"><span class="pos ' + esc(g.pos) + '">' + esc(g.pos || 'OTH') + '</span><span>' + g.items.length + ' \u00b7 ' + money(g.sal) + '</span></div>') +
+          g.items.map(function(p){ return '<div class="alr"><span class="aln" data-card="' + esc(p.id) + '">' + esc(p.n) + '</span>' + (p.inj ? '<span class="ij mono">' + esc(p.inj) + '</span>' : '') + (p.tag ? '<span class="altg mono">' + esc(p.tag) + '</span>' : '') + '<span class="alnfl mono">' + esc(p.tm || '') + '</span><span class="alp mono">' + (p.pts || '\u2013') + '</span><span class="als">' + money(p.sal) + '</span></div>'; }).join(''); }).join('') +
+        (G.length ? '' : '<div class="alr none mono">NONE</div>') + '</section>';
+    }).join('');
+    $('tr').innerHTML = '<div class="allv"><div class="allhd"><div><div class="kk mono">SEASON ' + D.Y + ' \u00b7 ' + (Object.keys(d.REC).length === 12 ? 'IN STANDINGS ORDER' : 'ALL TEAMS') + '</div><h2>All 12 Rosters</h2></div><div class="allc"><div class="seg mono">' + pos.map(function(q){ return '<button type="button" data-apos="' + q + '" class="' + (q === P ? 'on' : '') + '">' + (q || 'ALL') + '</button>'; }).join('') + '</div><button type="button" class="btn ghost2" data-one="' + (S.sel || S.me || D.IDS[0]) + '">ONE TEAM</button></div></div>' +
+      '<div class="alhd mono"><span>PLAYER</span><span>NFL</span><span>PTS</span><span>$</span></div><div class="allg">' + cards + '</div></div>';
+  }
   function draw(){
+    document.getElementById('tr').classList.toggle('all', !!S.all);
+    if(S.all) return allView();
     var d = S.d, f = S.sel, x = team(f), rec = d.REC[f] || '', cmp = S.cmp && S.cmp !== f ? S.cmp : '';
     var rail = IDS().map(function(id){
       var c = id === f ? 'on' : (id === cmp ? 'b' : '');
@@ -64,7 +79,7 @@
       '<div class="cnt" style="grid-template-columns:repeat(' + Math.max(1, x.groups.length) + ',1fr)">' + x.groups.map(function(g){ return '<div><b>' + g.items.length + '</b><span class="mono">' + esc(g.pos || 'OTH') + '</span></div>'; }).join('') + '</div>' +
       '<div class="tl mono">' + x.pl.length + ' PLAYERS ON ROSTER</div></div>' + (D.div(f) && D.div(f).crest ? '<img class="dvwm ' + D.div(f).k + '" src="' + D.div(f).crest + '" alt="">' : '');
     var on = S.pick || cmp;
-    var led = '<div class="lh"><span class="t">Roster</span><button type="button" class="btn' + (on ? ' cmpon' : ' ghost2') + '" data-cmp>' + (on ? 'CLOSE COMPARE \u00d7' : 'COMPARE +') + '</button></div>';
+    var led = '<div class="lh"><span class="t">Roster</span><button type="button" class="btn ghost2" data-allv>ALL 12 ROSTERS</button><button type="button" class="btn' + (on ? ' cmpon' : ' ghost2') + '" data-cmp>' + (on ? 'CLOSE COMPARE \u00d7' : 'COMPARE +') + '</button></div>';
     led = led.replace('</button>', '</button>' + (on ? '' : '<button type="button" class="btn' + (S.kp ? ' cmpon' : ' ghost2') + '" data-kp>' + (S.kp ? 'DONE PLANNING \u00d7' : 'PLAN KEEPERS') + '</button>'));
     led = led.replace('<div class="lh"><span class="t">Roster</span>', '<div class="lh"><span class="t">Roster</span><span class="lhb">');
     led = led.replace(/(data-kp>[^<]*<\/button>|data-cmp>[^<]*<\/button>)(<\/div>)$/, '$1</span>$2');
@@ -107,6 +122,9 @@
 
   document.addEventListener('click', function(e){
     if(!S.d) return;
+    if(e.target.closest('[data-allv]')){ S.all = true; S.pick = false; S.cmp = ''; history.replaceState(null, '', D.href('teams') + '#all'); draw(); window.scrollTo(0, 0); return; }
+    var ap = e.target.closest('[data-apos]'); if(ap){ S.apos = ap.getAttribute('data-apos'); draw(); return; }
+    var one = e.target.closest('[data-one]'); if(one){ S.all = false; S.sel = one.getAttribute('data-one'); history.replaceState(null, '', D.href('teams', 'f=' + S.sel)); draw(); window.scrollTo(0, 0); return; }
     if(e.target.closest('[data-cmp]')){ if(S.pick || S.cmp){ S.pick = false; S.cmp = ''; } else { S.pick = true; S.kp = false; } draw(); return; }
     if(e.target.closest('[data-kp]')){ S.kp = !S.kp; draw(); return; }
     if(e.target.closest('[data-kclr]')){ delete S.keep[S.sel]; saveKeep(); draw(); return; }
@@ -118,4 +136,5 @@
     history.replaceState(null, '', D.href('teams', 'f=' + id));
     if(window.innerWidth <= 760) window.scrollTo({ top:0, behavior:'smooth' });
   });
+  window.addEventListener('hashchange', function(){ S.all = location.hash === '#all'; if(S.d) draw(); });
 })();

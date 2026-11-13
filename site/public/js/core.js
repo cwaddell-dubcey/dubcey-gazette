@@ -601,7 +601,7 @@
   // top menu: six sections, most with a dropdown of their pages and tabs
   var GROUPS = [
     { t:'SCORES', p:['scores', 'nfl'], items:[['scores', 'LEAGUE SCORES'], ['nfl', 'NFL GAMES']] },
-    { t:'LEAGUE', p:['standings', 'schedule', 'teams'], items:[['standings', 'STANDINGS'], ['standings#power', 'POWER RANKINGS'], ['standings#odds', 'PLAYOFF ODDS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS']] },
+    { t:'LEAGUE', p:['standings', 'schedule', 'teams'], items:[['standings', 'STANDINGS'], ['standings#power', 'POWER RANKINGS'], ['standings#odds', 'PLAYOFF ODDS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['teams#all', 'ALL ROSTERS']] },
     { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
     { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
     { t:'HISTORY', p:['history'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#defunct', 'DEFUNCT']] },
