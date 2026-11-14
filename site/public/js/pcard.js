@@ -152,18 +152,21 @@
     return A.map(function(a){ return '<button type="button" class="btn' + (a[2] ? '' : ' ghost2') + ' sm" data-pca="' + a[0] + '">' + a[1] + '</button>'; }).join('');
   }
   // his whole Dubcey history: every fantasy team he was on, from data/rosters.json (2003–05, 2010 on)
-  var VT = null, VD = null;
-  function vault(){ if(!VT) VT = Promise.all([fetch('data/rosters.json?v=20261112b').then(function(r){ return r.json(); }), D.seasonCards ? D.seasonCards() : null]).then(function(X){ VD = D.mergeSeason ? D.mergeSeason(X[0], X[1]) : X[0]; }, function(){ VD = false; }).then(body); return VT; }
+  var VT = null, VD = null, DRF = null;
+  // every auction he went for: [year, team name, fid, $]
+  function drafted(id){ var o = []; if(!DRF || !id) return o; Object.keys(DRF.years).forEach(function(y){ DRF.years[y].forEach(function(t){ t.p.forEach(function(p){ if(p[3] === id) o.push([+y, t.n, t.f, p[2]]); }); }); }); return o.sort(function(a, b){ return b[0] - a[0]; }); }
+  function draftHTML(id){ var L = drafted(id); if(!L.length) return ''; return '<div class="pdraft"><div class="kick mono">AUCTION HISTORY \u00b7 BOUGHT ' + L.length + (L.length === 1 ? ' TIME' : ' TIMES') + ' \u00b7 HIGH $' + Math.max.apply(null, L.map(function(x){ return x[3]; })) + '</div>' + L.map(function(x){ return '<a class="pdr" href="' + D.href('history') + '#drafts/' + x[0] + '"><b class="mono">' + x[0] + '</b>' + (x[2] ? '<img src="' + D.helm(x[2]) + '" alt="">' : '<span></span>') + '<span>' + esc(x[1] || D.NAME[x[2]] || '') + '</span><b class="pdkd">$' + x[3] + '</b></a>'; }).join('') + '</div>'; }
+  function vault(){ if(!VT) VT = Promise.all([fetch('data/rosters.json?v=20261112b').then(function(r){ return r.json(); }), D.seasonCards ? D.seasonCards() : null, fetch('data/drafts.json?v=20261114a').then(function(r){ return r.json(); }).catch(function(){ return null; })]).then(function(X){ VD = D.mergeSeason ? D.mergeSeason(X[0], X[1]) : X[0]; DRF = X[2]; }, function(){ VD = false; }).then(body); return VT; }
   function dubcey(id){
     if(!VD) return '<div class="ld mono">DUBCEY HISTORY ISN’T AVAILABLE RIGHT NOW</div>';
     var i = -1; for(var k = 0; k < VD.p.length; k++) if(VD.p[k][3] === id){ i = k; break; }
     var L = i < 0 ? [] : VD.s.filter(function(s){ return s[0] === i; }).sort(function(a, b){ return b[1] - a[1]; });
-    if(!L.length) return '<div class="ld mono">NEVER ON A DUBCEY ROSTER IN THE SEASONS ON FILE</div>';
+    if(!L.length) return draftHTML(id) + '<div class="ld mono">NEVER ON A DUBCEY ROSTER IN THE SEASONS ON FILE</div>';
     var st = 0, sp = 0, hi = 0, ys = {}, tm = {};
     L.forEach(function(s){ st += s[5]; sp += s[6]; if(s[7] > hi) hi = s[7]; ys[s[1]] = 1; tm[s[3] || VD.t[s[2]]] = 1; });
     var ny = Object.keys(ys).length, nt = Object.keys(tm).length;
     function n2(v){ return D.pts(Math.round(v * 100) / 100); }
-    return '<div class="pdub mono"><div><b>' + ny + '</b><span>' + (ny === 1 ? 'SEASON' : 'SEASONS') + '</span></div><div><b>' + nt + '</b><span>' + (nt === 1 ? 'TEAM' : 'TEAMS') + '</span></div><div><b>' + st + '</b><span>STARTS</span></div><div><b>' + Math.round(sp).toLocaleString('en-US') + '</b><span>PTS AS STARTER</span></div></div>' +
+    return draftHTML(id) + '<div class="pdub mono"><div><b>' + ny + '</b><span>' + (ny === 1 ? 'SEASON' : 'SEASONS') + '</span></div><div><b>' + nt + '</b><span>' + (nt === 1 ? 'TEAM' : 'TEAMS') + '</span></div><div><b>' + st + '</b><span>STARTS</span></div><div><b>' + Math.round(sp).toLocaleString('en-US') + '</b><span>PTS AS STARTER</span></div></div>' +
       '<div class="sx"><table class="ht pgt"><thead><tr><th class="l">SEASON</th><th class="l">FANTASY TEAM</th><th>WKS</th><th>STARTS</th><th>PTS</th><th>BEST</th></tr></thead><tbody>' +
       L.map(function(s){ var nm = VD.t[s[2]]; return '<tr><td class="l y">' + s[1] + '</td><td class="l"><span class="tn3">' + (s[3] ? '<img src="' + D.helm(s[3]) + '" alt="">' : '') + '<b>' + esc(nm) + '</b></span></td><td>' + s[4] + '</td><td>' + s[5] + '</td><td>' + n2(s[6]) + '</td><td>' + (s[5] ? n2(s[7]) : '–') + '</td></tr>'; }).join('') +
       '</tbody></table></div><div class="pdubn mono">WEEKS = ON THE ROSTER · 2003–05 STARTERS ONLY · 2010–13 REGULAR SEASON ONLY · <a href="' + D.href('history') + '#rosters">ROSTER VAULT →</a></div>';

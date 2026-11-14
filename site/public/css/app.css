@@ -3038,3 +3038,91 @@ img.ckpress{aspect-ratio:880/1400}
   .allc .seg button{flex:1;min-width:0}
 }
 @media (max-width:760px){ .allv{padding:14px 14px 0} }
+
+/* ---------- history: drafts ---------- */
+.dnav{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:4px 0 18px}
+.dnav .seg a{display:block;padding:10px 14px;background:#16304F;border-left:1.5px solid #2C4C78;color:#9FB4CC;font-size:10px;white-space:nowrap}
+.dnav .seg a:first-child{border-left:0}
+.dnav .seg a.on{background:#E0A72B;color:#102542}
+.dyrs{display:flex;flex-wrap:wrap;gap:4px}
+.dyrs a,.dyrs .dno{padding:7px 9px;font-size:10px;background:#16304F;border:1.5px solid #2C4C78;color:#9FB4CC}
+.dyrs a:hover{color:#fff;border-color:#43648A}
+.dyrs a.on{background:#E0A72B;border-color:#E0A72B;color:#102542}
+.dyrs .dno{opacity:.45;cursor:default}
+.dhd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:2px solid #E0A72B;margin-bottom:14px}
+.dhd h2{margin:0;font:400 28px/1 'Alfa Slab One',serif;text-transform:uppercase;color:#F7EFDB}
+.dhd span{font-size:9px;color:#9FB4CC}
+.dhl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.dhc{background:#F7EFDB;color:#102542;border:2px solid #102542;box-shadow:4px 4px 0 #c8282d;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.dhc b{font:400 18px/1.15 'Alfa Slab One',serif;text-transform:uppercase}
+.dhc b a,.dhc b span{color:#102542}
+.dhc>span.mono{font-size:9px;color:#6B6455}
+.dpb{display:grid;grid-template-columns:34px 1fr 40px;gap:8px;align-items:center;font-size:9.5px;color:#2A3442}
+.dpb i{display:block;height:9px;background:#EAE0C6}
+.dpb i b{display:block;height:100%;background:#102542}
+.dpb .pos{font-size:8px;padding:2px 4px;text-align:center}
+.dbw{overflow-x:auto;margin:0 0 44px;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.dboard{display:grid;grid-template-columns:repeat(var(--n),minmax(212px,1fr));gap:8px;align-items:start;min-width:calc(var(--n) * 220px)}
+.dcol{background:#F7EFDB;color:#102542;border:2px solid #102542;min-width:0}
+.dch{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 8px 10px;background:#102542;color:#F7EFDB;text-align:center;border-bottom:3px solid #E0A72B}
+.dch:hover{background:#16304F;color:#F7EFDB}
+.dch img{width:84px;height:62px;object-fit:contain}
+.dch b{font:400 13px/1.1 'Alfa Slab One',serif;text-transform:uppercase;min-height:29px;display:flex;align-items:center}
+.dch span{font-size:8.5px;color:#E0A72B}
+.dkr{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:6px;align-items:center;padding:5px 8px;border-top:1px solid #EAE0C6;font-size:13px;line-height:1.15}
+.dkr .pos{font-size:7.5px;padding:2px 3px;text-align:center}
+.dkr>b{font:400 13px/1 'Alfa Slab One',serif}
+.dkr.none{display:block;text-align:center;font-size:8.5px;color:#6B6455;padding:10px}
+.dnm{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:5px}
+.dnm i{flex-basis:100%;font-style:normal;font-size:8px;color:#6B6455}
+.dpn{color:#102542;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+a.dpn:hover{color:#c8282d}
+.dktag{font-style:normal;font-size:7.5px;padding:1px 4px;flex:none}
+.dktag.steal{background:#2E7D4F;color:#fff}
+.dktag.bust{background:#c8282d;color:#fff}
+.dkfs{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;margin-bottom:16px}
+.dkfs a{display:block;padding:6px 4px;background:#16304F;border:1.5px solid #2C4C78}
+.dkfs a.on{border-color:#E0A72B;background:#1E3A63}
+.dkfs img{width:100%;height:40px;object-fit:contain}
+.dtl{display:flex;flex-direction:column;gap:10px;margin-bottom:44px}
+.dty{display:grid;grid-template-columns:250px minmax(0,1fr);background:#F7EFDB;color:#102542;border:2px solid #102542;box-shadow:4px 4px 0 #c8282d}
+.dtyh{display:grid;grid-template-columns:auto 62px minmax(0,1fr);gap:8px;align-items:center;padding:10px 12px;background:#102542;color:#F7EFDB}
+.dtyh:hover{color:#F7EFDB;background:#16304F}
+.dtyh>b{font-size:13px;color:#E0A72B}
+.dtyh img{width:62px;height:46px;object-fit:contain}
+.dtyh span b{display:block;font:400 13px/1.15 'Alfa Slab One',serif;text-transform:uppercase}
+.dtyh span i{display:block;font-style:normal;font-size:8.5px;color:#9FB4CC;margin-top:3px}
+.dtyp{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px;align-content:flex-start}
+.dkc{display:inline-flex;align-items:center;gap:5px;padding:3px 7px 3px 3px;background:#fff;border:1px solid #D9CBA8;font-size:12.5px;max-width:100%}
+.dkc.big{border-color:#102542;font-size:13.5px}
+.dkc .pos{font-size:7.5px;padding:2px 3px}
+.dkc>b{font-size:9.5px;color:#c8282d}
+.dtops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:44px}
+.dtop ol{list-style:none;margin:0;padding:0}
+.dtop li{display:grid;grid-template-columns:26px 44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 14px;border-top:1px solid #EAE0C6}
+.dtop li>b{font-size:10px;color:#6B6455}
+.dtop li img{width:44px;height:33px;object-fit:contain}
+.dpt{min-width:0;display:flex;flex-direction:column}
+.dpt i{font-style:normal;font-size:8.5px;color:#6B6455;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsc{font-size:10px;color:#102542;white-space:nowrap}
+/* player card: auction history */
+.pdraft{margin:0 0 14px;padding:10px 12px;background:#EFE4C8;border:2px solid #D9CBA8}
+.pdraft .kick{margin-bottom:6px}
+.pdr{display:grid;grid-template-columns:44px 30px minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0;border-top:1px solid #D9CBA8;color:#102542;font-size:14px}
+.pdr:first-of-type{border-top:0}
+.pdr:hover{color:#c8282d}
+.pdr>b.mono{font-size:10px}
+.pdr img{width:30px;height:22px;object-fit:contain}
+.pdkd{font:400 14px/1 'Alfa Slab One',serif}
+@media (max-width:900px){ .dhl{grid-template-columns:repeat(2,minmax(0,1fr))} .dtops{grid-template-columns:1fr} .dkfs{grid-template-columns:repeat(6,minmax(0,1fr))} }
+@media (max-width:760px){
+  .dhd h2{font-size:22px}
+  .dhl{grid-template-columns:1fr 1fr;gap:8px}
+  .dhc{padding:10px}
+  .dhc b{font-size:14px}
+  .dty{grid-template-columns:1fr}
+  .dboard{grid-template-columns:repeat(var(--n),200px);min-width:0}
+  .dnav .seg{width:100%;display:flex}
+  .dnav .seg a{flex:1;text-align:center;padding:10px 6px}
+}
+.dnm i.dktag{flex-basis:auto;align-self:center}

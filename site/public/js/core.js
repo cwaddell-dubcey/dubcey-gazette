@@ -604,7 +604,7 @@
     { t:'LEAGUE', p:['standings', 'schedule', 'teams'], items:[['standings', 'STANDINGS'], ['standings#power', 'POWER RANKINGS'], ['standings#odds', 'PLAYOFF ODDS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['teams#all', 'ALL ROSTERS']] },
     { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
     { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
-    { t:'HISTORY', p:['history'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#defunct', 'DEFUNCT']] },
+    { t:'HISTORY', p:['history'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#drafts', 'DRAFTS'], ['history#defunct', 'DEFUNCT']] },
     { t:'CLUBHOUSE', p:['finances', 'rules', 'clerk', 'ideas'], items:[['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['ideas', 'SUGGESTION BOX']] },
     { t:'MY TEAM', p:['myteam'], href:'myteam', cls:'ngmt' }
   ];

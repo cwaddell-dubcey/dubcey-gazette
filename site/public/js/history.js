@@ -3,7 +3,7 @@
   var H = null, ME = '';
   var S = { tab:'champions', team:'', a:'', b:'', rc:'game', yr:'' };
   var CATS = [['game', 'SINGLE GAME'], ['season', 'SEASON'], ['career', 'CAREER'], ['playoffs', 'POSTSEASON'], ['player', 'PLAYERS'], ['blunders', 'BENCH BLUNDERS'], ['milestone', 'MILESTONES']];
-  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
+  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(S.tab === 'drafts'){ S.dv = p[1] === 'team' ? 'team' : p[1] === 'top' ? 'top' : 'board'; if(S.dv === 'board' && /^\d{4}$/.test(p[1] || '')) S.dy = p[1]; if(S.dv === 'team' && p[2]) S.df = p[2]; } if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
@@ -118,7 +118,75 @@
 
   function draw(){
     [].forEach.call(document.querySelectorAll('#htabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct, rosters:rosters }[S.tab] || champions)();
+    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct, rosters:rosters, drafts:drafts }[S.tab] || champions)();
+  }
+
+  /* ---------- drafts: every auction board on file (data/drafts.json, built from the league's draft trackers) ---------- */
+  var DR = null, DRL = 0;
+  function drLoad(){ if(DRL) return; DRL = 1; fetch('data/drafts.json?v=20261114a').then(function(r){ return r.json(); }).then(function(j){ DR = drPrep(j); if(S.tab === 'drafts') draw(); }).catch(function(){ DRL = 0; if(S.tab === 'drafts') $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE DRAFT ROOM.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; }); }
+  // each pick: [pos, name, $, mflId, pts]; tag steals and busts within that year's auction
+  function drPrep(j){
+    var Y = Object.keys(j.years).sort(function(a, b){ return b - a; }), all = [];
+    Y.forEach(function(y){ var L = [];
+      j.years[y].forEach(function(t){ t.p.forEach(function(p){ var x = { y:+y, f:t.f, tn:t.n, pos:p[0], n:p[1], $:p[2], id:p[3], pts:p[4] }; L.push(x); all.push(x); }); t.spent = t.p.reduce(function(a, p){ return a + p[2]; }, 0); });
+      var V = L.filter(function(x){ return x.pts != null && x.$ >= 5; }).map(function(x){ return x.pts / x.$; }).sort(function(a, b){ return a - b; });
+      var hi = V[Math.floor(V.length * .88)] || 1e9, lo = V[Math.floor(V.length * .12)] || 0, live = +y === +D.Y;
+      L.forEach(function(x){ if(live || x.pts == null) return; var v = x.pts / Math.max(1, x.$); if(x.$ >= 5 && v >= hi) x.tag = 'steal'; else if(x.$ >= 15 && v <= lo) x.tag = 'bust'; });
+    });
+    return { j:j, years:Y, all:all };
+  }
+  function dHelm(n, y, f){ var h = hl(n || '', +y); return h && h !== 'h/logo.webp' && h !== 'h/helmet-ddallstars.webp' ? h : f ? D.helm(f) : 'h/logo.webp'; }
+  function dPts(v){ return v == null ? '\u2013' : D.pts(Math.round(v * 100) / 100); }
+  function dName(x){ return x.id ? '<a href="#" class="dpn" data-card="' + esc(x.id) + '">' + esc(x.n) + '</a>' : '<span class="dpn">' + esc(x.n) + '</span>'; }
+  function dTag(x){ return x.tag ? '<i class="dktag ' + x.tag + ' mono">' + (x.tag === 'steal' ? 'STEAL' : 'BUST') + '</i>' : ''; }
+  function drafts(){
+    if(!DR){ drLoad(); $('hb').innerHTML = '<div class="ld mono">OPENING THE DRAFT ROOM\u2026</div>'; return; }
+    var y = S.dy && DR.j.years[S.dy] ? S.dy : DR.years[0], v = S.dv || 'board';
+    var nav = '<div class="dnav"><div class="seg mono"><a class="' + (v === 'board' ? 'on' : '') + '" href="#drafts/' + y + '">DRAFT BOARDS</a><a class="' + (v === 'team' ? 'on' : '') + '" href="#drafts/team/' + (S.df || ME || '0001') + '">BY TEAM</a><a class="' + (v === 'top' ? 'on' : '') + '" href="#drafts/top">ALL-TIME</a></div>' +
+      (v === 'board' ? '<div class="dyrs mono">' + DR.years.map(function(k){ return '<a class="' + (k === y ? 'on' : '') + '" href="#drafts/' + k + '">' + k + '</a>'; }).join('') + '<span class="dno" title="No 2014 tracker on file">2014 \u2013</span></div>' : '') + '</div>';
+    $('hb').innerHTML = nav + (v === 'team' ? drTeam() : v === 'top' ? drTop() : drBoard(y));
+  }
+  function drBoard(y){
+    var T = DR.j.years[y], L = DR.all.filter(function(x){ return x.y === +y; }), live = +y === +D.Y;
+    var top = L.slice().sort(function(a, b){ return b.$ - a.$; })[0];
+    var val = L.filter(function(x){ return x.pts != null && x.$ >= 5; }).sort(function(a, b){ return b.pts / b.$ - a.pts / a.$; })[0];
+    var bust = L.filter(function(x){ return x.pts != null && x.$ >= 20; }).sort(function(a, b){ return a.pts / a.$ - b.pts / b.$; })[0];
+    var PS = {}; L.forEach(function(x){ PS[x.pos] = (PS[x.pos] || 0) + x.$; }); var tot = L.reduce(function(a, x){ return a + x.$; }, 0);
+    function hc(k, x, sub){ return x ? '<div class="dhc"><span class="kick mono">' + k + '</span><b>' + dName(x) + '</b><span class="mono">' + esc(x.tn) + ' \u00b7 $' + x.$ + (sub ? ' \u00b7 ' + sub : '') + '</span></div>' : ''; }
+    var hl0s = '<div class="dhl">' + hc('TOP DOLLAR', top) + (live ? '' : hc('BEST VALUE', val, val ? dPts(val.pts) + ' PTS' : '') + hc('BIGGEST BUST', bust, bust ? dPts(bust.pts) + ' PTS' : '')) +
+      '<div class="dhc dps"><span class="kick mono">WHERE THE MONEY WENT</span>' + ['QB', 'RB', 'WR', 'TE'].map(function(p){ var s = PS[p] || 0; return '<div class="dpb mono"><span class="pos ' + p + '">' + p + '</span><i><b style="width:' + Math.round(100 * s / Math.max(1, tot)) + '%"></b></i><span>$' + s + '</span></div>'; }).join('') + '</div></div>';
+    var cols = T.map(function(t){
+      var helm = dHelm(t.n, y, t.f);
+      return '<section class="dcol"><a class="dch" href="' + (t.f ? '#drafts/team/' + t.f : '#drafts') + '"><img src="' + helm + '" alt=""><b>' + esc(t.n || (t.f ? D.NAME[t.f] : 'Team')) + '</b><span class="mono">$' + t.spent + ' \u00b7 ' + t.p.length + ' PLAYERS' + (t.inc ? ' \u00b7 INCOMPLETE' : '') + '</span></a>' +
+        t.p.map(function(p){ var x = L.filter(function(q){ return q.tn === t.n && q.n === p[1] && q.$ === p[2] && q.f === t.f; })[0] || { n:p[1], id:p[3], pts:p[4], $:p[2], pos:p[0] };
+          return '<div class="dkr"><span class="pos ' + esc(p[0] === 'DEF' ? 'Def' : p[0]) + '">' + esc(p[0]) + '</span><span class="dnm">' + dName(x) + '<i class="mono">' + (x.pts != null ? dPts(x.pts) + ' PTS' + (live ? ' SO FAR' : '') : '') + '</i>' + dTag(x) + '</span><b>$' + p[2] + '</b></div>'; }).join('') +
+        (t.inc ? '<div class="dkr none mono">REST OF THIS COLUMN WAS NEVER FILLED IN</div>' : '') + '</section>';
+    }).join('');
+    return '<div class="dhd"><h2>' + y + ' Auction</h2><span class="mono">$' + tot + ' SPENT \u00b7 ' + L.length + ' PLAYERS \u00b7 PTS = WHAT HE SCORED ON DUBCEY ROSTERS THAT SEASON</span></div>' + hl0s +
+      '<div class="dbw"><div class="dboard" style="--n:' + T.length + '">' + cols + '</div></div>';
+  }
+  function drTeam(){
+    var f = S.df || ME || '0001';
+    var helms = '<div class="dkfs">' + D.IDS.map(function(id){ return '<a class="' + (id === f ? 'on' : '') + '" href="#drafts/team/' + id + '" title="' + esc(D.NAME[id]) + '"><img src="' + D.helm(id) + '" alt=""></a>'; }).join('') + '</div>';
+    var rows = DR.years.map(function(y){
+      var t = DR.j.years[y].filter(function(t){ return t.f === f; })[0]; if(!t) return '';
+      var L = DR.all.filter(function(x){ return x.y === +y && x.f === f; }).sort(function(a, b){ return b.$ - a.$; });
+      var pt = L.reduce(function(a, x){ return a + (x.pts || 0); }, 0);
+      return '<div class="dty"><a class="dtyh" href="#drafts/' + y + '"><b class="mono">' + y + '</b><img src="' + dHelm(t.n, y, f) + '" alt=""><span><b>' + esc(t.n || D.NAME[f]) + '</b><i class="mono">$' + t.spent + ' \u00b7 ' + (+y === +D.Y ? 'IN PROGRESS' : dPts(pt) + ' PTS') + '</i></span></a><div class="dtyp">' +
+        L.map(function(x, i){ return '<span class="dkc' + (i < 3 ? ' big' : '') + '"><span class="pos ' + esc(x.pos === 'DEF' ? 'Def' : x.pos) + '">' + esc(x.pos) + '</span>' + dName(x) + '<b class="mono">$' + x.$ + '</b>' + dTag(x) + '</span>'; }).join('') + '</div></div>';
+    }).join('');
+    return '<div class="dhd"><h2>' + esc(D.NAME[f] || '') + '</h2><span class="mono">EVERY AUCTION ON FILE, NEWEST FIRST \u00b7 PRICIEST BUYS UP FRONT</span></div>' + helms + '<div class="dtl">' + rows + '</div>';
+  }
+  function drTop(){
+    var done = DR.all.filter(function(x){ return x.y !== +D.Y; });
+    function tbl(t, L, sc){ return '<article class="card dtop"><div class="bar mono"><span>' + t + '</span></div><ol>' + L.map(function(x, i){ return '<li><b class="mono">' + (i + 1) + '</b><img src="' + dHelm(x.tn, x.y, x.f) + '" alt=""><span class="dpt">' + dName(x) + '<i class="mono">' + x.y + ' \u00b7 ' + esc(x.tn) + '</i></span><span class="dsc mono">' + sc(x) + '</span></li>'; }).join('') + '</ol></article>'; }
+    var pricey = DR.all.slice().sort(function(a, b){ return b.$ - a.$ || b.y - a.y; }).slice(0, 20);
+    var value = done.filter(function(x){ return x.pts != null && x.$ >= 5; }).sort(function(a, b){ return b.pts / b.$ - a.pts / a.$; }).slice(0, 20);
+    var dollar = done.filter(function(x){ return x.pts != null && x.$ <= 2; }).sort(function(a, b){ return b.pts - a.pts; }).slice(0, 20);
+    var bust = done.filter(function(x){ return x.pts != null && x.$ >= 25; }).sort(function(a, b){ return a.pts / a.$ - b.pts / b.$; }).slice(0, 20);
+    return '<div class="dhd"><h2>All-Time Auction</h2><span class="mono">' + DR.all.length.toLocaleString('en-US') + ' PLAYERS BOUGHT SINCE ' + DR.years[DR.years.length - 1] + ' \u00b7 VALUE = PTS PER DOLLAR (MIN $5)</span></div><div class="dtops">' +
+      tbl('MOST EXPENSIVE EVER', pricey, function(x){ return '$' + x.$; }) + tbl('BEST VALUE', value, function(x){ return dPts(x.pts) + ' / $' + x.$; }) +
+      tbl('BEST $1\u2013$2 BUYS', dollar, function(x){ return dPts(x.pts) + ' PTS'; }) + tbl('BIGGEST BUSTS ($25+)', bust, function(x){ return dPts(x.pts) + ' / $' + x.$; }) + '</div>';
   }
 
   /* ---------- champions ---------- */
