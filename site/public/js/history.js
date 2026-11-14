@@ -270,12 +270,40 @@
       T.seasons.map(function(s){ var ch = /League Champion/.test(s[7]), yy = +s[0], G = seasonGames(id, yy), op = G.length && S.xy === yy;
         if(yy === +D.Y && G.length) s = curSeason(s, G); var upd = yy === +D.Y && S.liveBusy;
         return '<tr class="' + (ch ? 'gold' : '') + (G.length ? ' ck2 xyr' : '') + (op ? ' xon' : '') + '"' + (G.length ? ' data-xy="' + yy + '" title="Week by week"' : '') + '><td class="y">' + (G.length ? '<i class="xcar">' + (op ? '\u25be' : '\u25b8') + '</i>' : '') + esc(s[0]) + (isRT(s[0]) ? '<i class="rtdot mono" title="RT Sports year">RT</i>' : '') + '</td><td class="l"><span class="snm">' + (nameIn(+s[0]) ? hthumb(nameIn(+s[0]), +s[0], 'ysh') : '') + esc(nameIn(+s[0])) + '</span></td><td class="b">' + esc(s[1]) + '</td><td>' + esc(s[2]) + '</td><td>' + esc(s[3]) + '</td><td>' + esc(s[4]) + '</td><td>' + esc(s[5]) + '</td><td>' + esc(s[6]) + '</td><td class="l nt">' + (upd ? '<span class="xupd mono">UPDATING\u2026</span>' : '') + notes(s[7]) + '</td></tr>' + (op ? weekRows(id, yy, G, s) : '');
-      }).join('') + '</tbody></table></div></div></div>' + evo + rushmore(id);
+      }).join('') + '</tbody></table></div></div></div>' + evo + allTime(id) + rushmore(id);
     fitWeeks();
   }
 
 
   /* ---------- Mount Rushmore: the four players with the most starter points for a franchise ---------- */
+  /* ---------- all-time roster: each franchise's most-started players at every spot, rebuilt live from every season's lineups ---------- */
+  var AT = null, ATL = 0;
+  // a league slot can change hands: only count seasons since the franchise's first name in its lineage (DD Allstars aren't the Scallywags)
+  function atFrom(f){ var L = (H.lineage && H.lineage[f]) || []; return L.length ? Math.min.apply(null, L.map(function(x){ return +String(x[1]).split('-')[0]; })) : 0; }
+  function atLoad(){ if(ATL) return; ATL = 1;
+    Promise.all([fetch('data/rosters.json?v=20261112b').then(function(r){ return r.json(); }), D.seasonCards ? D.seasonCards().catch(function(){ return null; }) : null]).then(function(X){
+      var j = D.mergeSeason ? D.mergeSeason(X[0], X[1]) : X[0], by = {};
+      j.s.forEach(function(r){ var f = r[3] || H.n2id[j.t[r[2]]] || ''; if(!f || !r[5] || r[1] < atFrom(f)) return;
+        var p = j.p[r[0]], pos = String(p[1]).toUpperCase(); pos = pos === 'DEF' ? 'DEF' : pos === 'K' ? 'PK' : pos;
+        var k = f + '|' + r[0], a = (by[f] = by[f] || {})[k] || (by[f][k] = { n:rvName(p[0]), pos:pos, id:p[3] || '', st:0, pts:0, ys:{} });
+        a.st += r[5]; a.pts += r[6] || 0; a.ys[r[1]] = 1; });
+      AT = {}; Object.keys(by).forEach(function(f){ var L = Object.keys(by[f]).map(function(k){ return by[f][k]; }).sort(function(a, b){ return b.st - a.st || b.pts - a.pts; }), used = {};
+        function take(ps, n){ return L.filter(function(x){ return ps.indexOf(x.pos) > -1 && !used[x.n + x.pos]; }).slice(0, n).map(function(x){ used[x.n + x.pos] = 1; return x; }); }
+        var qb = take(['QB'], 2), rb = take(['RB'], 2), wr = take(['WR'], 3), te = take(['TE'], 1), fx = take(['RB', 'WR', 'TE'], 2);
+        AT[f] = { slots:[['QB', qb], ['RB', rb], ['WR', wr], ['TE', te], ['FLEX', fx]], yrs:Object.keys(L.reduce(function(o, x){ Object.keys(x.ys).forEach(function(y){ o[y] = 1; }); return o; }, {})).length };
+      });
+      if(S.tab === 'teams') draw();
+    }).catch(function(){ ATL = 0; });
+  }
+  function allTime(id){
+    if(!AT){ atLoad(); return '<section class="atr"><div class="lh"><span class="t">All-Time Roster</span><span class="mono">LOADING\u2026</span></div></section>'; }
+    var R = AT[id]; if(!R) return '';
+    function card(x, slot){ var ys = Object.keys(x.ys).map(Number).sort(function(a, b){ return a - b; });
+      return '<' + (x.id ? 'a href="#" data-card="' + esc(x.id) + '"' : 'div') + ' class="atc"><span class="atsl mono">' + slot + '</span><span class="pos ' + esc(x.pos) + '">' + esc(x.pos) + '</span><b class="atn">' + esc(x.n) + '</b><span class="aty mono">' + esc(rvRuns(ys)) + '</span>' +
+        '<span class="ats"><span><b>' + x.st + '</b><i class="mono">STARTS</i></span><span><b>' + Math.round(x.pts).toLocaleString('en-US') + '</b><i class="mono">PTS</i></span></span></' + (x.id ? 'a' : 'div') + '>'; }
+    return '<section class="atr"><div class="lh"><span class="t">All-Time Roster</span><span class="mono">MOST STARTS AT EACH SPOT \u00b7 EVERY NAME \u00b7 UPDATES EVERY WEEK</span></div><div class="atg">' +
+      R.slots.map(function(sl){ return sl[1].map(function(x){ return card(x, sl[0]); }).join(''); }).join('') + '</div></section>';
+  }
   function rushmore(id){
     var R = EX && EX.rush && EX.rush[id]; if(!R || !R.length) return '';
     return '<section class="rush"><div class="lh"><span class="t">Mount Rushmore</span><span class="mono">MOST POINTS AS A STARTER · EVERY NAME · ' + esc(rvRuns(EX.yrs || [])) + '</span></div><div class="rshg">' +
