@@ -100,8 +100,9 @@
         var t = tx(sum).replace(/^\([^)]*\)\s*/, '').replace(/\s*\(More\)\s*$/i, ''), parts = t.split(/\s*Analysis:\s*/i);
         out.push({ hl:tx(hd), src:tx(src), when:tx(r.querySelector('td.timestamp')), body:parts[0] || '', an:parts.slice(1).join(' ') });
       });
-      S.d.news = out; S.d.newsOk = true; body();
-    }).catch(function(){ if(S.id === id){ S.d.news = []; S.d.newsOk = true; body(); } });
+      if(out.length){ S.d.news = out; S.d.newsOk = true; body(); return; }
+      return Promise.reject();
+    }).catch(function(){ if(S.id !== id) return; D.profNews([id]).then(function(L){ if(S.id !== id) return; S.d.news = L.filter(function(n){ return n.mins <= 43200; }).map(function(n){ return { hl:n.head, src:n.src, when:n.when, body:'' }; }); S.d.newsOk = true; body(); }, function(){ S.d.news = []; S.d.newsOk = true; body(); }); });
   };
   // MFL's export API returns blank scores for many players (free agents especially); the player's own MFL page always has them
   function ptsCol(g){ for(var i = g.head.length - 1; i >= 0; i--) if(/^(fantasy\s*)?(pts|points|fpts)\.?$/i.test(g.head[i]) || /fantasy pts/i.test(g.head[i])) return i; return g.head.length - 1; }

@@ -168,6 +168,21 @@
   // request limiter state; set up before the first call below (the injury list) runs
   var INF = 0, QUE = [];
   D.INJ = {};
+  // player news headlines from MFL's public player profiles (works without a login): [{ id, head, src, when, mins }]
+  D.profNews = function(ids){
+    ids = (ids || []).filter(Boolean); var ch = []; for(var i = 0; i < ids.length; i += 60) ch.push(ids.slice(i, i + 60));
+    function mins(s){ var m = /(\d+)\s*(min|hour|day|week|month|year)/i.exec(String(s || '')); if(!m) return /just|now/i.test(String(s)) ? 0 : 1e9; return +m[1] * { min:1, hour:60, day:1440, week:10080, month:43200, year:525600 }[m[2].toLowerCase()]; }
+    function src(id){ id = String(id || ''); return /^rotowire/i.test(id) ? 'RotoWire' : /dynastyleaguefootball/i.test(id) ? 'Dynasty League Football' : /rotoballer/i.test(id) ? 'RotoBaller' : /fantasypros/i.test(id) ? 'FantasyPros' : /cbs/i.test(id) ? 'CBS' : /espn/i.test(id) ? 'ESPN' : ''; }
+    return Promise.all(ch.map(function(c){ return D.api('playerProfile', 'P=' + c.join(',')).catch(function(){ return null; }); })).then(function(R){
+      var out = [];
+      R.forEach(function(j){ D.arr(j && j.playerProfiles && j.playerProfiles.playerProfile).forEach(function(p){ var pid = p.id || (p.player && p.player.id);
+        D.arr(p.news && p.news.article).forEach(function(a){ var h = String(a.headline || '').replace(/^Dynasty\s*\|\s*/i, '').replace(/^(QB|RB|WR|TE|PK|K|DEF|DST)\s+[^:]{2,40}:\s*/, ''); if(!h) return;
+          out.push({ id:pid, head:h, src:src(a.id), when:String(a.published || ''), mins:mins(a.published) }); }); }); });
+      // the same story often arrives twice (RotoWire and a dynasty site): keep one
+      out = out.filter(function(n){ return n.src !== 'Dynasty League Football' || !out.some(function(m){ return m !== n && m.id === n.id && m.mins === n.mins && m.src !== n.src; }); });
+      return out.sort(function(a, b){ return a.mins - b.mins; });
+    });
+  };
   D.injCode = function(s){ s = String(s || '').toLowerCase().trim(); if(!s) return ''; if(/^q/.test(s)) return 'Q'; if(/^doubt/.test(s)) return 'D'; if(/^out/.test(s)) return 'OUT'; if(/^(ir|injured)/.test(s)) return 'IR'; if(/^susp/.test(s)) return 'SUS'; if(/^pup/.test(s)) return 'PUP'; if(/^hold/.test(s)) return 'HO'; if(/^retir/.test(s)) return ''; if(/^prob/.test(s)) return 'P'; if(/^(nfi|non)/.test(s)) return 'NFI'; return s.toUpperCase().slice(0, 4); };
   D.injReady = api('injuries', 'r=2').then(function(j){ D.arr(j && j.injuries && j.injuries.injury).forEach(function(i){ var k = D.injCode(i.status); if(k) D.INJ[i.id] = { k:k, full:i.status || '', det:[i.details, i.exp_return ? 'est. return ' + i.exp_return : ''].filter(Boolean).join(', ') }; }); }).catch(function(){});
   D.ij = function(id){ var x = D.INJ[id]; return x ? '<span class="ij mono" title="' + D.esc(x.full + (x.det ? ' \u2014 ' + x.det : '')) + '">' + x.k + '</span>' : ''; };
