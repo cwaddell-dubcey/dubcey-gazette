@@ -39,7 +39,7 @@ const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o 
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
 const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
 // one line per page for link previews
-const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', lottery: 'The Dubcey auction lottery: the balls, the odds and the draw.' };
+const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', helmets: 'The Dubcey Helmet Lab: design a helmet and add it to your team.', lottery: 'The Dubcey rookie lottery: the balls, the odds and the draw for the rookie draft order.' };
 const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1, stories:1, hits:1, pgfx:1, lottery:1 };
 // what a media ("press pass") member may write; everything else stays commissioner-only
 const MEDIA_OK = { column:1, stories:1, hits:1, pgfx:1 };
@@ -314,6 +314,54 @@ export default {
     }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
+    // ---- Helmet Lab: owners design helmets, add them as ALTERNATES (never replace or delete the main one),
+    //      pick which helmet the site shows, and keep saved designs in a locker. Commish can act for any team. ----
+    if (p === '/data/helmet-lab') {
+      const s = (await session(req, env)), fid = String(u.searchParams.get('f') || '').replace(/\D/g, '').slice(0, 4);
+      if (!s || !s.f) return json({ ok: false, error: 'Sign in with an owner account first.' }, 401);
+      if (!fid || (fid !== s.f && !isCommish(s, env))) return json({ ok: false, error: 'You can only change your own team.' }, 403);
+      if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
+      const getJ = async (k, d) => { try { return JSON.parse((await env.DC.get(k)) || 'null') || d; } catch (e) { return d; } };
+      const teams = await getJ('c:teams', {}), t = teams[fid] = teams[fid] || {}, lk = 'hl:' + fid;
+      if (req.method === 'GET') return json({ ok: true, alts: t.alts || [], use: t.use || '', designs: await getJ(lk, []) });
+      if (req.method !== 'POST' || !sameOrigin(req, u)) return json({ ok: false }, 405);
+      const b = await req.json().catch(() => ({}));
+      if (b.action === 'alt') {
+        const m = /^data:image\/(webp|png);base64,([A-Za-z0-9+/=]+)$/.exec(String(b.img || ''));
+        if (!m) return json({ ok: false, error: 'Bad image.' }, 400);
+        const bin = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+        if (bin.byteLength > 1.5e6) return json({ ok: false, error: 'Image too big.' }, 400);
+        t.alts = t.alts || [];
+        if (t.alts.length >= 12) return json({ ok: false, error: 'That team already has 12 alternates. Ask the Commish to clear some out.' }, 400);
+        const used = t.alts.map(a => a.k); let n = 1; while (used.includes(fid + '_' + n)) n++;
+        const k = fid + '_' + n, v = Date.now();
+        await env.DC.put('img:' + k, bin, { metadata: { type: 'image/' + m[1] } });
+        t.alts.push({ k, url: '/content/img/' + k + '?v=' + v, by: s.f, lab: 1, name: String(b.name || '').slice(0, 40) });
+        if (b.use) t.use = k;
+        await env.DC.put('c:teams', JSON.stringify(teams));
+        return json({ ok: true, k, url: '/content/img/' + k + '?v=' + v, alts: t.alts, use: t.use || '' });
+      }
+      if (b.action === 'use') {
+        const want = String(b.use || '');
+        if (want && want !== 'main' && !(t.alts || []).some(a => a.k === want)) return json({ ok: false, error: 'Unknown helmet.' }, 400);
+        if (want) t.use = want; else delete t.use;
+        await env.DC.put('c:teams', JSON.stringify(teams));
+        return json({ ok: true, use: t.use || '' });
+      }
+      if (b.action === 'save' || b.action === 'del') {
+        let L = await getJ(lk, []);
+        if (b.action === 'del') L = L.filter(x => x.id !== b.id);
+        else {
+          const snap = b.snap && typeof b.snap === 'object' ? b.snap : null; if (!snap) return json({ ok: false, error: 'Nothing to save.' }, 400);
+          const it = { id: String(b.id || Date.now()), name: String(b.name || 'Untitled').slice(0, 40), ts: Date.now(), snap };
+          L = [it].concat(L.filter(x => x.id !== it.id)).slice(0, 12);
+        }
+        const out = JSON.stringify(L); if (out.length > 8e6) return json({ ok: false, error: 'Locker is full. Delete a design or use a smaller logo.' }, 400);
+        await env.DC.put(lk, out);
+        return json({ ok: true, designs: L });
+      }
+      return json({ ok: false, error: 'Unknown action.' }, 400);
+    }
     // ---- suggestion box: any signed-in owner files bugs/ideas; commish sets status ----
     if (p === '/data/feedback') {
       const s = (await session(req, env)), clip = (x, n) => String(x == null ? '' : x).replace(/\s+$/,'').slice(0, n);

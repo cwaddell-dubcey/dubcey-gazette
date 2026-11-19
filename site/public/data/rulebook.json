@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-11",
+  "updated": "2026-11-19",
   "add": {
     "league": [
       {
@@ -106,8 +106,28 @@
     "draft": [
       {
         "h": "Rookie draft.",
-        "t": "Each year, a rookie draft is held before the auction draft. It is one round, and every team gets one pick, in order from 1 to 12.",
+        "t": "Each year, a rookie draft is held before the auction draft. It is one round, and every team gets one pick. The order is set by the Rookie Lottery.",
         "v": "1 round"
+      },
+      {
+        "h": "Rookie lottery.",
+        "t": "The Commish draws the rookie draft order on the Rookie Lottery page. Each ball is one chance at the #1 pick. Pick 1 is drawn first, then pick 2 from the teams left, and so on. The official result is posted on the site.",
+        "v": "Weighted draw"
+      },
+      {
+        "h": "Lottery balls.",
+        "t": "Every team starts with 20 balls. A team that misses the playoffs gets 20 more.",
+        "v": "20 / +20"
+      },
+      {
+        "h": "Playoff wins.",
+        "t": "A team loses 5 balls for every playoff game it wins, starting in Week 15. The Week 14 Free-For-All does not count.",
+        "v": "−5 per win"
+      },
+      {
+        "h": "Traded-for money.",
+        "t": "A team loses 1 ball for every $1 of next year’s auction money it has gained in trades. Only net gains count, and a team that traded money away does not gain balls. No team can go below zero balls.",
+        "v": "−1 per $1"
       },
       {
         "h": "Rookie values.",
@@ -171,5 +191,31 @@
       }
     ]
   },
-  "articles": []
+  "articles": [
+    {
+      "title": "Helmets",
+      "rules": [
+        {
+          "h": "Main helmet.",
+          "t": "Every franchise has one main helmet, set by the Commish. Owners can't replace or delete it.",
+          "v": "Commish"
+        },
+        {
+          "h": "Alternate helmets.",
+          "t": "Any owner can design a new helmet in the Helmet Lab and add it to their team as an alternate. Owners can add alternates but can't remove any. Only the Commish can take one down.",
+          "v": "Add only"
+        },
+        {
+          "h": "Choosing a helmet.",
+          "t": "In the Helmet Lab, an owner picks which helmet the site shows each week: the main helmet, one of the alternates, or a weekly rotation through all of them. The Commish can still pin a helmet for a special week.",
+          "v": "Owner's pick"
+        },
+        {
+          "h": "The Dubcey patch.",
+          "t": "Every helmet wears the Dubcey patch, in the same spot and at the same size. The Helmet Lab won't make a helmet without it.",
+          "v": "Required"
+        }
+      ]
+    }
+  ]
 }

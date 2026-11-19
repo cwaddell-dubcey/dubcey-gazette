@@ -3300,3 +3300,90 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 .lxrn{font-size:9.5px;letter-spacing:.06em;color:#6B6455;line-height:1.5}
 .lxwhy{font-size:8.5px;letter-spacing:.05em;color:#6B6455;line-height:1.45;margin:-2px 0 9px;min-height:2.9em}
 .lxwhy.off{color:#c8282d}
+.lxhow{margin:24px 0 40px}
+.lxhb{padding:14px 18px 18px}
+.lxhb p{margin:0 0 10px;font-size:15px;line-height:1.5;max-width:760px}
+.lxlad{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
+.lxlad li{display:flex;flex-direction:column;align-items:center;padding:7px 4px;background:#102542;color:#F7EFDB}
+.lxlad b{font-size:9px;letter-spacing:.12em;color:#9FB4CC}
+.lxlad span{font:400 20px/1.1 'Alfa Slab One',serif;color:#E0A72B}
+.lxpr{font-size:10px;font-style:normal;color:#1f6f5c;min-width:26px}
+/* ---- Helmet Lab ---- */
+.zlsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.zltop{font-size:10.5px;letter-spacing:.12em;color:#E0A72B}
+.zlwrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start;padding-bottom:44px}
+.zlstage{position:sticky;top:88px}
+.zlur{display:flex;gap:6px}
+.zlur button{background:transparent;border:1px solid #2C4C78;color:#9FB4CC;font:700 9.5px/1 'Courier Prime',monospace;letter-spacing:.08em;padding:5px 8px;cursor:pointer}
+.zlur button:hover{color:#fff;border-color:#E0A72B}
+.zlcv{position:relative;background:#2A2B2E}
+.zlcv canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;cursor:crosshair}
+.zlld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#C9C2AC;font-size:11px;letter-spacing:.14em}
+.zlld[hidden]{display:none}
+.zlnote{padding:9px 14px;font-size:9.5px;letter-spacing:.08em;color:#6B6455;border-top:1px solid #E4DCC5}
+.zltabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.zltabs button{flex:1;padding:10px 6px;background:#16304F;border:1.5px solid #2C4C78;color:#9FB4CC;font:700 10px/1 'Courier Prime',monospace;letter-spacing:.1em;cursor:pointer}
+.zltabs button:hover{color:#fff}
+.zltabs button.on{background:#E0A72B;border-color:#E0A72B;color:#102542}
+.zlpanel{padding:4px 16px 16px;max-height:calc(100vh - 170px);overflow:auto}
+.zlsec{padding:12px 0;border-bottom:1px solid #E4DCC5}
+.zlsec:last-child{border-bottom:0}
+.zlh{font-size:9.5px;letter-spacing:.14em;color:#c8282d;margin-bottom:8px}
+.zlgrp{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;align-items:center}
+.zlgrp>span{width:100%;font-size:8.5px;letter-spacing:.12em;color:#6B6455}
+.zlpt{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1.5px solid #C9C2AC;background:#fff;color:#102542;font:600 12px/1 'Zilla Slab',Georgia,serif;cursor:pointer}
+.zlpt i{width:12px;height:12px;border:1px solid rgba(0,0,0,.25);display:inline-block}
+.zlpt.on{border-color:#102542;background:#102542;color:#F7EFDB}
+.zlpal{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:4px}
+.zlsw{aspect-ratio:1;border:1px solid rgba(0,0,0,.2);cursor:pointer;padding:0}
+.zlsw.on{outline:3px solid #c8282d;outline-offset:1px}
+.zlrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.zlrow input[type=color]{width:44px;height:34px;border:1.5px solid #102542;padding:0;background:#fff;cursor:pointer}
+.zlhex,.zltx{height:34px;border:1.5px solid #102542;background:#fff;padding:0 9px;font-size:13px;color:#102542}
+.zlhex{width:92px}.zltx{flex:1;min-width:140px;font:600 14px/1 'Zilla Slab',Georgia,serif}
+.zlseg{display:flex;flex-wrap:wrap;gap:4px}
+.zlseg button{flex:1;padding:9px 6px;border:1.5px solid #102542;background:#fff;color:#102542;font-size:9.5px;letter-spacing:.08em;cursor:pointer;white-space:nowrap}
+.zlseg button.on{background:#102542;color:#E0A72B}
+.zlchk{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0 4px;font:600 13px/1.2 'Zilla Slab',Georgia,serif}
+.zlchk input,.zlcl input[type=checkbox]{accent-color:#c8282d}
+.zlsl{display:grid;grid-template-columns:88px 1fr 44px;gap:8px;align-items:center;margin:7px 0}
+.zlsl span{font-size:9px;letter-spacing:.08em;color:#6B6455}
+.zlsl input{width:100%;accent-color:#c8282d}
+.zlsl b{font-size:10.5px;text-align:right}
+.zlpre{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.zlpre button{display:flex;align-items:center;gap:7px;padding:6px;border:1.5px solid #C9C2AC;background:#fff;cursor:pointer}
+.zlpre button:hover{border-color:#102542}
+.zlpre i{width:20px;height:20px;border:1px solid rgba(0,0,0,.2);flex:none}
+.zlpre span{font-size:9px;letter-spacing:.06em;color:#102542}
+.zlpats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.zlpats button{padding:4px;border:1.5px solid #C9C2AC;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center}
+.zlpats button.on{border-color:#c8282d;box-shadow:0 0 0 1.5px #c8282d}
+.zlpats canvas{width:100%;height:auto;aspect-ratio:112/80;display:block}
+.zlpats span{font-size:8.5px;letter-spacing:.06em;color:#102542}
+.zlup{display:flex;flex-direction:column;gap:6px;cursor:pointer;margin-bottom:8px}
+.zlup span.mono{font-size:9px;letter-spacing:.05em;color:#6B6455;line-height:1.5}
+.zlswaps{display:grid;gap:6px;margin-top:10px}
+.zlswap{display:flex;align-items:center;gap:8px}
+.zlswap i{width:26px;height:26px;border:1px solid rgba(0,0,0,.25)}
+.zlswap span{font-size:10px}
+.zlswap label{font-size:9.5px;display:flex;gap:4px;align-items:center}
+.zltl{display:flex;flex-wrap:wrap;gap:6px}
+.zltl button.mono{padding:7px 10px;border:1.5px solid #C9C2AC;background:#fff;color:#102542;font-size:10px;cursor:pointer;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zltl button.on{border-color:#102542;background:#102542;color:#E0A72B}
+.zlcl{display:flex;align-items:center;gap:6px;font-size:9.5px;letter-spacing:.08em}
+.zlp{margin:8px 0 0;font-size:14px;line-height:1.45;color:#3A3528}
+.zlsel{display:flex;align-items:center;gap:8px;font-size:9.5px;margin-bottom:6px}
+.zlsel select{flex:1;height:32px;border:1.5px solid #102542;background:#fff;font:600 13px 'Zilla Slab',Georgia,serif}
+.zlwear{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.zlwear button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border:1.5px solid #C9C2AC;background:#fff;cursor:pointer;min-height:92px;justify-content:center}
+.zlwear button.on{border-color:#c8282d;box-shadow:0 0 0 1.5px #c8282d;background:#fbf3df}
+.zlwear img{width:84px;height:62px;object-fit:contain}
+.zlwear span{font-size:8.5px;letter-spacing:.06em;color:#102542;text-align:center}
+.zllock{display:grid;gap:4px;margin-top:10px}
+.zlli{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #E4DCC5}
+.zlli b{font:600 14px/1.1 'Zilla Slab',Georgia,serif}
+.zlli span{font-size:9px;color:#6B6455}
+.zlli button{border:1.5px solid #102542;background:#fff;color:#102542;font-size:9px;padding:5px 7px;cursor:pointer}
+.zltoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:90;background:#102542;color:#F7EFDB;border:2px solid #E0A72B;padding:11px 15px;font-size:11px;letter-spacing:.06em;max-width:min(90vw,460px);text-align:center;pointer-events:none}
+@media (max-width:980px){.zlwrap{grid-template-columns:1fr}.zlstage{position:sticky;top:56px;z-index:5}.zlpanel{max-height:none}}
+@media (max-width:980px){.zlnote{display:none}.zlur button{padding:4px 6px}}

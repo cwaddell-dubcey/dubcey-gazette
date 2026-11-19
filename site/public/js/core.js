@@ -43,7 +43,9 @@
   D.nflWeek = Math.max(1, Math.floor((Date.now() - Date.UTC(W1[0], W1[1] - 1, W1[2], 9)) / 6048e5) + 1);
   D.PIN = {};
   D.weeksOf = function(s){ var o = []; String(s || '').split(/[\s,]+/).forEach(function(p){ var m = /^(\d{1,2})(?:-(\d{1,2}))?$/.exec(p); if(!m) return; var a = +m[1], b = +(m[2] || m[1]); for(var w = Math.min(a, b); w <= Math.max(a, b) && w <= 22; w++) if(w > 0 && o.indexOf(w) < 0) o.push(w); }); return o.sort(function(a, b){ return a - b; }); };
-  D.helmPick = function(id){ var p = D.PIN[id]; return p && p[D.nflWeek] != null && p[D.nflWeek] < D.helmPool(id).length ? p[D.nflWeek] : null; };
+  // the Commish's week pins win; otherwise the helmet the owner chose in the Helmet Lab (D.USE); otherwise it rotates weekly
+  D.USE = {};
+  D.helmPick = function(id){ var p = D.PIN[id], n = D.helmPool(id).length; if(p && p[D.nflWeek] != null && p[D.nflWeek] < n) return p[D.nflWeek]; return D.USE[id] != null && D.USE[id] < n ? D.USE[id] : null; };
   D.helm = function(id){
     var P = D.helmPool(id), pk = D.helmPick(id); if(pk != null) return P[pk]; if(P.length < 2) return P[0];
     var s = String(id) + ':' + D.helmWeek, h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -133,7 +135,8 @@
   // team-name / helmet overrides, applied before any page draws
   D.teamsReady = D.content('teams').then(function(t){
     Object.keys(t || {}).forEach(function(id){ var o = t[id] || {}; if(!D.NAME[id]) return; D.applyTeam(id, o); if(o.ego && o.ego.helm && D.LOCAL && D.EGO_ON[id]) D.EGO_ON[id].helm = localStorage.getItem('dcImg:' + id + '_ego') || D.EGO_ON[id].helm; if(o.helm) D.CUSTOM[id] = D.LOCAL ? (localStorage.getItem('dcImg:' + id) || '') || undefined : o.helm; var pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; });
-      if(Array.isArray(o.alts) && o.alts.length){ var L = []; o.alts.forEach(function(a){ var u = D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; if(!u) return; L.push(u); D.weeksOf(a.wk).forEach(function(w){ pin[w] = L.length; }); }); if(L.length) D.ALT[id] = L; }
+      if(Array.isArray(o.alts) && o.alts.length){ var L = []; o.alts.forEach(function(a){ var u = D.LOCAL ? localStorage.getItem('dcImg:' + a.k) || '' : a.url; if(!u) return; L.push(u); if(o.use === a.k) D.USE[id] = L.length; D.weeksOf(a.wk).forEach(function(w){ pin[w] = L.length; }); }); if(L.length) D.ALT[id] = L; }
+      if(o.use === 'main') D.USE[id] = 0;
       if(Object.keys(pin).length) D.PIN[id] = pin; });
     return t || {};
   }).catch(function(){ return {}; });
@@ -624,7 +627,7 @@
     { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
     { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
     { t:'HISTORY', p:['history','vault'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#drafts', 'DRAFTS'], ['history#defunct', 'DEFUNCT'], ['vault', 'THE VAULT']] },
-    { t:'CLUBHOUSE', p:['finances', 'rules', 'clerk', 'lottery', 'ideas'], items:[['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['lottery', 'AUCTION LOTTERY'], ['ideas', 'SUGGESTION BOX']] },
+    { t:'CLUBHOUSE', p:['finances', 'rules', 'clerk', 'lottery', 'helmets', 'ideas'], items:[['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['lottery', 'ROOKIE LOTTERY'], ['helmets', 'HELMET LAB'], ['ideas', 'SUGGESTION BOX']] },
     { t:'MY TEAM', p:['myteam'], href:'myteam', cls:'ngmt' }
   ];
   function gHref(x){ var i = x.indexOf('#'); return i < 0 ? D.href(x) : D.href(x.slice(0, i)) + x.slice(i); }

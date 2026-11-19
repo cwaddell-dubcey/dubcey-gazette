@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Helmet Lab · Dubcey Chronicle</title>
+<meta name="theme-color" content="#0D1F38">
+<link rel="icon" href="h/logo.webp">
+<link rel="apple-touch-icon" href="h/apple-touch-icon.png?v=20261014v">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Dubcey">
+<meta name="application-name" content="Dubcey">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Shrikhand&family=Zilla+Slab:wght@400;500;600;700&family=Courier+Prime:wght@400;700&family=Archivo+Black&family=Anton&family=Bebas+Neue&family=Oswald:wght@700&family=Graduate&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css?v=20261112a">
+</head>
+<body>
+<div class="bg">
+<header id="top"></header>
+<div class="in">
+  <div class="pagehd">
+    <div><div class="k mono">THE CLUBHOUSE · EQUIPMENT ROOM</div><h1>Helmet Lab</h1></div>
+    <div class="zltop mono" id="zltop"></div>
+  </div>
+  <div class="zlwrap">
+    <section class="zlstage card">
+      <div class="bar mono"><span id="zlpart">CLICK THE HELMET TO PICK A PART</span><span class="zlur"><button type="button" data-a="undo" aria-label="Undo">&#8630; UNDO</button><button type="button" data-a="redo" aria-label="Redo">REDO &#8631;</button><button type="button" data-a="surprise">SURPRISE ME</button></span></div>
+      <div class="zlcv"><canvas id="zlcv" width="1600" height="900" aria-label="Helmet preview"></canvas><div class="zlld mono" id="zlld">LOADING THE PAINT SHOP…</div></div>
+      <div class="zlnote mono">THE DUBCEY PATCH IS LEAGUE ISSUE. EVERY HELMET WEARS IT, SAME SPOT, SAME SIZE.</div>
+    </section>
+    <aside class="zlside">
+      <nav class="zltabs mono" id="zltabs"><button type="button" data-t="color">COLORS</button><button type="button" data-t="pattern">PATTERN</button><button type="button" data-t="decal">LOGO</button><button type="button" data-t="text">TEXT</button><button type="button" data-t="save">SAVE</button></nav>
+      <div class="card zlpanel" id="zlp"></div>
+    </aside>
+  </div>
+  <div class="zlsr" aria-live="polite" id="zlsay"></div>
+</div>
+</div>
+<script src="js/core.js?v=20261112a"></script>
+<script src="js/helmetlab.js?v=20261112a"></script>
+</body>
+</html>

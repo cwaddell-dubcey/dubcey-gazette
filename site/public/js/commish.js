@@ -154,7 +154,7 @@
     [].forEach.call(r.querySelectorAll('[data-wk]'), function(inp){ var v = D.weeksOf(inp.value).join(', '), k = inp.getAttribute('data-wk'); if(k === 'main'){ if(v) o.mainWk = v; else delete o.mainWk; } else if(o.alts && o.alts[+k]){ if(v) o.alts[+k].wk = v; else delete o.alts[+k].wk; } }); }); }
   function applyPins(){ D.PIN = {}; D.IDS.forEach(function(id){ var o = S.T[id] || {}, pin = {}; D.weeksOf(o.mainWk).forEach(function(w){ pin[w] = 0; }); (o.alts || []).forEach(function(a, i){ D.weeksOf(a.wk).forEach(function(w){ pin[w] = i + 1; }); }); if(Object.keys(pin).length) D.PIN[id] = pin; }); }
   function teams(){
-    if(!S.T){ D.content('teams').then(function(t){ S.T = t || {}; teams(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
+    if(!S.T){ D.content('teams').then(function(t){ S.T = t || {}; S.Tseen = {}; Object.keys(S.T).forEach(function(id){ (S.T[id].alts || []).forEach(function(a){ S.Tseen[a.k] = 1; }); }); teams(); }); $('cb').innerHTML = '<div class="ld mono">LOADING\u2026</div>'; return; }
     $('cb').innerHTML = '<article class="card" style="margin-bottom:44px"><div class="bar mono"><span>TEAM NAMES & HELMETS</span><span>SHOWS EVERYWHERE ON THE SITE</span></div>' + D.IDS.map(function(id){ var o = S.T[id] || {};
       return '<div class="trow" data-id="' + id + '"><label class="hpick" title="Upload a new main helmet"><img src="' + D.helmPool(id, true)[0] + '" alt=""><input type="file" accept="image/*" hidden><span class="mono">CHANGE</span></label>' +
         '<label class="mono">FULL NAME<input name="name" value="' + esc(o.name || D.NAME0[id]) + '"></label><label class="mono">SHORT NAME<input name="short" value="' + esc(o.short || D.SHORT0[id]) + '" maxlength="14"></label><span class="mono fid">#' + id + '</span>' +
@@ -264,8 +264,12 @@
     var ar = t.closest && t.closest('[data-altrm]'); if(ar){ keepWk(); var rid = ar.closest('.trow').getAttribute('data-id'), oo = S.T[rid] || {}; (oo.alts || []).splice(+ar.getAttribute('data-altrm'), 1); if(D.ALT[rid]) D.ALT[rid].splice(+ar.getAttribute('data-altrm'), 1); applyPins(); var yy = window.scrollY; teams(); window.scrollTo(0, yy); toast('REMOVED \u2014 HIT SAVE TEAMS'); return; }
     if(t.id === 'tsave'){
       keepWk(); keepEgo(); t.disabled = true; var T = {};
-      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:o.alts || [] }; if(o.ego && (o.ego.name || o.ego.helm)) T[id].ego = o.ego; if(o.mainWk && T[id].alts.length) T[id].mainWk = o.mainWk; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
-      D.save('teams', T).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ D.applyTeam(id, T[id]); }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
+      // owners can add Helmet Lab alternates (and pick which helmet they wear) while this page is open: re-read and keep those
+      D.content('teams').then(function(F){ F = F || {};
+      [].forEach.call(document.querySelectorAll('.trow'), function(r){ var id = r.getAttribute('data-id'), o = S.T[id] || {}, f = F[id] || {}; T[id] = { name:r.querySelector('[name=name]').value.trim(), short:r.querySelector('[name=short]').value.trim(), helm:o.helm || '', alts:(o.alts || []).concat((f.alts || []).filter(function(a){ return !(S.Tseen || {})[a.k] && !(o.alts || []).some(function(b){ return b.k === a.k; }); })) }; if(o.ego && (o.ego.name || o.ego.helm)) T[id].ego = o.ego; if(o.mainWk && T[id].alts.length) T[id].mainWk = o.mainWk;
+        var use = f.use != null ? f.use : o.use; if(use && (use === 'main' || T[id].alts.some(function(a){ return a.k === use; }))) T[id].use = use; if(!T[id].helm) delete T[id].helm; if(!T[id].alts.length) delete T[id].alts; });
+      Object.keys(T).forEach(function(id){ (T[id].alts || []).forEach(function(a){ (S.Tseen = S.Tseen || {})[a.k] = 1; }); });
+      return D.save('teams', T); }).then(function(r){ t.disabled = false; if(done(r, 'TEAMS')){ S.T = T; Object.keys(T).forEach(function(id){ D.applyTeam(id, T[id]); }); applyPins(); var y3 = window.scrollY; teams(); window.scrollTo(0, y3); } });
       return;
     }
     if(t.id === 'padd'){ S.pop = readPop().concat([{ id:'n' + Date.now().toString(36), kind:'note', title:'New message', on:true, sd:'Sun', st:'12:00', ed:'Sun', et:'13:00', kick:'', body:'' }]); popups(); return; }
