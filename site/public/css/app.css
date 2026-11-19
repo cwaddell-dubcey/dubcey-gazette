@@ -3175,3 +3175,120 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 .nf4 h2{font:400 26px/1.1 'Alfa Slab One',serif;text-transform:uppercase;margin:8px 0 10px}
 .nf4 p{font-size:16px;line-height:1.5;margin:0 0 18px}
 .nf4a{display:flex;flex-wrap:wrap;gap:8px}
+/* ---- Auction Lottery ---- */
+.lxsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.lxban{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;margin:0 0 18px;padding:10px 16px;background:#102542;border:2px solid #E0A72B;color:#F7EFDB;font-size:10.5px;letter-spacing:.1em;text-decoration:none}
+.lxban b{color:#E0A72B;font-weight:700}
+.lxban:not(.lxdone) b{color:#ff8a7a}
+.lxdone:hover{border-color:#F7EFDB;color:#F7EFDB}
+.lxmini{display:flex;gap:4px;flex-wrap:wrap}
+.lxmini i{position:relative;display:block;width:34px}
+.lxmini img{width:34px;height:26px;object-fit:contain;display:block}
+.lxmini em{position:absolute;left:-2px;top:-4px;font-size:8.5px;font-style:normal;color:#E0A72B}
+.lxtop{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:14px 18px;margin-bottom:22px}
+.lxsum b{display:block;font:400 30px/1 'Alfa Slab One',serif}
+.lxsum span{font-size:9.5px;color:#6B6455;letter-spacing:.1em}
+.lxtag{font-size:9.5px;letter-spacing:.1em;padding:5px 9px;border:1.5px dashed #c8282d;color:#c8282d}
+.lxtag.ok{border-style:solid;border-color:#1f6f5c;color:#1f6f5c}
+.lxact{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+.lxgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:18px}
+.lxt{padding:14px 14px 16px;box-shadow:4px 4px 0 #c8282d}
+.lxth{display:flex;align-items:center;gap:10px;min-height:56px}
+.lxth img{width:64px;height:50px;object-fit:contain;flex:none}
+.lxth b{display:block;font:400 15px/1.1 'Alfa Slab One',serif;text-transform:uppercase}
+.lxth span{font-size:9px;color:#6B6455;letter-spacing:.06em}
+.lxbal{display:flex;align-items:center;gap:10px;margin:12px 0 10px}
+.lxpm{width:40px;height:40px;flex:none;border:2px solid #102542;background:#fff;color:#102542;font:700 22px/1 'Courier Prime',monospace;cursor:pointer}
+.lxpm:hover{background:#102542;color:#E0A72B}
+.lxbal label{flex:1;text-align:center}
+.lxbal input{width:100%;border:0;border-bottom:2px solid #C9C2AC;background:transparent;text-align:center;font:400 34px/1.1 'Alfa Slab One',serif;color:#102542;padding:0;-moz-appearance:textfield}
+.lxbal input::-webkit-outer-spin-button,.lxbal input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.lxbal input:focus{outline:2px solid #E0A72B;outline-offset:2px}
+.lxbal label span{display:block;font-size:9px;letter-spacing:.14em;color:#6B6455;margin-top:3px}
+.lxodd{display:flex;justify-content:space-between;align-items:baseline}
+.lxodd span{font-size:9px;letter-spacing:.12em;color:#6B6455}
+.lxodd b{font:700 15px/1 'Courier Prime',monospace;color:#c8282d}
+.lxbar{height:8px;background:#E4DCC5;margin-top:5px}
+.lxbar i{display:block;height:100%;background:linear-gradient(90deg,#c99a3a,#E0A72B);transition:width .3s}
+.lxnote{font-size:9.5px;letter-spacing:.08em;color:#9FB4CC;margin:22px 0 40px;line-height:1.7}
+.lxodds{margin-bottom:40px}
+.lxscr{overflow-x:auto}
+.lxodds table{width:100%;border-collapse:collapse;min-width:760px}
+.lxodds th,.lxodds td{padding:7px 6px;border-bottom:1px solid #E4DCC5;text-align:center;font-size:11.5px;font-variant-numeric:tabular-nums}
+.lxodds thead th{font:700 10px/1 'Courier Prime',monospace;color:#6B6455;letter-spacing:.08em;background:#EFE6CF}
+.lxodds tbody th{text-align:left;font:400 12px/1.1 'Alfa Slab One',serif;text-transform:uppercase;white-space:nowrap}
+.lxodds tbody th img{display:inline-block;width:30px;height:22px;object-fit:contain;vertical-align:middle;margin-right:7px}
+.lxft{font-size:9px;letter-spacing:.08em;color:#6B6455;padding:10px 14px}
+.lxhist{display:grid;gap:22px;margin-bottom:40px}
+.lxord{list-style:none;margin:0;padding:8px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:0 22px}
+.lxord li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #E4DCC5}
+.lxord li>b{width:22px;font-size:14px;color:#c8282d;text-align:right}
+.lxord img{width:40px;height:30px;object-fit:contain}
+.lxord span{flex:1;font:400 13px/1.15 'Alfa Slab One',serif;text-transform:uppercase}
+.lxord span i{display:block;font:400 9px/1.4 'Courier Prime',monospace;color:#6B6455;letter-spacing:.05em;text-transform:none}
+.lxha{display:flex;gap:8px;padding:0 14px 14px}
+.lxmv{font-size:10px;font-style:normal;padding:2px 5px;color:#6B6455;white-space:nowrap}
+.lxmv.lxup{background:#1f6f5c;color:#fff}.lxmv.lxdn{background:#c8282d;color:#fff}
+.lxstage{background:radial-gradient(ellipse at 50% 0,#1d3a63 0,#102542 45%,#0D1F38 100%);border:2px solid #0D1F38;box-shadow:6px 6px 0 #c8282d;margin-bottom:40px;color:#F7EFDB}
+.lxsh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:9px 14px;background:#0D1F38;color:#E0A72B;font-size:10.5px;letter-spacing:.1em}
+.lxtools{display:flex;gap:6px}
+.lxtools button{background:transparent;border:1.5px solid #2C4C78;color:#9FB4CC;font:700 9.5px/1 'Courier Prime',monospace;letter-spacing:.1em;padding:7px 10px;cursor:pointer}
+.lxtools button:hover{color:#fff;border-color:#43648A}
+.lxmach{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;padding:22px}
+.lxcol{display:flex;flex-direction:column;align-items:center}
+.lxdrum{position:relative;width:min(400px,80vw);aspect-ratio:1;border-radius:50%;border:6px solid #E0A72B;background:radial-gradient(circle at 38% 28%,rgba(255,255,255,.16),rgba(13,31,56,.6) 55%,#081426);box-shadow:inset 0 0 60px rgba(0,0,0,.6),0 0 0 6px #0D1F38,0 0 40px -4px rgba(224,167,43,.35);overflow:hidden}
+.lxdrum.spin{animation:lxshake .45s ease-in-out infinite}
+.lxring{position:absolute;inset:0;animation:lxorb 22s linear infinite}
+.lxring.i{animation:lxorbr 15s linear infinite}
+.lxbl{position:absolute;width:19%;aspect-ratio:1;transform:translate(-50%,-50%)}
+.lxbi{display:flex;flex-direction:column;align-items:center;width:100%;height:100%;animation:lxorbr 22s linear infinite}
+.lxring.i .lxbi{animation:lxorb 15s linear infinite}
+.lxbi img{width:100%;height:100%;border-radius:50%;object-fit:contain;padding:9%;background:radial-gradient(circle at 36% 28%,#F7EFDB,#C9C2AC 70%);border:3px solid #E0A72B;box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.5)}
+.lxbi i{font-style:normal;font-size:9.5px;color:#E0A72B;margin-top:2px;text-shadow:0 1px 3px #000}
+.lxdrum.spin .lxring{animation-duration:2.4s}.lxdrum.spin .lxring.i{animation-duration:1.8s}
+.lxdrum.spin .lxbi{animation-duration:2.4s}.lxdrum.spin .lxring.i .lxbi{animation-duration:1.8s}
+.lxdrum.spin .lxbi i{visibility:hidden}
+.lxempty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.lxempty b{font:400 clamp(26px,4vw,40px)/1 'Alfa Slab One',serif;text-shadow:3px 3px 0 #c8282d}
+.lxempty span{font-size:10px;color:#9FB4CC;letter-spacing:.14em;margin-top:8px}
+.lxchute{position:relative;width:96px;height:44px;margin-top:-3px;background:linear-gradient(180deg,#E0A72B,#8a6420);clip-path:polygon(0 0,100% 0,66% 100%,34% 100%)}
+.lxchute i{position:absolute;left:50%;top:2px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff,#F7EFDB 60%,#C9C2AC);animation:lxfall .9s ease-in .6s infinite}
+.lxtray{width:min(440px,100%);min-height:200px;margin-top:8px;padding:20px 18px;background:#F7EFDB;color:#102542;border:2px solid #0D1F38;box-shadow:5px 5px 0 #c8282d;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px}
+.lxtray p{margin:0;font-size:15px;line-height:1.45;max-width:340px}
+.lxtray h3{margin:0;font:400 clamp(22px,3.4vw,32px)/1.05 'Alfa Slab One',serif;text-transform:uppercase}
+.lxk{font-size:10.5px;letter-spacing:.16em;color:#c8282d}
+.lxglow{animation:lxblink 1s ease-in-out infinite}
+.lxsub{font-size:9.5px !important;letter-spacing:.14em;color:#6B6455}
+.lxrev h3{animation:lxslam .6s cubic-bezier(.2,.9,.3,1.2) .3s both}
+.lxbig{width:170px;height:130px;object-fit:contain;animation:lxdrop .8s cubic-bezier(.2,.85,.3,1.25) both;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.lxbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
+.btn.lxred{background:#c8282d;color:#fff !important}.btn.lxred:hover{background:#102542}
+.lxctl{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px;min-height:48px}
+.btn.lxspin{font-size:13px;padding:15px 26px;box-shadow:4px 4px 0 #c8282d}
+.lxboard{background:#F7EFDB;color:#102542;border:2px solid #0D1F38;align-self:start}
+.lxboard ol{list-style:none;margin:0;padding:6px 10px}
+.lxboard li{display:flex;align-items:center;gap:9px;min-height:40px;border-bottom:1px solid #E4DCC5}
+.lxboard li:last-child{border-bottom:0}
+.lxboard li>b{width:24px;text-align:right;font-size:14px;color:#6B6455}
+.lxboard li.one>b{color:#c8282d}
+.lxboard li.on{animation:lxrow .4s ease both}
+.lxboard li.one.on{background:#f3dfa8}
+.lxboard img{width:36px;height:28px;object-fit:contain}
+.lxboard li span{flex:1;font:400 12.5px/1.1 'Alfa Slab One',serif;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lxboard .lxin{font:400 10px/1 'Courier Prime',monospace;color:#A69D85;letter-spacing:.08em;text-transform:none}
+.lxtoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:90;background:#102542;color:#F7EFDB;border:2px solid #E0A72B;padding:12px 16px;font-size:11px;letter-spacing:.06em;max-width:min(90vw,460px);text-align:center}
+.lxstage:fullscreen,.lxstage.lxfake{position:fixed;inset:0;z-index:200;margin:0;overflow:auto;display:flex;flex-direction:column;box-shadow:none}
+.lxstage:fullscreen .lxmach,.lxstage.lxfake .lxmach{flex:1;align-items:center;grid-template-columns:minmax(0,1fr) 380px}
+.lxstage:fullscreen .lxdrum,.lxstage.lxfake .lxdrum{width:min(52vh,560px)}
+.lxstage:fullscreen .lxboard li,.lxstage.lxfake .lxboard li{min-height:min(6vh,56px)}
+.lxstage:fullscreen .lxboard li span,.lxstage.lxfake .lxboard li span{font-size:16px}
+@keyframes lxorb{to{transform:rotate(360deg)}}
+@keyframes lxorbr{to{transform:rotate(-360deg)}}
+@keyframes lxshake{0%,100%{transform:translate(0,0)}25%{transform:translate(-4px,3px)}50%{transform:translate(4px,-3px)}75%{transform:translate(-3px,-3px)}}
+@keyframes lxfall{0%{transform:translateY(-12px);opacity:0}30%{opacity:1}100%{transform:translateY(46px);opacity:0}}
+@keyframes lxblink{50%{opacity:.45}}
+@keyframes lxslam{0%{transform:scale(1.5);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes lxdrop{0%{transform:translateY(-160px) scale(.5);opacity:0}70%{transform:translateY(10px) scale(1.08);opacity:1}100%{transform:none}}
+@keyframes lxrow{0%{transform:translateX(12px);opacity:0}100%{transform:none;opacity:1}}
+@media (max-width:860px){.lxmach{grid-template-columns:1fr;padding:16px}.lxact{margin-left:0}}
+@media (prefers-reduced-motion:reduce){.lxring,.lxbi,.lxdrum.spin{animation:none !important}}
