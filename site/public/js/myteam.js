@@ -101,8 +101,8 @@
       (v.lim.count ? '<span class="chip mono' + (v.n === v.lim.count ? '' : ' no') + '">TOTAL ' + v.n + '<em>/' + v.lim.count + '</em></span>' : '');
     var wp = '', w0 = S.cur || S.week; for(var k = w0; k <= Math.min(17, w0 + 4); k++) wp += '<button type="button" class="' + (k === S.week ? 'on' : '') + '" data-lw="' + k + '">WK ' + k + (k === S.cur ? ' \u00b7 NOW' : '') + '</button>';
     $('mtb').innerHTML = '<div class="luwk mono"><span>SET LINEUP FOR</span><div>' + wp + '</div></div>' + opp +
-      '<div class="lugrid"><article class="card"><div class="bar mono"><span>STARTERS' + (Object.keys(S.pj).length ? ' \u00b7 PROJ ' + D.pts(Math.round(st.reduce(function(a, id){ return a + (S.pj[id] || 0); }, 0) * 10) / 10) : '') + '</span><span>TAP TO BENCH</span></div>' + (st.map(function(id){ return prow(id, true); }).join('') || '<div class="ld mono">NO STARTERS SET</div>') + '</article>' +
-      '<article class="card"><div class="bar mono"><span>BENCH</span><span>TAP TO START</span></div>' + (bn.map(function(id){ return prow(id, false); }).join('') || '<div class="ld mono">BENCH IS EMPTY</div>') + '</article></div>' +
+      '<div class="lugrid"><article class="card"><div class="bar mono"><span>STARTERS' + (Object.keys(S.pj).length ? ' \u00b7 PROJ ' + D.pts(Math.round(st.reduce(function(a, id){ return a + (S.pj[id] || 0); }, 0) * 10) / 10) : '') + '</span><span>PICK ONE TO BENCH</span></div>' + (st.map(function(id){ return prow(id, true); }).join('') || '<div class="ld mono">NO STARTERS SET</div>') + '</article>' +
+      '<article class="card"><div class="bar mono"><span>BENCH</span><span>PICK ONE TO START</span></div>' + (bn.map(function(id){ return prow(id, false); }).join('') || '<div class="ld mono">BENCH IS EMPTY</div>') + '</article></div>' +
       '<div class="savebar"><div class="chips">' + chips + '</div><div class="sv">' + (v.bad.length ? '<span class="why">' + esc(v.bad[0]) + '</span>' : (S.dirty ? '<span class="why ok mono">UNSAVED CHANGES</span>' : '')) +
       '<button class="btn" type="button" id="save"' + (v.bad.length || !S.dirty ? ' disabled' : '') + '>SAVE LINEUP</button></div></div>';
   }

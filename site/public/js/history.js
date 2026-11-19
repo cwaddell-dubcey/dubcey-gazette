@@ -92,7 +92,7 @@
       '</div><div class="fnote mono"><span>INDEX = GAMES PLAYED + HOW EVEN THE SERIES IS + CLOSE GAMES + PLAYOFF MEETINGS</span><span>CHART USES THE GAMES ON RECORD (2006\u201309 LOST)</span></div></article>';
   }
   function rivTop(){
-    return '<article class="card rvt"><div class="bar mono"><span>THE LEAGUE\u2019S BEST RIVALRIES</span><span>TAP ONE FOR THE FULL SERIES</span></div><div class="rvtg">' + rivals().slice(0, 10).map(function(r){
+    return '<article class="card rvt"><div class="bar mono"><span>THE LEAGUE\u2019S BEST RIVALRIES</span><span>PICK ONE FOR THE FULL SERIES</span></div><div class="rvtg">' + rivals().slice(0, 10).map(function(r){
       return '<a class="rvc" href="#h2h/' + r.a + '/' + r.b + '" data-rv="' + r.a + '/' + r.b + '"><b class="rvn">' + r.rk + '</b><span class="rvh"><img src="' + D.helm(r.a) + '" alt=""><i class="mono">VS</i><img src="' + D.helm(r.b) + '" alt=""></span><span class="rvx"><b>' + esc(D.SHORT[r.a]) + ' \u2013 ' + esc(D.SHORT[r.b]) + '</b><span class="mono">' + r.wa + '\u2013' + r.wb + ' \u00b7 ' + rivTag(r) + '</span></span><em class="mono">' + r.idx + '</em></a>'; }).join('') + '</div></article>';
   }
 
@@ -199,12 +199,12 @@
       '<article class="card champ"><div class="ph"><img src="' + hl(top[1], top[0]) + '" alt=""><div class="cw"><div class="kick mono">DEFENDING CHAMPIONS</div><b class="yr">' + top[0] + '</b><b class="cn">' + esc(top[1]) + '</b><span class="mono">' + (idOf(top[1]) ? (c[idOf(top[1])] || 1) + ' TITLES ALL-TIME' : '') + '</span></div></div></article>' +
       '<div class="cmain"><div class="wall">' + rows.map(function(r){
         return '<div class="wrow"><div class="row6">' + r.map(function(x){ var id = idOf(x[1]), n2 = now(x[1]);
-          return '<a class="trophy" href="' + (id ? '#teams/' + id : '#champions') + '" title="' + esc(x[1]) + '"><img src="' + hl(x[1], x[0]) + '" alt=""><span class="nm3">' + esc(x[1]) + '</span>' + (n2 ? '<span class="now mono">NOW ' + esc(D.SHORT[id]) + '</span>' : '') + '</a>';
-        }).join('') + '</div><div class="plank"><div class="row6">' + r.map(function(x){ return '<span class="plate">' + x[0] + '</span>'; }).join('') + '</div></div></div>';
+          return '<a class="trophy" href="' + (id ? '#teams/' + id : '#defunct') + '" title="' + esc(x[0] + ' champion: ' + x[1]) + '"><img src="' + hl(x[1], x[0]) + '" alt=""><span class="plate tyr">' + x[0] + '</span><span class="nm3">' + esc(x[1]) + '</span>' + (n2 ? '<span class="now mono">NOW ' + esc(D.SHORT[id]) + '</span>' : '') + '</a>';
+        }).join('') + '</div><div class="plank"></div></div>';
       }).join('') + '</div>' +
       '<aside class="box lb"><div class="bar mono"><span>MOST TITLES</span><span>SINCE 2001</span></div>' + lb.map(function(k, i){
         var id = D.NAME[k] ? k : '', yrs = H.champs.filter(function(x){ return (idOf(x[1]) || x[1]) === k; }).map(function(x){ return x[0]; }).sort();
-        return '<a class="lbr" href="' + (id ? '#teams/' + id : '#champions') + '"><img src="' + (id ? D.helm(id) : hl(k)) + '" alt=""><div><b>' + esc(id ? D.NAME[id] : k) + '</b><span class="mono">' + yrs.join(' · ') + '</span></div><em>' + c[k] + '</em></a>';
+        return '<a class="lbr" href="' + (id ? '#teams/' + id : '#defunct') + '"><img src="' + (id ? D.helm(id) : hl(k)) + '" alt=""><div><b>' + esc(id ? D.NAME[id] : k) + '</b><span class="mono">' + yrs.join(' · ') + '</span></div><em>' + c[k] + '</em></a>';
       }).join('') + '</aside></div>';
   }
 

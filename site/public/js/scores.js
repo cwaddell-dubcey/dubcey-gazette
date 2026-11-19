@@ -97,7 +97,7 @@
 
   function weeks(){
     var h = ''; for(var i = 1; i <= Math.max(S.cur, LAST); i++) h += '<a class="' + (i === S.w ? 'on' : i > S.cur ? 'wfut' : '') + '" href="' + D.href('scores', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
-    $('weeks').innerHTML = h;
+    $('weeks').innerHTML = '<span class="wkl mono">WEEK</span>' + h;
     // phones: the week strip scrolls sideways; bring the selected week into view
     var wk = $('weeks'), on = wk.querySelector('.on'); if(on && wk.scrollWidth > wk.clientWidth) wk.scrollLeft = Math.max(0, on.offsetLeft - wk.clientWidth / 2 + on.offsetWidth / 2);
   }
@@ -111,12 +111,12 @@
     var status = live ? 'LIVE' : (started ? 'FINAL' : 'UPCOMING');
     $('wkK').textContent = 'SCOREBOARD · ' + status;
     $('wkH').textContent = 'Week ' + S.w;
-    $('stat').innerHTML = live ? '<b class="live">\u25cf LIVE</b> · UPDATES EVERY 30 SEC' : (started ? 'FINAL SCORES' : 'GAMES NOT STARTED');
+    $('stat').innerHTML = (live ? '<b class="live">\u25cf LIVE</b> · UPDATES EVERY 30 SEC' : (started ? 'FINAL SCORES' : 'GAMES NOT STARTED')) + ' · ' + D.updated();
     if(S.sel < 0 || S.sel >= d.ms.length){ S.sel = 0; if(S.me) d.ms.forEach(function(m, k){ if(m[0].id === S.me || m[1].id === S.me) S.sel = k; }); }
     $('slate').innerHTML = d.ms.map(function(m, k){
       return '<button type="button" class="bug' + (k === S.sel ? ' on' : '') + '" data-m="' + k + '">' + m.map(function(f, i){
         var w = started && f.score > m[1 - i].score;
-        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + (hasProj() && (live || !started) ? '<u class="mono">PROJ ' + D.pts(Math.round(tproj(f) * 10) / 10) + (live ? ' \u00b7 ' + pct(i ? 1 - wprob(m) : wprob(m)) : '') + '</u>' : '') + '</b><i>' + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
+        return '<div class="s' + (w ? ' w' : '') + '"><img src="' + helm(f.id) + '" alt=""><b title="' + esc(D.NAME[f.id]) + '">' + esc(D.SHORT[f.id] || f.id) + (hasProj() && (live || !started) ? '<u class="mono">PROJ ' + D.pts(Math.round(tproj(f) * 10) / 10) + (live ? ' \u00b7 ' + pct(i ? 1 - wprob(m) : wprob(m)) : '') + '</u>' : '') + '</b><i>' + (w ? '<em class="mgn">+' + D.pts(Math.round((f.score - m[1 - i].score) * 100) / 100) + '</em>' : '') + (started ? D.pts(f.score) : esc(S.rec[f.id] || '')) + '</i></div>';
       }).join('') + '</button>';
     }).join('');
     if(live && hasProj()) track(d);

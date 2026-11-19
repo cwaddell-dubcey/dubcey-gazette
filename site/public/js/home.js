@@ -48,6 +48,7 @@
   }); }
 
   function shelf(order){
+    if($('shu')) $('shu').textContent = ' \u00b7 ' + D.updated();
     $('helms').innerHTML = order.map(function(id, i){
       return '<a class="tm" href="' + D.href('teams', 'f=' + id) + '" title="' + esc(D.NAME[id]) + '"><span class="rk">' + (REC[id] ? i + 1 : '') + '</span><img src="' + helm(id) + '" alt="' + esc(D.NAME[id]) + '"></a>';
     }).join('');

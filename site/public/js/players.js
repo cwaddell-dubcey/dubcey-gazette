@@ -72,7 +72,8 @@
       arr(r[4] && r[4].nflSchedule && r[4].nflSchedule.matchup).forEach(function(m){ var T = arr(m.team), k = num(m.kickoff) * 1000; if(T.length !== 2) return;
         var when = k ? new Date(k).toLocaleString('en-US', { timeZone:'America/New_York', weekday:'short', hour:'numeric', minute:'2-digit' }).replace(':00', '') : '';
         T.forEach(function(t, i){ var o = T[1 - i]; S.opp[t.id] = { o:(t.isHome === '1' ? 'vs ' : '@ ') + o.id, w:when }; }); });
-      arr(r[5] && r[5].projectedScores && r[5].projectedScores.playerScore).forEach(function(x){ if(x.score !== '' && S.proj[x.id] == null) S.proj[x.id] = num(x.score); });
+      // this week's MFL projections win over the free-agent report, which can lag a week behind
+      arr(r[5] && r[5].projectedScores && r[5].projectedScores.playerScore).forEach(function(x){ if(x.score !== '') S.proj[x.id] = num(x.score); });
       list();
     });
     if(D.LOCAL) return;
@@ -139,7 +140,7 @@
           '<div class="pmv"><b>' + fmt(val(r, big), big, r) + '</b><span class="mono">' + SH[big] + '</span></div>' + (S.me ? star(r.id) : '<span></span>') +
           (r.own ? '<a class="pma" href="' + D.href('teams', 'f=' + r.own) + '" title="' + esc(D.NAME[r.own]) + '"><img src="' + helm(r.own) + '" alt=""></a>' : '<button class="pma add mono" type="button" data-add="' + esc(r.id) + '" aria-label="Add ' + esc(r.n) + '">+</button>') + '</div>';
       }).join('') || '<div class="ld mono">NO PLAYERS MATCH</div>') +
-      '<div class="fnote mono"><span>TAP A PLAYER FOR GAME LOGS</span><span>% OWN / ADD FROM MFL</span></div>';
+      '<div class="fnote mono"><span>PICK A PLAYER FOR GAME LOGS</span><span>% OWN / ADD FROM MFL</span></div>';
   }
   var MQ = window.matchMedia('(max-width:760px)'); if(MQ.addEventListener) MQ.addEventListener('change', function(){ if(S.rows.length) list(); });
   function list(){
@@ -157,7 +158,7 @@
           '<td class="act">' + (r.own ? '<a class="ow2" href="' + D.href('teams', 'f=' + r.own) + '" title="' + esc(D.NAME[r.own]) + '"><img src="' + helm(r.own) + '" alt=""></a>' : '<button class="btn sm" type="button" data-add="' + esc(r.id) + '">ADD</button>') + '</td>' +
           C.map(function(c){ return '<td class="mono' + (c[0] === S.sort ? ' on' : '') + (c[0] === 'p' ? ' pp' : '') + '">' + fmt(val(r, c[0]), c[0], r) + '</td>'; }).join('') + '</tr>';
       }).join('') || '<tr><td colspan="' + (C.length + 2) + '"><div class="ld mono">NO PLAYERS MATCH</div></td></tr>') + '</tbody></table></div>' +
-      '<div class="fnote mono"><span>TAP A PLAYER FOR GAME LOGS \u00b7 TAP A COLUMN TO SORT</span><span>% OWN / % ADD ACROSS ALL MFL LEAGUES \u00b7 PROJ = MFL PROJECTION FOR WEEK ' + (S.wk || '') + '</span></div>';
+      '<div class="fnote mono"><span>PICK A PLAYER FOR GAME LOGS \u00b7 SORT BY ANY COLUMN</span><span>% OWN / % ADD ACROSS ALL MFL LEAGUES \u00b7 PROJ = MFL PROJECTION FOR WEEK ' + (S.wk || '') + '</span></div>';
   }
   function sheet(html){
     var v = document.createElement('div'); v.className = 'veil';

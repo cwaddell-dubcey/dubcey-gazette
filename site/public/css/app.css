@@ -3165,3 +3165,13 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 .vltcap .k{font-size:10px;color:#E0A72B}
 .vltspec{font-size:10px !important;letter-spacing:.1em;color:#9FB4CC !important}
 @media (max-width:820px){.vlt{grid-template-columns:1fr}}
+.weeks .wkl{display:flex;align-items:center;padding:0 6px 0 0;color:#9FB4CC;font-size:10px;letter-spacing:.14em}
+.trophy .tyr{margin:1px 0 2px}
+.wall .plank{height:14px}
+.bug .mgn{font:700 9px/1 'Courier Prime',monospace;font-style:normal;color:#7FB89A;margin-right:6px;letter-spacing:.02em}
+.shelf .hd .shu{font-weight:400;color:#9FB4CC}
+.card.nf4{max-width:640px;padding:26px 28px 28px;margin:6px 0 60px}
+.nf4 .nf4k{font-size:10px;letter-spacing:.2em;color:#c8282d}
+.nf4 h2{font:400 26px/1.1 'Alfa Slab One',serif;text-transform:uppercase;margin:8px 0 10px}
+.nf4 p{font-size:16px;line-height:1.5;margin:0 0 18px}
+.nf4a{display:flex;flex-wrap:wrap;gap:8px}

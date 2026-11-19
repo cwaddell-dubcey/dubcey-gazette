@@ -202,10 +202,14 @@
     // give up on a slow answer after 15 seconds, and quietly try once more before the page shows an error
     function once(){
       var c = window.AbortController ? new AbortController() : null, tm = c ? setTimeout(function(){ c.abort(); }, 15000) : 0;
-      return fetch(url, { credentials:'same-origin', cache:'no-cache', signal:c ? c.signal : undefined }).then(function(r){ clearTimeout(tm); if(!r.ok) throw r.status; return r.json(); }, function(e){ clearTimeout(tm); throw e; });
+      return fetch(url, { credentials:'same-origin', cache:'no-cache', signal:c ? c.signal : undefined }).then(function(r){ clearTimeout(tm); if(!r.ok) throw r.status; var f = Date.parse(r.headers.get('X-Fetched') || '') || Date.now(); if(f > D.fetchedAt) D.fetchedAt = f; return r.json(); }, function(e){ clearTimeout(tm); throw e; });
     }
     return once().catch(function(e){ if(e === 401 || e === 403 || e === 404) throw e; return new Promise(function(r){ setTimeout(r, 900); }).then(once); });
   }
+  // when the league data on the page was last pulled from MFL, e.g. "UPDATED 2:14 PM" (adds the date if it isn't today)
+  D.fetchedAt = 0;
+  D.updated = function(){ var d = new Date(D.fetchedAt || Date.now()), t = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }).toUpperCase();
+    return 'UPDATED ' + (d.toDateString() === new Date().toDateString() ? t : d.toLocaleDateString('en-US', { month:'short', day:'numeric' }).toUpperCase() + ' ' + t); };
   // "TRY AGAIN" on any load error reloads the page
   document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-reload]')) location.reload(); });
   // write actions (lineups, waivers, trades…) — owner must be signed in
@@ -512,7 +516,7 @@
   };
   // NFL team logos + player headshots
   var NFLX = { GBP:'gb', KCC:'kc', NEP:'ne', NOS:'no', SFO:'sf', TBB:'tb', LVR:'lv', JAC:'jax', WAS:'wsh', LAR:'lar', LAC:'lac', OAK:'lv', SDC:'lac', STL:'lar' };
-  D.nflLogo = function(t){ t = String(t || '').toUpperCase(); if(!t || t === 'FA') return 'h/logo.webp'; return 'https://a.espncdn.com/i/teamlogos/nfl/500/' + (NFLX[t] || t.toLowerCase()) + '.png'; };
+  D.nflLogo = function(t){ t = String(t || '').toUpperCase(); if(!t || t === 'FA') return 'h/logo.webp'; return 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/nfl/500/' + (NFLX[t] || t.toLowerCase()) + '.png&w=100&h=100'; }; // ESPN's resizer: 100px instead of the 500px original
   D.photo = function(id, team, pos){ return /^(Def|DEF|TMDEF|ST)$/.test(pos || '') ? D.nflLogo(team) : 'https://www.mflscripts.com/playerImages_80x107/mfl_' + id + '.png'; };
   D.face = function(id, pos, team, big){ var lg = D.nflLogo(team); return '<span class="face' + (big ? ' big' : '') + '"' + (big ? '' : ' data-card="' + D.esc(id) + '"') + '><img src="' + D.photo(id, team, pos) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'' + lg + '\';this.className=\'lg\'"></span>'; };
   D.tlogo = function(team){ return team && team !== 'FA' ? '<img class="nl" src="' + D.nflLogo(team) + '" alt="' + D.esc(team) + '" title="' + D.esc(team) + '">' : ''; };

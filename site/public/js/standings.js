@@ -67,7 +67,7 @@
       return { id:f.id, rk:i + 1, dw:num(dv[0]), dl:num(dv[1]), w:w, l:l, t:t, g:g, pct:g ? (w + t / 2) / g : 0, pf:num(f.pf), pa:num(f.pa), strk:f.strk || '', eff:f.eff ? num(f.eff) : null, faab:f.bbidbalance || '' };
     });
     var played = Math.max.apply(null, T.map(function(x){ return x.g; })) || 0;
-    $('k').textContent = 'THE STANDINGS · AFTER WEEK ' + played;
+    $('k').textContent = 'THE STANDINGS · AFTER WEEK ' + played + ' · ' + D.updated();
 
     // shelf
     $('helms').innerHTML = T.map(function(x){ return '<a class="tm" data-id="' + x.id + '" href="' + D.href('teams', 'f=' + x.id) + '" title="' + esc(D.NAME[x.id]) + '"><span class="rk">' + x.rk + '</span><img src="' + helm(x.id) + '" alt="' + esc(D.NAME[x.id]) + '"></a>'; }).join('');

@@ -66,7 +66,7 @@
     var ks = Object.keys(C.weeks || {}).filter(function(k){ return C.weeks[k] && (arr(C.weeks[k].dispatch).length || C.weeks[k].takes); }).sort(function(a, b){ return b - a; });
     if(!ks.length) return;
     if(!w || ks.indexOf(w) < 0) w = ks[0];
-    $('weeks').innerHTML = ks.slice().reverse().map(function(k){ return '<a class="' + (k === w ? 'on' : '') + '" href="' + D.href('dispatch', 'w=' + k) + '" data-w="' + k + '">' + k + '</a>'; }).join('');
+    $('weeks').innerHTML = '<span class="wkl mono">WEEK</span>' + ks.slice().reverse().map(function(k){ return '<a class="' + (k === w ? 'on' : '') + '" href="' + D.href('dispatch', 'w=' + k) + '" data-w="' + k + '">' + k + '</a>'; }).join('');
     $('k').textContent = 'THE DISPATCH · WEEK ' + w;
     var W = C.weeks[w], Dp = arr(W.dispatch);
     if(Dp.length){

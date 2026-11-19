@@ -86,7 +86,7 @@
     if(S.kp && !on && S.fut){
       var kk = kept(f, x), bud = S.fut[f] ? S.fut[f].budget : D.NEXT.base, left = bud - kk.cost;
       led += '<div class="kps"><div class="kpg"><div><span class="mono">KEEPING</span><b>' + kk.n + '</b></div><div><span class="mono">RAISE EACH</span><b>' + (kk.n ? '+$' + kk.bump : '\u2013') + '</b></div><div><span class="mono">KEEPER COST</span><b>$' + kk.cost + '</b></div><div class="hi"><span class="mono">LEFT FOR ' + D.NEXT.year + ' AUCTION</span><b class="' + (left < 0 ? 'bad' : '') + '">$' + left + '</b><i class="mono">OF $' + bud + '</i></div></div>' +
-        '<div class="kpn mono"><span>TAP PLAYERS TO KEEP \u00b7 EACH KEEPER GOES UP $1 MORE THAN THE NUMBER KEPT</span>' + (kk.n ? '<button type="button" data-kclr>CLEAR</button>' : '') + '</div><div class="kpn2 mono">PLAN IS SAVED IN THIS BROWSER ONLY. IT ISN\u2019T SUBMITTED ANYWHERE.</div></div>';
+        '<div class="kpn mono"><span>PICK PLAYERS TO KEEP \u00b7 EACH KEEPER GOES UP $1 MORE THAN THE NUMBER KEPT</span>' + (kk.n ? '<button type="button" data-kclr>CLEAR</button>' : '') + '</div><div class="kpn2 mono">PLAN IS SAVED IN THIS BROWSER ONLY. IT ISN\u2019T SUBMITTED ANYWHERE.</div></div>';
     }
     if(S.pick && !cmp) led += '<div class="hint mono">PICK A TEAM TO COMPARE WITH ' + esc(D.SHORT[f]).toUpperCase() + '</div>';
     if(cmp){

@@ -45,7 +45,7 @@
   }
   function weeks(){
     var h = ''; for(var i = 1; i <= Math.max(18, S.cur); i++) h += '<a class="' + (i === S.w ? 'on' : '') + '" href="' + D.href('nfl', 'w=' + i) + '" data-w="' + i + '">' + i + '</a>';
-    $('weeks').innerHTML = h; $('nk').textContent = 'AROUND THE NFL \u00b7 WEEK ' + S.w;
+    $('weeks').innerHTML = '<span class="wkl mono">WEEK</span>' + h; $('nk').textContent = 'AROUND THE NFL \u00b7 WEEK ' + S.w;
   }
   function owner(name, ab){ var o = S.own[nk(name) + '|' + (MX[ab] || ab)]; return o ? '<a class="nown" href="' + D.href('teams', 'f=' + o.f) + '" title="' + esc(D.NAME[o.f]) + '"><img src="' + D.helm(o.f) + '" alt=""></a>' : '<span class="nown"></span>'; }
   var COLS = { passing:['C/ATT', 'YDS', 'TD', 'INT'], rushing:['CAR', 'YDS', 'TD', 'LONG'], receiving:['REC', 'YDS', 'TD', 'TGTS'] };

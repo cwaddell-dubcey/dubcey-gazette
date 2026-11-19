@@ -8,7 +8,9 @@
     "directory": "public",
     "binding": "ASSETS",
     "html_handling": "drop-trailing-slash",
-    "run_worker_first": true
+    "run_worker_first": true,
+    // unknown URLs get public/404.html (with a real 404 status)
+    "not_found_handling": "404-page"
   },
   // commissioner's MFL franchise number (comma-separate to add a co-commish); CLERK = who can edit the Clerk's Office notes
   "vars": { "COMMISH": "0001", "CLERK": "0005" },
