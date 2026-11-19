@@ -3292,3 +3292,11 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 @keyframes lxrow{0%{transform:translateX(12px);opacity:0}100%{transform:none;opacity:1}}
 @media (max-width:860px){.lxmach{grid-template-columns:1fr;padding:16px}.lxact{margin-left:0}}
 @media (prefers-reduced-motion:reduce){.lxring,.lxbi,.lxdrum.spin{animation:none !important}}
+.lxrules{margin-bottom:22px}
+.lxrb{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center;padding:14px 18px}
+.lxrb ul{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:11px;letter-spacing:.06em}
+.lxrb ul b{display:inline-block;min-width:34px;color:#c8282d}
+.lxra{display:flex;flex-direction:column;align-items:flex-start;gap:8px;max-width:420px}
+.lxrn{font-size:9.5px;letter-spacing:.06em;color:#6B6455;line-height:1.5}
+.lxwhy{font-size:8.5px;letter-spacing:.05em;color:#6B6455;line-height:1.45;margin:-2px 0 9px;min-height:2.9em}
+.lxwhy.off{color:#c8282d}

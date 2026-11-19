@@ -48,6 +48,55 @@
   function offBalls(){ var b = S.off && S.off.balls; if(!b) return null; var o = {}; IDS.forEach(function(id){ o[id] = b[id] != null ? +b[id] : DEF; }); return o; }
   function same(a, b){ return !!a && !!b && IDS.every(function(id){ return +a[id] === +b[id]; }); }
 
+  /* ---------- the ball rules ----------
+     everyone starts with 20 · miss the playoffs: +20 · each playoff win (Week 15 on): −5 · each $1 of next year's auction money gained in trades: −1 · never below 0
+     playoff field (Dubcey format): 3 division winners + next 3 best records after Week 13, then ranks 7–10 play the Week 14 Free-For-All
+     with +100 / +50 / 0 / 0 head starts and the top two get in. Until Week 14 is final, the field is "if the season ended today" (ranks 1–8). */
+  var BASE = 20, MISS = 20, PER_WIN = 5, R = null;
+  function rulesLoad(){
+    var SN = D.SEASON, REG = SN.regEnd || 13, FFA = SN.ffaWeek || 14, LAST = Math.max.apply(null, Object.keys(SN.playoffs || { 17:1 }).map(Number));
+    return Promise.all([D.doneWeek().catch(function(){ return { w:0 }; }), D.future().then(D.futureCalc).catch(function(){ return {}; })]).then(function(x){
+      var done = Math.min(LAST, x[0].w || 0), fut = x[1] || {}, ws = [];
+      for(var w = 1; w <= done; w++) ws.push(w);
+      return Promise.all(ws.map(D.week)).then(function(W){
+        var st = {}; IDS.forEach(function(id){ st[id] = { w:0, l:0, t:0, pf:0 }; });
+        W.forEach(function(rows, i){ if(i + 1 > REG) return; var by = {}; rows.forEach(function(r){ by[r.id] = r; });
+          rows.forEach(function(r){ var t = st[r.id], o = by[r.opp]; if(!t) return; t.pf += r.s;
+            if(o){ if(r.s > o.s) t.w++; else if(r.s < o.s) t.l++; else t.t++; } else if(r.res === 'W') t.w++; else if(r.res === 'L') t.l++; else if(r.res === 'T') t.t++; }); });
+        function pct(id){ var t = st[id], g = t.w + t.l + t.t; return g ? (t.w + t.t / 2) / g : 0; }
+        function cmp(a, b){ return pct(b) - pct(a) || st[b].pf - st[a].pf || IDS.indexOf(a) - IDS.indexOf(b); }
+        var dw = (D.DIVS || []).map(function(d){ return d.ids.filter(function(id){ return st[id]; }).sort(cmp)[0]; }).filter(Boolean).sort(cmp);
+        var o = dw.concat(IDS.filter(function(id){ return dw.indexOf(id) < 0; }).sort(cmp)), field;
+        if(done >= FFA){ var sc = {}; (W[FFA - 1] || []).forEach(function(r){ sc[r.id] = r.s; });
+          var ff = o.slice(6, 10).map(function(id, i){ return { id:id, s:(sc[id] || 0) + [100, 50, 0, 0][i], i:i }; }).sort(function(a, b){ return b.s - a.s || a.i - b.i; });
+          field = o.slice(0, 6).concat(ff.slice(0, 2).map(function(z){ return z.id; })); }
+        else field = o.slice(0, 8);
+        var wins = {}; IDS.forEach(function(id){ wins[id] = 0; });
+        for(var k = FFA + 1; k <= done; k++){ var rows = W[k - 1] || [], by = {}; rows.forEach(function(r){ by[r.id] = r; });
+          rows.forEach(function(r){ var op = by[r.opp]; if(op && field.indexOf(r.id) > -1 && field.indexOf(r.opp) > -1 && r.s > op.s) wins[r.id]++; }); }
+        var balls = {}, why = {};
+        IDS.forEach(function(id){
+          var inn = field.indexOf(id) > -1, money = Math.max(0, Math.round(((fut[id] && fut[id].budget) || D.NEXT.base) - D.NEXT.base)), b = BASE, parts = [BASE + ' BASE'];
+          if(!inn){ b += MISS; parts.push('+' + MISS + ' NO PLAYOFFS'); }
+          if(wins[id]){ b -= PER_WIN * wins[id]; parts.push('−' + PER_WIN * wins[id] + ' FOR ' + wins[id] + ' PLAYOFF WIN' + (wins[id] > 1 ? 'S' : '')); }
+          if(money){ b -= money; parts.push('−' + money + ' FOR $' + money + ' AUCTION MONEY'); }
+          balls[id] = Math.max(0, b); why[id] = parts.join(' · ');
+        });
+        R = { balls:balls, why:why, field:field, wins:wins, done:done, final:done >= LAST, proj:done < FFA,
+          stage:done >= LAST ? 'FINAL' : done >= FFA ? 'PLAYOFF FIELD SET · THROUGH WEEK ' + done : 'IF THE SEASON ENDED TODAY · THROUGH WEEK ' + done };
+        return R;
+      });
+    }).catch(function(){ R = null; return null; });
+  }
+  function rulesCard(B){
+    if(!R) return '';
+    var match = same(B, R.balls);
+    return '<article class="card lxrules"><div class="bar mono"><span>THE BALL RULES</span><span>' + esc(R.stage) + '</span></div><div class="lxrb"><ul class="mono">' +
+      '<li><b>' + BASE + '</b> BALLS TO START</li><li><b>+' + MISS + '</b> IF YOU MISS THE PLAYOFFS</li><li><b>−' + PER_WIN + '</b> FOR EVERY PLAYOFF WIN (WEEK 15 ON)</li><li><b>−1</b> FOR EVERY $1 OF ' + YR + ' AUCTION MONEY YOU’VE TRADED FOR</li></ul>' +
+      '<div class="lxra">' + (match ? '<span class="lxtag mono ok">THESE COUNTS FOLLOW THE RULES</span>' : '<button class="btn" type="button" data-a="rules">USE THE RULES</button>') +
+      (R.proj ? '<span class="mono lxrn">PLAYOFF SPOTS ARE PROJECTED FROM TODAY’S STANDINGS (THE TOP 8). THE REAL FIELD LOCKS AFTER THE WEEK 14 FREE-FOR-ALL.</span>' : '') + '</div></div></article>';
+  }
+
   /* ---------- sound: Sirius underneath, a riser on each spin, a hit on each reveal ---------- */
   var AU = null, MUS = null;
   function ctx(){ if(!AU){ var C = window.AudioContext || window.webkitAudioContext; if(!C) return null; var c = new C(), g = c.createGain(); g.gain.value = S.muted ? 0 : 1; g.connect(c.destination); AU = { c:c, g:g, nodes:[] }; } if(AU.c.state === 'suspended') AU.c.resume(); return AU; }
@@ -102,15 +151,17 @@
     var h = '<div class="lxtop card"><div class="lxsum"><b>' + T + '</b><span class="mono">TOTAL BALLS · ' + N + ' TEAMS</span></div>' +
       '<span class="lxtag mono ' + (isOff ? 'ok' : '') + '">' + (ob ? (isOff ? 'OFFICIAL BALL COUNTS' + (S.off.setAt ? ' · SET ' + esc(when(S.off.setAt).toUpperCase()) : '') : 'PRACTICE COUNTS · ONLY YOU SEE THESE') : 'PRACTICE COUNTS · NO OFFICIAL COUNTS YET') + '</span>' +
       '<div class="lxact">' + (ob && !isOff ? '<button class="btn ghost2" type="button" data-a="official">USE OFFICIAL COUNTS</button>' : '') +
-      '<button class="btn ghost2" type="button" data-a="reset">' + (S.resetArm ? 'TAP AGAIN TO RESET ALL' : 'RESET ALL TO ' + DEF) + '</button>' +
+      '<button class="btn ghost2" type="button" data-a="reset">' + (S.resetArm ? 'TAP AGAIN TO RESET ALL' : R ? 'RESET TO THE RULES' : 'RESET ALL TO ' + DEF) + '</button>' +
       (S.commish && !isOff ? '<button class="btn ghost2" type="button" data-a="saveballs">SAVE AS OFFICIAL COUNTS</button>' : '') +
       '<a class="btn" href="#draw">GO TO THE DRAW →</a></div></div>' +
+      rulesCard(B) +
       '<div class="lxgrid">' + IDS.slice().sort(function(a, b){ return O[a].exp - O[b].exp || (D.NAME[a] || '').localeCompare(D.NAME[b] || ''); }).map(function(id){
         var o = O[id], b = Math.max(0, +B[id] || 0), w = Math.max(o.p[0] * 100, 1);
         return '<article class="lxt card"><div class="lxth"><img src="' + D.helm(id) + '" alt=""><div><b>' + esc(D.NAME[id] || id) + '</b><span class="mono">AVERAGE PICK ' + o.exp.toFixed(1) + '</span></div></div>' +
           '<div class="lxbal"><button type="button" class="lxpm" data-d="-1" data-id="' + id + '" aria-label="One less ball for ' + esc(D.NAME[id]) + '">−</button>' +
           '<label><input type="number" inputmode="numeric" min="0" max="999" value="' + b + '" data-id="' + id + '" aria-label="Balls for ' + esc(D.NAME[id]) + '"><span class="mono">BALLS</span></label>' +
           '<button type="button" class="lxpm" data-d="1" data-id="' + id + '" aria-label="One more ball for ' + esc(D.NAME[id]) + '">+</button></div>' +
+          (R ? '<div class="lxwhy mono' + (+B[id] === R.balls[id] ? '' : ' off') + '">' + (+B[id] === R.balls[id] ? '' : 'RULES SAY ' + R.balls[id] + ': ') + esc(R.why[id]) + '</div>' : '') +
           '<div class="lxodd"><span class="mono">#1 PICK ODDS</span><b>' + pc(o.p[0]) + '</b></div><div class="lxbar"><i style="width:' + w + '%"></i></div></article>';
       }).join('') + '</div>' +
       '<p class="lxnote mono">EACH BALL IS ONE CHANCE AT THE #1 PICK. PICK 1 IS DRAWN FIRST, THEN PICK 2 FROM WHO’S LEFT, AND SO ON. THE REVEAL RUNS FROM 12 UP TO 1.</p>';
@@ -208,7 +259,8 @@
     var a = t.getAttribute('data-a');
     if(t.classList.contains('lxpm')){ var id = t.getAttribute('data-id'); setBalls(id, (+S.balls[id] || 0) + (+t.getAttribute('data-d'))); return setupView(); }
     if(a !== 'reset' && S.resetArm){ S.resetArm = false; }
-    if(a === 'reset'){ if(!S.resetArm){ S.resetArm = true; setupView(); clearTimeout(S.rt); S.rt = setTimeout(function(){ S.resetArm = false; if(S.v === 'setup') setupView(); }, 3500); return; } S.resetArm = false; IDS.forEach(function(id){ S.balls[id] = DEF; }); lsSet('dcLotBalls', S.balls); return setupView(); }
+    if(a === 'reset'){ if(!S.resetArm){ S.resetArm = true; setupView(); clearTimeout(S.rt); S.rt = setTimeout(function(){ S.resetArm = false; if(S.v === 'setup') setupView(); }, 3500); return; } S.resetArm = false; IDS.forEach(function(id){ S.balls[id] = R ? R.balls[id] : DEF; }); lsSet('dcLotBalls', S.balls); return setupView(); }
+    if(a === 'rules' && R){ IDS.forEach(function(id){ S.balls[id] = R.balls[id]; }); lsSet('dcLotBalls', S.balls); return setupView(); }
     if(a === 'official'){ S.balls = offBalls(); lsSet('dcLotBalls', S.balls); return setupView(); }
     if(a === 'saveballs'){ var o = JSON.parse(JSON.stringify(S.off || {})); o.balls = JSON.parse(JSON.stringify(S.balls)); o.setAt = Date.now(); return put(o).then(function(){ alertBox('Saved. Everyone now sees these ball counts.'); draw(); }, function(err){ alertBox(String(err)); }); }
     if(a === 'practice') return begin(false);
@@ -229,10 +281,10 @@
   function route(){ var v = (location.hash || '#setup').slice(1); S.v = /^(setup|odds|draw|history)$/.test(v) ? v : 'setup'; if(S.v !== 'draw' && S.drawing){ clearTimeout(spin.t); hush(); S.drawing = false; } draw(); window.scrollTo(0, 0); }
   window.addEventListener('hashchange', route);
 
-  Promise.all([D.shell('lottery'), load().catch(function(){})]).then(function(r){
+  Promise.all([D.shell('lottery'), load().catch(function(){}), Promise.race([rulesLoad(), new Promise(function(r){ setTimeout(r, 6000); })])]).then(function(r){
     S.me = r[0] || {}; S.commish = !!S.me.commish; S.muted = !!lsGet('dcLotMute');
     var mine = lsGet('dcLotBalls'), ob = offBalls();
-    S.balls = {}; IDS.forEach(function(id){ S.balls[id] = mine && mine[id] != null ? +mine[id] : ob ? ob[id] : DEF; });
+    S.balls = {}; IDS.forEach(function(id){ S.balls[id] = mine && mine[id] != null ? +mine[id] : ob ? ob[id] : R ? R.balls[id] : DEF; });
     // an unfinished draw in this browser picks up where it left off (an official one only if it's still the latest on the site)
     var dr = lsGet('dcLotDraw'); if(dr && dr.order && dr.order.length === N && (!dr.official || (latest() && latest().ts === dr.ts))) S.draw = dr;
     route();
