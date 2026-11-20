@@ -193,6 +193,46 @@
   },
   "articles": [
     {
+      "title": "The Pro Bowl",
+      "rules": [
+        {
+          "h": "When.",
+          "t": "The Pro Bowl is played in NFL Week 18, the week after the Dubcey championship in Week 17.",
+          "v": "Week 18"
+        },
+        {
+          "h": "Divisions.",
+          "t": "It's a divisional competition. Each of the three divisions fields one lineup from its four teams' rosters.",
+          "v": "3 teams"
+        },
+        {
+          "h": "Lineup.",
+          "t": "Each division lineup has 2 QB, 2 RB, 3 WR, 1 TE and 2 FLEX (RB, WR or TE), scored the same as a regular week.",
+          "v": "10 starters"
+        },
+        {
+          "h": "Filling the roster.",
+          "t": "The four owners in a division fill the open spots on the Pro Bowl page with players from their own rosters. Owners can swap or pull their own players until that player's game kicks off.",
+          "v": "Shared board"
+        },
+        {
+          "h": "Everyone plays.",
+          "t": "Every team must have at least one player on its division's roster. When the open spots only cover the teams still missing, those spots are saved for them.",
+          "v": "1+ per team"
+        },
+        {
+          "h": "Lock.",
+          "t": "Each player locks when his Week 18 game kicks off.",
+          "v": "At kickoff"
+        },
+        {
+          "h": "Prize.",
+          "t": "Every team puts in $50. The division with the highest total wins, and its four teams split the $600 pot, $150 each.",
+          "v": "$50 / $150"
+        }
+      ]
+    },
+    {
       "title": "Helmets",
       "rules": [
         {

@@ -3387,3 +3387,57 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 .zltoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:90;background:#102542;color:#F7EFDB;border:2px solid #E0A72B;padding:11px 15px;font-size:11px;letter-spacing:.06em;max-width:min(90vw,460px);text-align:center;pointer-events:none}
 @media (max-width:980px){.zlwrap{grid-template-columns:1fr}.zlstage{position:sticky;top:56px;z-index:5}.zlpanel{max-height:none}}
 @media (max-width:980px){.zlnote{display:none}.zlur button{padding:4px 6px}}
+/* ---- Pro Bowl ---- */
+.bwsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.bwst{font-size:10.5px;letter-spacing:.1em;color:#E0A72B}
+.bwst .live{color:#ff8a7a}
+.bwpot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 18px;margin-bottom:18px}
+.bwpot span{font-size:10px;letter-spacing:.12em;color:#c8282d}
+.bwpot b{font:400 18px/1.15 'Alfa Slab One',serif;text-transform:uppercase;flex:1}
+.bwsb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.bwsc{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#102542;border:2px solid #2C4C78;color:#F7EFDB}
+.bwsc.bwlead{border-color:#E0A72B;box-shadow:4px 4px 0 #c8282d}
+.bwsc img{width:44px;height:44px;object-fit:contain}
+.bwsc div{flex:1;min-width:0}
+.bwsc b{display:block;font:400 16px/1.1 'Alfa Slab One',serif;text-transform:uppercase}
+.bwsc span{font-size:9px;letter-spacing:.08em;color:#9FB4CC}
+.bwsc em{font:400 28px/1 'Alfa Slab One',serif;font-style:normal;color:#E0A72B;font-variant-numeric:tabular-nums}
+.bwgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.bwdiv{padding-bottom:6px}
+.bwdiv.bwmine{box-shadow:6px 6px 0 #E0A72B}
+.bwteams{display:flex;justify-content:space-around;padding:10px 8px 6px;border-bottom:1px solid #E4DCC5}
+.bwteams span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.bwteams img{width:52px;height:39px;object-fit:contain}
+.bwteams i{font-size:8.5px;font-style:normal;letter-spacing:.08em}
+.bwteams .bwin i{color:#1f6f5c}.bwteams .bwout i{color:#c8282d}
+.bwteams .bwout img{opacity:.55}
+.bwwarn{margin:8px 12px 0;padding:6px 8px;background:#f3dfa8;font-size:9px;letter-spacing:.06em;color:#6b4c0a}
+.bwslots{list-style:none;margin:0;padding:4px 12px}
+.bwslots>li{display:flex;align-items:center;gap:8px;min-height:46px;border-bottom:1px solid #E4DCC5}
+.bwslots>li.bwlk{background:linear-gradient(90deg,rgba(16,37,66,.05),transparent)}
+.bwslots>li.bwpicking{background:#fbf3df}
+.bwpos{width:36px;flex:none;font-size:9.5px;color:#c8282d;letter-spacing:.06em}
+.bwnm{flex:1;min-width:0;display:flex;flex-direction:column}
+.bwnm b{font:600 14px/1.15 'Zilla Slab',Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bwnm i{font-size:8.5px;font-style:normal;color:#6B6455;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bwown{width:34px;height:26px;object-fit:contain;flex:none}
+.bwslots em{font:700 14px/1 'Courier Prime',monospace;font-style:normal;min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+.bwslots em small{font-size:10px;color:#A69D85;font-weight:400}
+.bwact{display:flex;gap:3px}
+.bwact button,.bwph button{border:1.5px solid #102542;background:#fff;color:#102542;font-size:8.5px;padding:4px 5px;cursor:pointer}
+.bwadd{flex:1;text-align:left;border:1.5px dashed #A69D85;background:transparent;color:#102542;font-size:10px;letter-spacing:.06em;padding:9px 10px;cursor:pointer}
+.bwadd:hover{border-color:#c8282d;color:#c8282d}
+.bwopen{font-size:9.5px;color:#A69D85;letter-spacing:.08em}
+.bwpick{display:block !important;padding:6px 0 10px;border-bottom:2px solid #102542 !important}
+.bwph{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:.08em;color:#c8282d;margin-bottom:4px}
+.bwopt{display:flex;align-items:center;gap:8px;width:100%;padding:5px 6px;border:0;border-bottom:1px solid #E4DCC5;background:#fff;text-align:left;cursor:pointer;color:#102542}
+.bwopt:hover:not(:disabled){background:#f3dfa8}
+.bwopt:disabled{opacity:.45;cursor:not-allowed}
+.bwopt .face{width:30px;height:30px}
+.bwopt em{font-size:9px;font-style:normal;color:#6B6455;white-space:nowrap}
+.bwrules{margin:26px 0 44px}
+.bwrules ol{margin:0;padding:14px 18px 14px 36px;font-size:10.5px;line-height:1.7;letter-spacing:.04em}
+.bwtoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:90;background:#102542;color:#F7EFDB;border:2px solid #E0A72B;padding:11px 15px;font-size:11px;letter-spacing:.06em;max-width:min(90vw,460px);text-align:center;pointer-events:none}
+@media (max-width:1100px){.bwgrid{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.bwgrid,.bwsb{grid-template-columns:1fr}}
+.bwdiv .dvx{white-space:nowrap}.bwdiv .dvx b{font-size:13px}

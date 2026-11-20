@@ -39,7 +39,7 @@ const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o 
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
 const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
 // one line per page for link previews
-const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', helmets: 'The Dubcey Helmet Lab: design a helmet and add it to your team.', lottery: 'The Dubcey rookie lottery: the balls, the odds and the draw for the rookie draft order.' };
+const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', probowl: 'The Dubcey Pro Bowl: three divisions, one Week 18 showdown.', helmets: 'The Dubcey Helmet Lab: design a helmet and add it to your team.', lottery: 'The Dubcey rookie lottery: the balls, the odds and the draw for the rookie draft order.' };
 const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1, stories:1, hits:1, pgfx:1, lottery:1 };
 // what a media ("press pass") member may write; everything else stays commissioner-only
 const MEDIA_OK = { column:1, stories:1, hits:1, pgfx:1 };
@@ -314,6 +314,61 @@ export default {
     }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
+    // ---- Pro Bowl (NFL Week 18): each division fields one 10-man lineup from its four teams' rosters.
+    //      Shared board: owners fill open slots with their own players; every team must end up with at least one player in.
+    //      Players lock at their own Week 18 kickoff. Commish can open the board early and change any slot. ----
+    if (p === '/data/probowl') {
+      const PB = { slots: ['QB1', 'QB2', 'RB1', 'RB2', 'WR1', 'WR2', 'WR3', 'TE1', 'FX1', 'FX2'], wk: 18,
+        divs: { malort: ['0009', '0012', '0011', '0010'], rumple: ['0002', '0004', '0003', '0001'], soup: ['0005', '0008', '0006', '0007'] },
+        // board opens the Tuesday after the Week 17 championship (Week 1 opened Tue Sep 8, 9 a.m. ET)
+        opens: Date.parse('2026-09-08T09:00:00-04:00') + 17 * 7 * 864e5 };
+      const key = 'pb:' + Y, getJ = async (k, d) => { try { return JSON.parse((env.DC && await env.DC.get(k)) || 'null') || d; } catch (e) { return d; } };
+      const B = await getJ(key, { open: false, div: {} });
+      Object.keys(PB.divs).forEach(d => { B.div[d] = B.div[d] || {}; });
+      const s = (await session(req, env)), boss = isCommish(s, env), isOpen = () => B.open || Date.now() >= PB.opens;
+      if (req.method === 'GET') return json({ ok: true, open: isOpen(), opens: PB.opens, forced: !!B.open, div: B.div, me: s && s.f ? s.f : '', commish: boss, slots: PB.slots, divs: PB.divs, wk: PB.wk });
+      if (req.method !== 'POST' || !sameOrigin(req, u)) return json({ ok: false }, 405);
+      if (!s || !s.f) return json({ ok: false, error: 'Sign in with an owner account first.' }, 401);
+      if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
+      const b = await req.json().catch(() => ({}));
+      if (b.action === 'open') { if (!boss) return json({ ok: false, error: 'Commissioner only.' }, 403); B.open = !!b.open; await env.DC.put(key, JSON.stringify(B)); return json({ ok: true, open: isOpen(), forced: !!B.open }); }
+      if (!isOpen() && !boss) return json({ ok: false, error: 'The Pro Bowl board opens after the Week 17 championship.' }, 400);
+      const slot = String(b.slot || ''), pid = String(b.pid || '').replace(/\D/g, '');
+      if (!PB.slots.includes(slot)) return json({ ok: false, error: 'Unknown slot.' }, 400);
+      // who owns what, what position everyone plays, and when each NFL team kicks off in Week 18
+      const [ro, sch] = await Promise.all([
+        cachedJSON(ctx, `${HOST}/${Y}/export?TYPE=rosters&L=${L}&JSON=1`, 30),
+        cachedJSON(ctx, `${API}/${Y}/export?TYPE=nflSchedule&W=${PB.wk}&JSON=1`, 300).catch(() => null)
+      ]);
+      const owner = {}; arr(ro && ro.rosters && ro.rosters.franchise).forEach(f => arr(f.player).forEach(x => { owner[x.id] = f.id; }));
+      const kick = {}; arr(sch && sch.nflSchedule && sch.nflSchedule.matchup).forEach(m => arr(m.team).forEach(t => { kick[t.id] = +m.kickoff * 1000; }));
+      const pinfo = async id => { const j = await cachedJSON(ctx, `${HOST}/${Y}/export?TYPE=players&L=${L}&PLAYERS=${id}&JSON=1`, 86400).catch(() => null); const x = arr(j && j.players && j.players.player)[0]; return x ? { pos: x.position, team: x.team } : null; };
+      const locked = async id => { if (!id) return false; const i = await pinfo(id); const k = i && kick[i.team]; return !!(k && Date.now() >= k); };
+      let dk = String(b.div || ''); if (!boss) dk = Object.keys(PB.divs).find(d => PB.divs[d].includes(s.f)) || '';
+      if (!PB.divs[dk]) return json({ ok: false, error: 'Unknown division.' }, 400);
+      const board = B.div[dk], cur = board[slot];
+      if (cur && cur.pid) {
+        if (!boss && cur.fid !== s.f) return json({ ok: false, error: 'That spot belongs to another team’s player.' }, 403);
+        if (!boss && await locked(cur.pid)) return json({ ok: false, error: 'That player’s game has started. He’s locked in.' }, 400);
+      }
+      if (b.action === 'clear') { delete board[slot]; await env.DC.put(key, JSON.stringify(B)); return json({ ok: true, div: B.div }); }
+      if (b.action !== 'set' || !pid) return json({ ok: false, error: 'Unknown action.' }, 400);
+      const fid = owner[pid];
+      if (!fid || !PB.divs[dk].includes(fid)) return json({ ok: false, error: 'That player isn’t on a roster in this division.' }, 400);
+      if (!boss && fid !== s.f) return json({ ok: false, error: 'You can only add players from your own roster.' }, 403);
+      const info = await pinfo(pid), pos = info && info.pos, need = slot.slice(0, 2);
+      const fits = need === 'FX' ? /^(RB|WR|TE)$/.test(pos) : pos === need;
+      if (!fits) return json({ ok: false, error: 'He doesn’t fit that spot (' + (pos || '?') + ').' }, 400);
+      if (Object.keys(PB.divs).some(d => Object.keys(B.div[d]).some(k => B.div[d][k] && B.div[d][k].pid === pid && !(d === dk && k === slot)))) return json({ ok: false, error: 'He’s already on the roster.' }, 400);
+      if (!boss && await locked(pid)) return json({ ok: false, error: 'His game has started. Too late to add him.' }, 400);
+      // every team gets at least one player: never let the last open spots go to a team that's already in
+      const next = Object.assign({}, board, { [slot]: { pid, fid } }), filled = PB.slots.filter(k => next[k] && next[k].pid);
+      const inTeams = new Set(filled.map(k => next[k].fid)), missing = PB.divs[dk].filter(f => !inTeams.has(f)).length, openN = PB.slots.length - filled.length;
+      if (!boss && openN < missing) return json({ ok: false, error: 'The last open spot' + (missing > 1 ? 's are' : ' is') + ' saved for ' + (missing > 1 ? 'teams' : 'a team') + ' with no one on the roster yet.' }, 400);
+      board[slot] = { pid, fid, ts: Date.now() };
+      await env.DC.put(key, JSON.stringify(B));
+      return json({ ok: true, div: B.div });
+    }
     // ---- Helmet Lab: owners design helmets, add them as ALTERNATES (never replace or delete the main one),
     //      pick which helmet the site shows, and keep saved designs in a locker. Commish can act for any team. ----
     if (p === '/data/helmet-lab') {
