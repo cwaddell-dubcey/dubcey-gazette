@@ -1,9 +1,12 @@
-/* Auction Lottery: weighted ball draw for next year's auction order.
+/* Rookie Lottery: weighted ball draw for the order of next year's one-round rookie draft (held before the auction).
    Anyone can play with the balls and run practice draws (kept in their own browser).
    Only the Commish can save official ball counts and run the official draw (saved to the site as content key "lottery"). */
 (function(){
   var D = DC, $ = D.$, esc = D.esc, YR = (D.NEXT && D.NEXT.year) || (+D.Y + 1);
   var IDS = D.IDS.slice(), N = IDS.length, DEF = 20;
+  // rookie salaries go by the order players are taken, not by slot: a team that skips drops to the end of the line
+  var PRICE = [25, 22, 19, 16, 13, 10, 7, 4, 4, 4, 4, 4];
+  function price(i){ return '$' + (PRICE[i] != null ? PRICE[i] : 4); }
   var S = { v:'setup', balls:{}, off:null, me:{}, commish:false, draw:null, drawing:false, cur:null, muted:false, resetArm:false, delArm:'', runArm:false };
 
   function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k) || 'null'); }catch(e){ return null; } }
@@ -142,7 +145,7 @@
   function banner(){
     var L = latest(), h = '';
     if(L && L.pending) h = '<div class="lxban mono"><b>● OFFICIAL DRAW IN PROGRESS</b><span>The Commish is spinning the machine. Results post when the #1 pick is out.</span></div>';
-    else if(L) h = '<a class="lxban lxdone" href="#history"><span class="mono"><b>OFFICIAL ' + YR + ' AUCTION ORDER</b> · DRAWN ' + esc(when(L.ts).toUpperCase()) + '</span><span class="lxmini">' + L.order.map(function(id, i){ return '<i><em class="mono">' + (i + 1) + '</em><img src="' + D.helm(id) + '" alt="' + esc(D.NAME[id] || id) + '" title="' + esc((i + 1) + '. ' + (D.NAME[id] || id)) + '"></i>'; }).join('') + '</span></a>';
+    else if(L) h = '<a class="lxban lxdone" href="#history"><span class="mono"><b>OFFICIAL ' + YR + ' ROOKIE DRAFT ORDER</b> · DRAWN ' + esc(when(L.ts).toUpperCase()) + '</span><span class="lxmini">' + L.order.map(function(id, i){ return '<i><em class="mono">' + (i + 1) + '</em><img src="' + D.helm(id) + '" alt="' + esc(D.NAME[id] || id) + '" title="' + esc((i + 1) + '. ' + (D.NAME[id] || id)) + '"></i>'; }).join('') + '</span></a>';
     $('lxoff').innerHTML = h;
   }
 
@@ -164,7 +167,10 @@
           (R ? '<div class="lxwhy mono' + (+B[id] === R.balls[id] ? '' : ' off') + '">' + (+B[id] === R.balls[id] ? '' : 'RULES SAY ' + R.balls[id] + ': ') + esc(R.why[id]) + '</div>' : '') +
           '<div class="lxodd"><span class="mono">#1 PICK ODDS</span><b>' + pc(o.p[0]) + '</b></div><div class="lxbar"><i style="width:' + w + '%"></i></div></article>';
       }).join('') + '</div>' +
-      '<p class="lxnote mono">EACH BALL IS ONE CHANCE AT THE #1 PICK. PICK 1 IS DRAWN FIRST, THEN PICK 2 FROM WHO’S LEFT, AND SO ON. THE REVEAL RUNS FROM 12 UP TO 1.</p>';
+      '<article class="card lxhow"><div class="bar mono"><span>HOW THE ROOKIE DRAFT WORKS</span><span>ONE ROUND \u00b7 BEFORE THE AUCTION</span></div><div class="lxhb">' +
+      '<p>The lottery sets the order for a one-round rookie draft. Each ball is one chance at the #1 pick: pick 1 is drawn first, then pick 2 from who\u2019s left, and so on. The reveal runs from 12 up to 1.</p>' +
+      '<p>Rookies are priced by the order they come off the board, not by slot. Don\u2019t like anyone at your price? Skip, and you drop to the end of the line.</p>' +
+      '<ol class="lxlad mono">' + PRICE.map(function(p, i){ return '<li><b>' + ord(i + 1).toUpperCase() + '</b><span>$' + p + '</span></li>'; }).join('') + '</ol></div></article>';
     $('lxb').innerHTML = h;
   }
 
@@ -185,9 +191,9 @@
     if(!H.length){ $('lxb').innerHTML = '<article class="card"><div class="ld mono">NO OFFICIAL DRAWS YET. PRACTICE ONES STAY IN YOUR BROWSER.</div></article>'; return; }
     $('lxb').innerHTML = '<div class="lxhist">' + H.map(function(L, k){
       var O = oddsFor(L.balls || {});
-      return '<article class="card"><div class="bar mono"><span>' + (k ? 'EARLIER DRAW' : 'OFFICIAL ' + YR + ' AUCTION ORDER') + (L.pending ? ' · IN PROGRESS' : '') + '</span><span>' + esc(when(L.ts).toUpperCase()) + '</span></div>' +
+      return '<article class="card"><div class="bar mono"><span>' + (k ? 'EARLIER DRAW' : 'OFFICIAL ' + YR + ' ROOKIE DRAFT ORDER') + (L.pending ? ' · IN PROGRESS' : '') + '</span><span>' + esc(when(L.ts).toUpperCase()) + '</span></div>' +
         '<ol class="lxord">' + L.order.map(function(id, i){ var mv = O[id] ? Math.round(O[id].exp - (i + 1)) : 0;
-          return '<li><b class="mono">' + (i + 1) + '</b><img src="' + D.helm(id) + '" alt=""><span>' + esc(D.NAME[id] || id) + '<i class="mono">' + (L.balls ? (+L.balls[id] || 0) + ' BALLS · ' + pc(O[id].p[i]) + ' TO LAND HERE' : '') + '</i></span>' + mvChip(mv) + '</li>'; }).join('') + '</ol>' +
+          return '<li><b class="mono">' + (i + 1) + '</b><em class="lxpr mono">' + price(i) + '</em><img src="' + D.helm(id) + '" alt=""><span>' + esc(D.NAME[id] || id) + '<i class="mono">' + (L.balls ? (+L.balls[id] || 0) + ' BALLS · ' + pc(O[id].p[i]) + ' TO LAND HERE' : '') + '</i></span>' + mvChip(mv) + '</li>'; }).join('') + '</ol>' +
         (S.commish ? '<div class="lxha"><button class="btn ghost2" type="button" data-del="' + L.ts + '">' + (S.delArm === String(L.ts) ? 'TAP AGAIN TO DELETE' : 'DELETE THIS DRAW') + '</button>' + (L.pending ? '<button class="btn" type="button" data-pub="' + L.ts + '">PUBLISH RESULT</button>' : '') + '</div>' : '') + '</article>';
     }).join('') + '</div>';
   }
@@ -216,8 +222,8 @@
     var ctl = d && !done && !S.drawing ? '<button class="btn lxspin" type="button" data-a="spin">SPIN FOR THE ' + ord(next).toUpperCase() + ' PICK</button>' + (step > 0 && step < N - 1 ? '<button class="btn ghost2" type="button" data-a="skip">SKIP TO THE #1 PICK</button>' : '') : '';
     var board = '<aside class="lxboard"><div class="bar mono"><span>THE BOARD</span><span>' + (d ? step + ' / ' + N + ' DRAWN' : 'NOT DRAWN') + '</span></div><ol>' + IDS.map(function(x, i){
       var p = i + 1, id = d && d.order[i], shown = d && p > N - step;
-      return '<li class="' + (shown ? 'on' : '') + (p === 1 ? ' one' : '') + '"><b class="mono">' + p + '</b>' + (shown ? '<img src="' + D.helm(id) + '" alt=""><span>' + esc(D.NAME[id] || id) + '</span>' + mvChip(Math.round(O[id].exp - p)) : '<span class="mono lxin">IN THE MACHINE…</span>') + '</li>'; }).join('') + '</ol></aside>';
-    $('lxb').innerHTML = '<section class="lxstage" id="lxstage"><div class="lxsh mono"><span>' + (d && d.official ? '● OFFICIAL DRAW' : 'PRACTICE DRAW') + ' · ' + YR + ' AUCTION ORDER</span><span class="lxtools"><button type="button" data-a="mute" aria-pressed="' + (!S.muted) + '">' + (S.muted ? 'SOUND: OFF' : 'SOUND: ON') + '</button><button type="button" data-a="tv">' + (document.fullscreenElement ? 'EXIT TV MODE' : 'TV MODE') + '</button>' + (d && !S.drawing && !done ? '<button type="button" data-a="clear">' + (d.official ? 'PAUSE' : 'START OVER') + '</button>' : '') + '</span></div>' +
+      return '<li class="' + (shown ? 'on' : '') + (p === 1 ? ' one' : '') + '"><b class="mono">' + p + '</b><em class="lxpr mono">' + price(i) + '</em>' + (shown ? '<img src="' + D.helm(id) + '" alt=""><span>' + esc(D.NAME[id] || id) + '</span>' + mvChip(Math.round(O[id].exp - p)) : '<span class="mono lxin">IN THE MACHINE…</span>') + '</li>'; }).join('') + '</ol></aside>';
+    $('lxb').innerHTML = '<section class="lxstage" id="lxstage"><div class="lxsh mono"><span>' + (d && d.official ? '● OFFICIAL DRAW' : 'PRACTICE DRAW') + ' · ' + YR + ' ROOKIE DRAFT ORDER</span><span class="lxtools"><button type="button" data-a="mute" aria-pressed="' + (!S.muted) + '">' + (S.muted ? 'SOUND: OFF' : 'SOUND: ON') + '</button><button type="button" data-a="tv">' + (document.fullscreenElement ? 'EXIT TV MODE' : 'TV MODE') + '</button>' + (d && !S.drawing && !done ? '<button type="button" data-a="clear">' + (d.official ? 'PAUSE' : 'START OVER') + '</button>' : '') + '</span></div>' +
       '<div class="lxmach"><div class="lxcol">' + drum + '<div class="lxchute">' + (S.drawing ? '<i></i>' : '') + '</div>' + tray + '<div class="lxctl">' + ctl + '</div></div>' + board + '</div></section>';
   }
 
@@ -246,7 +252,7 @@
   }
   function skip(){ var d = S.draw; if(!d || S.drawing || d.step >= N - 1) return; d.step = N - 1; S.cur = 2; lsSet('dcLotDraw', d); thump(0.6); say('Picks 12 through 2 are out. One spin left.'); drawView(); }
   function clear(){ clearTimeout(spin.t); hush(); S.drawing = false; S.cur = null; if(S.draw && !S.draw.official){ S.draw = null; lsSet('dcLotDraw', null); } else { S.draw = null; } music(false); draw(); }
-  function copy(){ var d = S.draw; if(!d) return; var t = YR + ' Dubcey auction order' + (d.official ? '' : ' (practice)') + '\n' + d.order.map(function(id, i){ return (i + 1) + '. ' + (D.NAME[id] || id); }).join('\n');
+  function copy(){ var d = S.draw; if(!d) return; var t = YR + ' Dubcey rookie draft order' + (d.official ? '' : ' (practice)') + '\n' + d.order.map(function(id, i){ return (i + 1) + '. ' + (D.NAME[id] || id); }).join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ say('Copied the draft order.'); flash('COPIED'); }, function(){ flash('COPY BLOCKED'); }); }
   function flash(t){ var b = document.querySelector('[data-a="copy"]'); if(b){ b.textContent = t; setTimeout(function(){ if(b.isConnected) b.textContent = 'COPY THE ORDER'; }, 1800); } }
   function alertBox(t){ var n = document.createElement('div'); n.className = 'lxtoast mono'; n.setAttribute('role', 'alert'); n.textContent = t; document.body.appendChild(n); setTimeout(function(){ n.remove(); }, 4200); }
