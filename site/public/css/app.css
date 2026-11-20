@@ -3441,3 +3441,45 @@ a.atc:hover{color:#102542;box-shadow:4px 4px 0 #E0A72B}
 @media (max-width:1100px){.bwgrid{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.bwgrid,.bwsb{grid-template-columns:1fr}}
 .bwdiv .dvx{white-space:nowrap}.bwdiv .dvx b{font-size:13px}
+.nbx .ndp{color:#c8282d;font-weight:700;padding-left:10px}
+.nbx th.ndp{color:#c8282d}
+.nbx th.ndp img{height:18px;width:auto;display:inline-block;vertical-align:middle}
+/* ---- Clubhouse landing: the locker room ---- */
+.khhero{display:flex;align-items:center;gap:22px;padding:18px 22px;margin-bottom:24px;background:#102542;border:2px solid #E0A72B;box-shadow:6px 6px 0 #c8282d;color:#F7EFDB}
+.khhero .k{font-size:10px;color:#E0A72B;letter-spacing:.14em}
+.khhero h2{margin:6px 0 4px;font:400 26px/1.05 'Alfa Slab One',serif;text-transform:uppercase}
+.khhero p{margin:0;color:#C9D6E5;font-size:15px}
+.khhero .btn{margin-left:auto;flex:none}
+.khlk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:26px}
+.khl{position:relative;display:flex;flex-direction:column;align-items:center;min-height:330px;padding:16px 10px 14px;text-decoration:none;color:#F7EFDB;
+  background:linear-gradient(90deg,rgba(0,0,0,.18),transparent 12%,transparent 88%,rgba(0,0,0,.18)),repeating-linear-gradient(180deg,#2C4C78 0 2px,#21406A 2px 9px);border:2px solid #0D1F38;box-shadow:inset 0 0 0 4px #16304F;transition:box-shadow .12s}
+.khl:hover,.khl:focus-visible{box-shadow:inset 0 0 0 4px #E0A72B;color:#F7EFDB}
+.khv{width:60%;height:34px;background:repeating-linear-gradient(180deg,#0D1F38 0 4px,transparent 4px 8px);opacity:.7;margin-bottom:16px}
+.khnp{background:linear-gradient(180deg,#f0cf7a,#c99a3a);border:1px solid #7a5a1d;color:#3b2a0a;font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 8px;text-align:center;margin-bottom:14px}
+.khim{width:84%;max-height:90px;object-fit:contain;margin:6px 0 14px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.khic{font:400 44px/1 'Alfa Slab One',serif;color:#E0A72B;margin:16px 0 22px;text-shadow:3px 3px 0 #c8282d}
+.khd{flex:1;text-align:center;font-size:13.5px;line-height:1.35;color:#C9D6E5}
+.khlv{margin-top:10px;font-size:9.5px;color:#E0A72B;letter-spacing:.08em;text-align:center;line-height:1.4}
+.khlv2{display:none}
+.khh{position:absolute;right:10px;top:46%;width:6px;height:36px;background:#C9C2AC;border-radius:3px}
+.khcal{max-width:640px;margin-bottom:44px}
+.khcal ul{list-style:none;margin:0;padding:0}
+.khcal li{display:flex;justify-content:space-between;gap:12px;padding:10px 18px;border-bottom:1px solid #E4DCC5;font-size:15px}
+.khcal li:last-child{border-bottom:0}
+.khcal li a{color:#102542;text-decoration:none}.khcal li a:hover{color:#c8282d}
+.khcal li b{font-size:11px;color:#c8282d;letter-spacing:.08em;white-space:nowrap}
+@media (max-width:1180px){.khlk{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:760px){
+  .khhero{flex-direction:column;align-items:flex-start}.khhero .btn{margin-left:0}
+  .khlk{grid-template-columns:1fr;gap:8px}
+  .khl{flex-direction:row;align-items:center;min-height:0;padding:12px 30px 12px 12px;gap:12px;
+    background:linear-gradient(180deg,rgba(0,0,0,.18),transparent 14%,transparent 86%,rgba(0,0,0,.18)),repeating-linear-gradient(90deg,#2C4C78 0 2px,#21406A 2px 9px)}
+  .khv{width:16px;height:52px;margin:0;flex:none;background:repeating-linear-gradient(90deg,#0D1F38 0 3px,transparent 3px 6px)}
+  .khic{font-size:30px;margin:0;width:44px;text-align:center;flex:none}
+  .khim{width:56px;margin:0;flex:none}
+  .khnp{position:absolute;left:96px;top:10px;margin:0}
+  .khd{text-align:left;margin-top:26px;font-size:13px}
+  .khlv{display:none}
+  .khlv2{display:block;margin-top:4px;font-size:9px;font-weight:700;color:#E0A72B;letter-spacing:.06em}
+  .khh{right:10px;top:50%;transform:translateY(-50%);height:26px}
+}

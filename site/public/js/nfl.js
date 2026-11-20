@@ -1,6 +1,6 @@
 (function(){
   var D = DC, $ = D.$, esc = D.esc, arr = D.arr, num = D.num;
-  var S = { w:+((/[?&]w=(\d+)/.exec(location.search) || [])[1] || 0), cur:0, open:{}, own:{}, data:null };
+  var S = { w:+((/[?&]w=(\d+)/.exec(location.search) || [])[1] || 0), cur:0, open:{}, own:{}, data:null, pts:{}, ptsW:0 };
   D.shell('nfl');
   var MX = { GB:'GBP', KC:'KCC', NE:'NEP', NO:'NOS', SF:'SFO', TB:'TBB', LV:'LVR', JAX:'JAC', WSH:'WAS' };
   function nk(n){ return String(n || '').toLowerCase().replace(/[.'\u2019]/g, '').replace(/\s+(jr|sr|ii|iii|iv|v)$/, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
@@ -15,6 +15,18 @@
     });
   }).catch(function(){});
 
+  // Dubcey fantasy points for every NFL player that week (MFL's scoring), matched to the box score by name + NFL team
+  function loadPts(){
+    var w = S.w;
+    return D.api('playerScores', 'W=' + w + '&YEAR=' + D.Y).then(function(j){
+      var sc = {}; arr(j && j.playerScores && j.playerScores.playerScore).forEach(function(x){ if(x.score !== '' && x.score != null) sc[x.id] = num(x.score); });
+      var ids = Object.keys(sc); return D.players(ids).then(function(){
+        if(w !== S.w) return; var P = {};
+        ids.forEach(function(id){ var i = D.pinfo(id); if(!/^(QB|RB|WR|TE)$/.test(i[1])) return; P[nk(i[0]) + '|' + String(i[2] || '').toUpperCase()] = sc[id]; });
+        S.pts = P; S.ptsW = w; if(S.data) draw();
+      });
+    }).catch(function(){});
+  }
   // default week: last week's results until Tuesday 8 p.m. ET, then the upcoming week (Week 1 opens Tue Sep 8, 2026)
   function defWeek(){
     var et = new Date(new Date().toLocaleString('en-US', { timeZone:'America/New_York' })), w1 = D.SEASON.week1.split('-').map(Number), start = new Date(w1[0], w1[1] - 1, w1[2], 20, 0);
@@ -26,7 +38,7 @@
     fetch('/data/nflgames' + (S.w ? '?W=' + S.w : '')).then(function(r){ return r.json(); }).then(function(d){
       if(!d || !d.games || !d.games.length) throw 0;
       S.data = d;
-      weeks(); draw(); fillML(d);
+      weeks(); draw(); fillML(d); loadPts();
     }).catch(function(){ $('games').innerHTML = '<div class="ld mono">NFL GAMES AREN\u2019T AVAILABLE RIGHT NOW.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
   }
   // moneylines straight from ESPN in the browser, in case the server copy comes back without them
@@ -52,8 +64,9 @@
   function table(cat, c, ab){
     if(!c || !c.rows.length) return '';
     var L = c.labels.map(function(x){ return String(x).toUpperCase(); }), want = COLS[cat].filter(function(k){ return L.indexOf(k) > -1; });
-    return '<table class="nbx"><thead><tr><th class="mono">' + cat.toUpperCase() + '</th>' + want.map(function(k){ return '<th class="mono">' + k + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      c.rows.map(function(r){ return '<tr><td>' + owner(r[0], ab) + '<span>' + esc(r[0]) + '</span></td>' + want.map(function(k){ return '<td class="mono">' + esc(r[2 + L.indexOf(k)]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+    var pts = S.ptsW === S.w;
+    return '<table class="nbx"><thead><tr><th class="mono">' + cat.toUpperCase() + '</th>' + want.map(function(k){ return '<th class="mono">' + k + '</th>'; }).join('') + (pts ? '<th class="ndp" title="Dubcey fantasy points this week (all stats, not just this category)"><img src="h/logo.webp" alt="Dubcey points"></th>' : '') + '</tr></thead><tbody>' +
+      c.rows.map(function(r){ var p = S.pts[nk(r[0]) + '|' + (MX[ab] || ab)]; return '<tr><td>' + owner(r[0], ab) + '<span>' + esc(r[0]) + '</span></td>' + want.map(function(k){ return '<td class="mono">' + esc(r[2 + L.indexOf(k)]) + '</td>'; }).join('') + (pts ? '<td class="mono ndp">' + (p != null ? D.pts(p) : '\u2013') + '</td>' : '') + '</tr>'; }).join('') + '</tbody></table>';
   }
   function side(t, win, live){ return '<div class="nsd' + (win ? ' w' : '') + '"><img src="' + esc(t.logo || D.nflLogo(t.ab)) + '" alt=""><b>' + esc(t.name || t.ab) + '</b><i class="mono">' + esc(t.rec || '') + '</i><em>' + (live ? esc(t.score) : '') + '</em></div>'; }
   function ml(v){ if(v == null || v === '') return '\u2013'; var s = String(v).trim(); if(/^EVEN$/i.test(s)) return 'EVEN'; var n = parseFloat(s.replace(/[^\d.+-]/g, '')); if(isNaN(n)) return '\u2013'; return (n > 0 ? '+' : '') + n; }
@@ -84,5 +97,5 @@
     var g = e.target.closest('[data-g]'); if(g){ var id = g.getAttribute('data-g'); S.open[id] = !S.open[id]; draw(); }
   });
   load();
-  setInterval(function(){ if(!document.hidden && S.data && S.data.games.some(function(g){ return g.state === 'in'; })) fetch('/data/nflgames?W=' + S.w).then(function(r){ return r.json(); }).then(function(d){ if(d && d.games) { S.data = d; draw(); } }).catch(function(){}); }, 60000);
+  setInterval(function(){ if(!document.hidden && S.data && S.data.games.some(function(g){ return g.state === 'in'; })) fetch('/data/nflgames?W=' + S.w).then(function(r){ return r.json(); }).then(function(d){ if(d && d.games) { S.data = d; draw(); loadPts(); } }).catch(function(){}); }, 60000);
 })();

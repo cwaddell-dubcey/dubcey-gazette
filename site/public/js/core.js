@@ -627,7 +627,7 @@
     { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
     { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
     { t:'HISTORY', p:['history','vault'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#drafts', 'DRAFTS'], ['history#defunct', 'DEFUNCT'], ['vault', 'THE VAULT']] },
-    { t:'CLUBHOUSE', p:['finances', 'rules', 'clerk', 'lottery', 'probowl', 'helmets', 'ideas'], items:[['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['lottery', 'ROOKIE LOTTERY'], ['probowl', 'PRO BOWL'], ['helmets', 'HELMET LAB'], ['ideas', 'SUGGESTION BOX']] },
+    { t:'CLUBHOUSE', p:['clubhouse', 'finances', 'rules', 'clerk', 'lottery', 'probowl', 'helmets', 'ideas'], items:[['clubhouse', 'CLUBHOUSE HOME'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['lottery', 'ROOKIE LOTTERY'], ['probowl', 'PRO BOWL'], ['helmets', 'HELMET LAB'], ['ideas', 'SUGGESTION BOX']] },
     { t:'MY TEAM', p:['myteam'], href:'myteam', cls:'ngmt' }
   ];
   function gHref(x){ var i = x.indexOf('#'); return i < 0 ? D.href(x) : D.href(x.slice(0, i)) + x.slice(i); }
