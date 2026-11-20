@@ -193,6 +193,51 @@
   },
   "articles": [
     {
+      "title": "Restricted Free Agency",
+      "rules": [
+        {
+          "h": "When.",
+          "t": "Restricted free agency opens the new fantasy year, usually in mid-August, before the rookie draft and the auction.",
+          "v": "Mid-August"
+        },
+        {
+          "h": "The pool.",
+          "t": "Every team must put one player from its roster into the RFA pool by RDPC's deadline. If a team doesn't, RDPC picks one for it.",
+          "v": "1 per team"
+        },
+        {
+          "h": "The draws.",
+          "t": "For 12 days, RDPC draws one player a day from the pool at random.",
+          "v": "12 days"
+        },
+        {
+          "h": "Bidding.",
+          "t": "The other 11 teams each submit a blind bid in whole dollars, starting at $1, plus a number of penalty shots, or pass. The bid is the player's salary for the coming auction. The team whose player is up sits out.",
+          "v": "$1 min"
+        },
+        {
+          "h": "Budget.",
+          "t": "A bid can't be more than the bidding team's next-year auction budget. RFA salaries come out of that budget, and a team can win more than one RFA.",
+          "v": "Within budget"
+        },
+        {
+          "h": "Winning bid.",
+          "t": "The highest bid wins. If bids are tied, the one with more penalty shots wins.",
+          "v": "Shots break ties"
+        },
+        {
+          "h": "Matching.",
+          "t": "The original team then sees the top bid and can match it, keeping the player at that salary and taking the penalty shots, or let him go to the top bidder, who takes the shots. If nobody bids, the player stays put.",
+          "v": "Match or release"
+        },
+        {
+          "h": "Results.",
+          "t": "RDPC runs the process. Bids stay sealed, even from the Commish, until each player is resolved. Then every bid and shot count is posted on the RFA page.",
+          "v": "All bids posted"
+        }
+      ]
+    },
+    {
       "title": "The Pro Bowl",
       "rules": [
         {

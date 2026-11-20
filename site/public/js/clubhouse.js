@@ -10,6 +10,7 @@
     { k:'finances', h:'Finances', d:'Dues, payouts, the penalty pool and next year’s auction money.', ic:'$' },
     { k:'rules', h:'Bylaws', d:'The official rules, from scoring to the Pro Bowl.', ic:'§' },
     { k:'clerk', h:'Clerk’s Office', d:'Rulings, fines and the official record.', ic:'⚖' },
+    { k:'rfa', h:'RFA', d:'Restricted free agency: one player a day, blind bids, match or let him go.', ic:'\u270d' },
     { k:'lottery', h:'Rookie Lottery', d:'The balls, the odds and the draw for the rookie draft.', ic:'●' },
     { k:'probowl', h:'Pro Bowl', d:'Three divisions, one Week 18 showdown. $600 pot.', ic:'★' },
     { k:'helmets', h:'Helmet Lab', d:'Design an alternate helmet and wear it.', img:true },
@@ -64,6 +65,8 @@
   fetch('data/rulebook.json', { cache:'no-cache' }).then(function(r){ return r.json(); }).then(function(j){ if(j && j.updated) set('rules', 'UPDATED ' + md(Date.parse(j.updated + 'T12:00:00'))); }).catch(function(){});
   D.content('clerk').then(function(c){ var t = 0; arr(c && c.notes).forEach(function(n){ if(n && n.at > t) t = n.at; }); if(t) set('clerk', 'LAST ENTRY ' + md(t)); }).catch(function(){});
   D.content('teams').then(function(T){ var n = 0; Object.keys(T || {}).forEach(function(id){ arr(T[id] && T[id].alts).forEach(function(a){ if(a.lab) n++; }); }); set('helmets', n ? n + ' LAB HELMET' + (n > 1 ? 'S' : '') + ' IN THE LEAGUE' : 'DESIGN YOUR ALTERNATE'); }).catch(function(){});
+  fetch(D.LOCAL ? 'about:blank' : '/data/rfa', { cache:'no-store', credentials:'same-origin' }).then(function(r){ return r.json(); }).then(function(v){
+    set('rfa', { off:'OPENS MID-AUGUST', pool:'POOL OPEN \u00b7 ' + v.nPool + ' OF 12 IN', running:v.cur && v.cur.stage === 'bidding' ? 'DAY ' + v.cur.day + ' \u00b7 BIDDING OPEN' : 'DAY ' + ((v.results || []).length) + ' OF ' + (v.nPool || 12), done:'ALL ' + (v.results || []).length + ' RESOLVED' }[v.phase] || ''); }).catch(function(){ set('rfa', 'OPENS MID-AUGUST'); });
   if(!D.LOCAL){
     fetch('/data/probowl', { cache:'no-store', credentials:'same-origin' }).then(function(r){ return r.json(); }).then(function(b){ PB = b; var n = 0; Object.keys(b.div || {}).forEach(function(k){ Object.keys(b.div[k]).forEach(function(s){ if(b.div[k][s] && b.div[k][s].pid) n++; }); });
       set('probowl', b.open ? n + ' OF 30 SPOTS FILLED' : 'BOARD OPENS ' + md(b.opens)); }).catch(function(){});

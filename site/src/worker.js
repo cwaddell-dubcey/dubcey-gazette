@@ -39,7 +39,7 @@ const sameOrigin = (req, u) => { const o = req.headers.get('Origin'); return !o 
 const isCommish = (s, env) => !!(s && s.f && String(env.COMMISH || '').split(',').includes(s.f));
 const isClerk = (s, env) => !!(s && s.f && (String(env.CLERK || '').split(',').includes(s.f) || isCommish(s, env)));
 // one line per page for link previews
-const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', clubhouse: 'The Dubcey Clubhouse: finances, bylaws, the lottery, the Pro Bowl and more.', probowl: 'The Dubcey Pro Bowl: three divisions, one Week 18 showdown.', helmets: 'The Dubcey Helmet Lab: design a helmet and add it to your team.', lottery: 'The Dubcey rookie lottery: the balls, the odds and the draw for the rookie draft order.' };
+const OG = { index: 'Scores, standings, the Dispatch and 26 years of Dubcey Fantasy Football history.', scores: 'Live scores and matchups for every Dubcey game this week.', standings: 'Dubcey standings, power rankings and playoff odds.', schedule: 'The Dubcey schedule, playoff picture and league calendar.', teams: 'Every Dubcey roster, salaries and keeper planning.', players: 'Free agents, top scorers, news and injuries.', wire: 'Every Dubcey add, drop, waiver bid and trade.', dispatch: 'The Dispatch: this week\u2019s Dubcey column.', history: 'Champions, head-to-head records, every roster since 2003 and the Dubcey record book.', rules: 'The official Dubcey bylaws and scoring.', finances: 'Dubcey dues, payouts and the penalty pool.', myteam: 'Set your Dubcey lineup, trades and waiver bids.', nfl: 'NFL scores and box scores, with Dubcey owners tagged.', ideas: 'The Dubcey Suggestion Box: bugs, fixes and the wish list.', clerk: 'The Dubcey Clerk\u2019s Office.', commish: 'The Dubcey Commish desk.', vault: 'From the Vault: the original dubcey.com Flash intro.', rfa: 'Dubcey Restricted Free Agency: one player a day, blind bids, match or let him go.', clubhouse: 'The Dubcey Clubhouse: finances, bylaws, the lottery, the Pro Bowl and more.', probowl: 'The Dubcey Pro Bowl: three divisions, one Week 18 showdown.', helmets: 'The Dubcey Helmet Lab: design a helmet and add it to your team.', lottery: 'The Dubcey rookie lottery: the balls, the odds and the draw for the rookie draft order.' };
 const CONTENT = { clerk:1, column:1, teams:1, calendar:1, bylaws:1, popups:1, finance:1, stories:1, hits:1, pgfx:1, lottery:1 };
 // what a media ("press pass") member may write; everything else stays commissioner-only
 const MEDIA_OK = { column:1, stories:1, hits:1, pgfx:1 };
@@ -314,6 +314,95 @@ export default {
     }
     if (p === '/auth/logout') return json({ ok: true }, 200, { 'Set-Cookie': cookie('', 0) });
 
+    // ---- Restricted Free Agency (offseason, run by RDPC). Each team puts one player in the pool; RDPC draws one a day at random;
+    //      the other 11 teams blind-bid (whole $ + penalty shots as the tiebreaker, or pass); the original team can match the top bid
+    //      (taking its $ and shots) or let him go. Only the RFA account (env.RFA, a press pass) sees bids before results post —
+    //      the Commish sees what everyone sees. ----
+    if (p === '/data/rfa') {
+      const YR = String(+Y + 1), key = 'rfa:' + YR, s = (await session(req, env));
+      const getJ = async (k, d) => { try { return JSON.parse((env.DC && await env.DC.get(k)) || 'null') || d; } catch (e) { return d; } };
+      const R = await getJ(key, { phase: 'off', pool: {}, results: [], cur: null });
+      const adminName = String(env.RFA || 'RDPC').toLowerCase();
+      const admin = !!(s && s.m && (await mediaList(env)).some(x => x.id === s.m && x.on !== false && x.name.toLowerCase() === adminName));
+      const me = s && s.f ? s.f : '', FIDS = ['0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010', '0011', '0012'];
+      const won = fid => (R.results || []).filter(x => x.winner === fid && x.salary).reduce((a, x) => a + x.salary, 0);
+      const view = () => {
+        const v = { ok: true, year: YR, phase: R.phase, deadline: R.deadline || 0, results: R.results || [], me, admin, nPool: Object.keys(R.pool || {}).length, done: (R.results || []).map(x => x.pid) };
+        // the pool goes public once RDPC starts the draws; before that an owner sees only their own player
+        v.pool = admin || R.phase === 'running' || R.phase === 'done' ? R.pool : (me && R.pool[me] ? { [me]: R.pool[me] } : {});
+        if (R.cur) {
+          const c = R.cur, pub = { pid: c.pid, fid: c.fid, day: c.day, stage: c.stage, opened: c.opened, closed: c.closed || 0, nBids: Object.keys(c.bids || {}).length };
+          if (me && c.bids && c.bids[me]) pub.mine = c.bids[me];
+          if (c.stage === 'match' && me === c.fid && c.top) pub.top = { amt: c.top.amt, shots: c.top.shots };   // the original team sees what it has to match, not who bid it
+          if (admin) { pub.bids = c.bids || {}; pub.top = c.top || null; pub.decision = c.decision || ''; }
+          v.cur = pub;
+        }
+        if (me) v.wonSalary = won(me);
+        return v;
+      };
+      if (req.method === 'GET') return json(view());
+      if (req.method !== 'POST' || !sameOrigin(req, u)) return json({ ok: false }, 405);
+      if (!env.DC) return json({ ok: false, error: 'Storage not set up yet.' }, 500);
+      const b = await req.json().catch(() => ({})), save = async () => { await env.DC.put(key, JSON.stringify(R)); return json(view()); };
+      const roster = async () => { const ro = await cachedJSON(ctx, `${HOST}/${Y}/export?TYPE=rosters&L=${L}&JSON=1`, 30); const o = {}; arr(ro && ro.rosters && ro.rosters.franchise).forEach(f => arr(f.player).forEach(x => { o[x.id] = f.id; })); return o; };
+      if (admin) {
+        if (b.action === 'open') { R.phase = 'pool'; R.deadline = +b.deadline || 0; return save(); }
+        if (b.action === 'deadline') { R.deadline = +b.deadline || 0; return save(); }
+        if (b.action === 'assign') { if (!FIDS.includes(b.fid)) return json({ ok: false, error: 'Unknown team.' }, 400); const own = await roster(); if (own[b.pid] !== b.fid) return json({ ok: false, error: 'He isn’t on that roster.' }, 400); R.pool[b.fid] = { pid: String(b.pid), ts: Date.now(), by: 'rdpc' }; return save(); }
+        if (b.action === 'start') { if (R.phase !== 'pool') return json({ ok: false, error: 'Open the pool first.' }, 400); R.phase = 'running'; return save(); }
+        if (b.action === 'draw') {
+          if (R.phase !== 'running') return json({ ok: false, error: 'Start the draws first.' }, 400);
+          if (R.cur && R.cur.stage !== 'done') return json({ ok: false, error: 'Finish today’s player first.' }, 400);
+          const done = (R.results || []).map(x => x.fid), left = Object.keys(R.pool).filter(f => !done.includes(f));
+          if (!left.length) { R.phase = 'done'; R.cur = null; return save(); }
+          const f = left[crypto.getRandomValues(new Uint32Array(1))[0] % left.length];
+          R.cur = { pid: R.pool[f].pid, fid: f, day: (R.results || []).length + 1, stage: 'bidding', opened: Date.now(), bids: {} };
+          return save();
+        }
+        if (b.action === 'close') {
+          const c = R.cur; if (!c || c.stage !== 'bidding') return json({ ok: false, error: 'No bidding is open.' }, 400);
+          const bids = Object.keys(c.bids).map(f => Object.assign({ fid: f }, c.bids[f])).filter(x => !x.pass && x.amt > 0);
+          bids.sort((a, b2) => b2.amt - a.amt || b2.shots - a.shots || a.ts - b2.ts);
+          c.top = bids[0] ? { fid: bids[0].fid, amt: bids[0].amt, shots: bids[0].shots } : null;
+          c.stage = c.top ? 'match' : 'decided'; if (!c.top) c.decision = 'nobids'; c.closed = Date.now();
+          return save();
+        }
+        if (b.action === 'decide') { const c = R.cur; if (!c || c.stage !== 'match') return json({ ok: false, error: 'Nothing to decide.' }, 400); if (!/^(match|decline)$/.test(b.decision)) return json({ ok: false }, 400); c.decision = b.decision; c.stage = 'decided'; c.decidedBy = 'rdpc'; return save(); }
+        if (b.action === 'reopen') { const c = R.cur; if (!c || c.stage === 'done') return json({ ok: false, error: 'Nothing to reopen.' }, 400); c.stage = 'bidding'; delete c.top; delete c.decision; c.closed = 0; return save(); }
+        if (b.action === 'publish') {
+          const c = R.cur; if (!c || c.stage !== 'decided') return json({ ok: false, error: 'Close bidding and get a match decision first.' }, 400);
+          const keep = c.decision === 'match' || c.decision === 'nobids';
+          (R.results = R.results || []).push({ day: c.day, pid: c.pid, fid: c.fid, bids: c.bids, top: c.top || null, decision: c.decision, winner: keep ? c.fid : c.top.fid,
+            salary: c.top ? c.top.amt : 0, shots: c.top ? c.top.shots : 0, ts: Date.now(), note: String(b.note || '').slice(0, 400) });
+          c.stage = 'done';
+          if ((R.results || []).length >= Object.keys(R.pool).length) R.phase = 'done';
+          return save();
+        }
+        if (b.action === 'reset') { if (b.confirm !== 'RESET') return json({ ok: false, error: 'Type RESET to confirm.' }, 400); await env.DC.put(key, JSON.stringify({ phase: 'off', pool: {}, results: [], cur: null })); return json({ ok: true }); }
+      }
+      if (!me) return json({ ok: false, error: 'Sign in with your team account.' }, 401);
+      if (b.action === 'submit') {
+        if (R.phase !== 'pool') return json({ ok: false, error: 'The RFA pool isn’t open.' }, 400);
+        if (R.deadline && Date.now() > R.deadline) return json({ ok: false, error: 'The deadline has passed. Talk to RDPC.' }, 400);
+        const own = await roster(); if (own[b.pid] !== me) return json({ ok: false, error: 'He isn’t on your roster.' }, 400);
+        R.pool[me] = { pid: String(b.pid), ts: Date.now(), by: 'owner' }; return save();
+      }
+      if (b.action === 'bid') {
+        const c = R.cur; if (!c || c.stage !== 'bidding') return json({ ok: false, error: 'Bidding is closed.' }, 400);
+        if (c.fid === me) return json({ ok: false, error: 'He’s your player. Sit tight.' }, 400);
+        if (b.pass) { c.bids[me] = { pass: true, ts: Date.now() }; return save(); }
+        const amt = Math.floor(+b.amt), shots = Math.max(0, Math.min(99, Math.floor(+b.shots || 0)));
+        if (!(amt >= 1)) return json({ ok: false, error: 'Bids start at $1.' }, 400);
+        const cap = 230 - won(me); if (amt > cap) return json({ ok: false, error: 'That’s more than your auction budget allows ($' + cap + ' max).' }, 400);
+        c.bids[me] = { amt, shots, ts: Date.now() }; return save();
+      }
+      if (b.action === 'match') {
+        const c = R.cur; if (!c || c.stage !== 'match' || c.fid !== me) return json({ ok: false, error: 'Nothing to decide.' }, 400);
+        if (!/^(match|decline)$/.test(b.decision)) return json({ ok: false }, 400);
+        c.decision = b.decision; c.stage = 'decided'; c.decidedBy = me; return save();
+      }
+      return json({ ok: false, error: admin ? 'Unknown action.' : 'Not allowed.' }, admin ? 400 : 403);
+    }
     // ---- Pro Bowl (NFL Week 18): each division fields one 10-man lineup from its four teams' rosters.
     //      Shared board: owners fill open slots with their own players; every team must end up with at least one player in.
     //      Players lock at their own Week 18 kickoff. Commish can open the board early and change any slot. ----
