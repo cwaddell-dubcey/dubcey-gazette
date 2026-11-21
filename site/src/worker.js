@@ -326,8 +326,13 @@ export default {
       const admin = !!(s && s.m && (await mediaList(env)).some(x => x.id === s.m && x.on !== false && x.name.toLowerCase() === adminName));
       const me = s && s.f ? s.f : '', FIDS = ['0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010', '0011', '0012'];
       const won = fid => (R.results || []).filter(x => x.winner === fid && x.salary).reduce((a, x) => a + x.salary, 0);
+      // back-to-back rule (since 2022): last year's RFAs can't be put in the pool. Last year comes from the portal if it ran there, else the history file.
+      let blocked = [];
+      const prev = await getJ('rfa:' + (+YR - 1), null);
+      if (prev && prev.pool && Object.keys(prev.pool).length) blocked = Object.values(prev.pool).map(x => String(x.pid));
+      else { try { const hr = await env.ASSETS.fetch(new Request(u.origin + '/data/rfa-history.json')); const hj = hr.ok ? await hr.json() : null; const py = hj && (hj.years || []).find(x => +x.y === +YR - 1); if (py) blocked = py.items.map(i => String(i.id || '')).filter(Boolean); } catch (e) {} }
       const view = () => {
-        const v = { ok: true, year: YR, phase: R.phase, deadline: R.deadline || 0, results: R.results || [], me, admin, nPool: Object.keys(R.pool || {}).length, done: (R.results || []).map(x => x.pid) };
+        const v = { ok: true, year: YR, blocked, phase: R.phase, deadline: R.deadline || 0, results: R.results || [], me, admin, nPool: Object.keys(R.pool || {}).length, done: (R.results || []).map(x => x.pid) };
         // the pool goes public once RDPC starts the draws; before that an owner sees only their own player
         v.pool = admin || R.phase === 'running' || R.phase === 'done' ? R.pool : (me && R.pool[me] ? { [me]: R.pool[me] } : {});
         if (R.cur) {
@@ -348,7 +353,7 @@ export default {
       if (admin) {
         if (b.action === 'open') { R.phase = 'pool'; R.deadline = +b.deadline || 0; return save(); }
         if (b.action === 'deadline') { R.deadline = +b.deadline || 0; return save(); }
-        if (b.action === 'assign') { if (!FIDS.includes(b.fid)) return json({ ok: false, error: 'Unknown team.' }, 400); const own = await roster(); if (own[b.pid] !== b.fid) return json({ ok: false, error: 'He isn’t on that roster.' }, 400); R.pool[b.fid] = { pid: String(b.pid), ts: Date.now(), by: 'rdpc' }; return save(); }
+        if (b.action === 'assign') { if (!FIDS.includes(b.fid)) return json({ ok: false, error: 'Unknown team.' }, 400); if (blocked.includes(String(b.pid))) return json({ ok: false, error: 'He was an RFA last year. Back-to-back RFAs are not allowed.' }, 400); const own = await roster(); if (own[b.pid] !== b.fid) return json({ ok: false, error: 'He isn’t on that roster.' }, 400); R.pool[b.fid] = { pid: String(b.pid), ts: Date.now(), by: 'rdpc' }; return save(); }
         if (b.action === 'start') { if (R.phase !== 'pool') return json({ ok: false, error: 'Open the pool first.' }, 400); R.phase = 'running'; return save(); }
         if (b.action === 'draw') {
           if (R.phase !== 'running') return json({ ok: false, error: 'Start the draws first.' }, 400);
@@ -364,15 +369,19 @@ export default {
           const bids = Object.keys(c.bids).map(f => Object.assign({ fid: f }, c.bids[f])).filter(x => !x.pass && x.amt > 0);
           bids.sort((a, b2) => b2.amt - a.amt || b2.shots - a.shots || a.ts - b2.ts);
           c.top = bids[0] ? { fid: bids[0].fid, amt: bids[0].amt, shots: bids[0].shots } : null;
+          // exact tie on dollars AND shots: settled by a three-cup flip-cup relay at the draft (only matters if the original team lets him go)
+          c.tied = bids.filter(x => bids[0] && x.amt === bids[0].amt && x.shots === bids[0].shots).map(x => x.fid); if (c.tied.length < 2) delete c.tied;
           c.stage = c.top ? 'match' : 'decided'; if (!c.top) c.decision = 'nobids'; c.closed = Date.now();
           return save();
         }
         if (b.action === 'decide') { const c = R.cur; if (!c || c.stage !== 'match') return json({ ok: false, error: 'Nothing to decide.' }, 400); if (!/^(match|decline)$/.test(b.decision)) return json({ ok: false }, 400); c.decision = b.decision; c.stage = 'decided'; c.decidedBy = 'rdpc'; return save(); }
+        if (b.action === 'flip') { const x = (R.results || []).find(r => r.day === +b.day); if (!x || !x.flip || !x.flip.includes(b.fid)) return json({ ok: false, error: 'Pick one of the tied teams.' }, 400); x.winner = b.fid; x.flipWon = Date.now(); return save(); }
         if (b.action === 'reopen') { const c = R.cur; if (!c || c.stage === 'done') return json({ ok: false, error: 'Nothing to reopen.' }, 400); c.stage = 'bidding'; delete c.top; delete c.decision; c.closed = 0; return save(); }
         if (b.action === 'publish') {
           const c = R.cur; if (!c || c.stage !== 'decided') return json({ ok: false, error: 'Close bidding and get a match decision first.' }, 400);
           const keep = c.decision === 'match' || c.decision === 'nobids';
-          (R.results = R.results || []).push({ day: c.day, pid: c.pid, fid: c.fid, bids: c.bids, top: c.top || null, decision: c.decision, winner: keep ? c.fid : c.top.fid,
+          const flip = !keep && c.tied && c.tied.length > 1 ? c.tied : null;
+          (R.results = R.results || []).push({ day: c.day, pid: c.pid, fid: c.fid, bids: c.bids, top: c.top || null, decision: c.decision, winner: keep ? c.fid : flip ? '' : c.top.fid, flip: flip || undefined,
             salary: c.top ? c.top.amt : 0, shots: c.top ? c.top.shots : 0, ts: Date.now(), note: String(b.note || '').slice(0, 400) });
           c.stage = 'done';
           if ((R.results || []).length >= Object.keys(R.pool).length) R.phase = 'done';
@@ -384,6 +393,7 @@ export default {
       if (b.action === 'submit') {
         if (R.phase !== 'pool') return json({ ok: false, error: 'The RFA pool isn’t open.' }, 400);
         if (R.deadline && Date.now() > R.deadline) return json({ ok: false, error: 'The deadline has passed. Talk to RDPC.' }, 400);
+        if (blocked.includes(String(b.pid))) return json({ ok: false, error: 'He was an RFA last year. Pick someone else.' }, 400);
         const own = await roster(); if (own[b.pid] !== me) return json({ ok: false, error: 'He isn’t on your roster.' }, 400);
         R.pool[me] = { pid: String(b.pid), ts: Date.now(), by: 'owner' }; return save();
       }

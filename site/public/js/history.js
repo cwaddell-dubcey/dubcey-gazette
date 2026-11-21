@@ -3,7 +3,7 @@
   var H = null, ME = '';
   var S = { tab:'champions', team:'', a:'', b:'', rc:'game', yr:'' };
   var CATS = [['game', 'SINGLE GAME'], ['season', 'SEASON'], ['career', 'CAREER'], ['playoffs', 'POSTSEASON'], ['player', 'PLAYERS'], ['blunders', 'BENCH BLUNDERS'], ['milestone', 'MILESTONES']];
-  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(S.tab === 'drafts'){ S.dv = p[1] === 'team' ? 'team' : p[1] === 'top' ? 'top' : 'board'; if(S.dv === 'board' && /^\d{4}$/.test(p[1] || '')) S.dy = p[1]; if(S.dv === 'team' && p[2]) S.df = p[2]; } if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
+  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(S.tab === 'rfa') S.ry = p[1] || ''; if(S.tab === 'drafts'){ S.dv = p[1] === 'team' ? 'team' : p[1] === 'top' ? 'top' : 'board'; if(S.dv === 'board' && /^\d{4}$/.test(p[1] || '')) S.dy = p[1]; if(S.dv === 'team' && p[2]) S.df = p[2]; } if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
   hash();
 
   D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
@@ -118,7 +118,106 @@
 
   function draw(){
     [].forEach.call(document.querySelectorAll('#htabs a'), function(a){ a.classList.toggle('on', a.getAttribute('data-t') === S.tab); });
-    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct, rosters:rosters, drafts:drafts }[S.tab] || champions)();
+    ({ champions:champions, teams:teams, h2h:h2h, records:records, standings:standings, defunct:defunct, rosters:rosters, drafts:drafts, rfa:rfa }[S.tab] || champions)();
+  }
+
+  /* ---------- RFA history: every restricted free agency since 2018 (data/rfa-history.json, built from the RFA tracker),
+     plus this year's results from the live RFA portal once they post ---------- */
+  var RF = null, RFL = 0;
+  function rfLoad(){
+    if(RFL) return; RFL = 1;
+    Promise.all([fetch('data/rfa-history.json?v=20261121a').then(function(r){ return r.json(); }),
+      D.LOCAL ? null : fetch('/data/rfa', { credentials:'same-origin', cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })]).then(function(r){
+      var j = r[0], v = r[1], L = v && v.results && v.results.length && !j.years.some(function(y){ return y.y === +v.year; }) ? v.results : null;
+      if(!L) return [j, null];
+      return D.players(L.map(function(x){ return x.pid; })).then(function(){ return [j, { y:+v.year, live:v.phase !== 'done', items:L.map(function(x){ var p = D.pinfo(x.pid);
+        var b = Object.keys(x.bids || {}).filter(function(f){ return !x.bids[f].pass; }).map(function(f){ return [D.NAME[f] || f, x.bids[f].amt, x.bids[f].shots || 0]; }).sort(function(a, c){ return c[1] - a[1] || c[2] - a[2]; });
+        return { p:p[0], pos:p[1], id:x.pid, f:D.NAME[x.fid] || x.fid, b:b, m:x.decision === 'match' || undefined, w:D.NAME[x.winner] || x.winner, o:x.day, live:1 }; }) }]; });
+    }).then(function(r){ RF = rfPrep(r[0], r[1]); if(S.tab === 'rfa') draw(); }).catch(function(){ RFL = 0; if(S.tab === 'rfa') $('hb').innerHTML = '<div class="ld mono">COULDN’T LOAD THE RFA HISTORY.</div>'; });
+  }
+  function rfPrep(j, live){
+    var T = j.teams || {}, Y = j.years.slice(); if(live){ live.items.forEach(function(i){ var id = idOf(i.f); if(id) T[i.f] = id; }); Y.push(live); }
+    Y.sort(function(a, b){ return b.y - a.y; });
+    var key = function(n){ return T[n] || n; }, all = [], tm = {};
+    function team(n, y){ var k = key(n), t = tm[k] || (tm[k] = { k:k, fid:T[n] || '', name:n, y:y, nom:0, won:0, kept:0, lost:0, tie:0, bids:0, opps:0, sum:0, spend:0, shots:0, best:null });
+      if(y >= t.y){ t.name = n; t.y = y; } return t; }
+    Y.forEach(function(yr){ var names = {}; yr.items.forEach(function(i){ names[i.f] = 1; i.b.forEach(function(b){ names[b[0]] = 1; }); });
+      yr.items.forEach(function(i){
+        var top = i.b[0], x = { y:yr.y, p:i.p, pos:i.pos, id:i.id, f:i.f, fk:key(i.f), b:i.b, m:!!i.m, tie:i.tie, flip:i.flip, d:i.d, o:i.o, live:i.live };
+        x.price = top && !i.tie ? top[1] : null; x.shots = top && !i.tie ? top[2] : 0; x.second = i.b[1] || null;
+        x.w = i.m ? i.f : i.tie ? '' : (i.w || (top ? top[0] : i.f)); x.none = !top;
+        // a flip-cup winner can be the second of two tied bids: use its own line for the price and shots
+        if(i.w && !i.m && top){ var wb = i.b.filter(function(b){ return b[0] === i.w; })[0]; if(wb){ x.price = wb[1]; x.shots = wb[2]; } }
+        all.push(x);
+        var o = team(i.f, yr.y); o.nom++;
+        if(x.none) o.kept++; else if(x.m){ o.kept++; o.spend += x.price; o.shots += x.shots; } else if(x.tie) o.tie++; else o.lost++;
+        Object.keys(names).forEach(function(n){ if(n !== i.f) team(n, yr.y).opps++; });
+        i.b.forEach(function(b){ var t = team(b[0], yr.y); t.bids++; t.sum += b[1]; });
+        if(!x.m && !x.tie && top && x.w !== i.f){ var w = team(x.w, yr.y); w.won++; w.spend += x.price; w.shots += x.shots; if(!w.best || x.price > w.best.price) w.best = x; }
+        if(x.m && (!o.best || x.price > o.best.price)) o.best = x;
+      });
+    });
+    return { j:j, Y:Y, all:all, tm:tm };
+  }
+  function rfHelm(n, y){ var f = (RF.j.teams || {})[n] || idOf(n); return dHelm(n, y, f); }
+  function rfTeam(n, y){ return '<span class="ryt"><img src="' + rfHelm(n, y) + '" alt="">' + esc(n) + '</span>'; }
+  function rfPl(x){ return (x.id ? '<a href="#" class="dpn" data-card="' + esc(x.id) + '">' + esc(x.p) + '</a>' : esc(x.p)) + ' <i class="mono">' + esc(x.pos) + '</i>'; }
+  function rfRes(x){
+    if(x.none) return '<span class="ryr none mono">NO BIDS · STAYED</span>';
+    if(x.tie) return '<span class="ryr tie mono">TIED $' + x.b[0][1] + ' + ' + x.b[0][2] + ' · ' + x.tie.map(function(n){ return esc(n); }).join(' VS ') + '</span>';
+    if(x.m) return '<span class="ryr kept mono">MATCHED · $' + x.price + ' + ' + x.shots + '</span>';
+    return '<span class="ryr gone mono">TO ' + esc(x.w.toUpperCase()) + ' · $' + x.price + ' + ' + x.shots + (x.flip ? ' · FLIP CUP' : '') + '</span>';
+  }
+  function rfa(){
+    if(!RF){ rfLoad(); $('hb').innerHTML = '<div class="ld mono">PULLING THE RFA FILES…</div>'; return; }
+    var yrs = RF.Y.map(function(y){ return y.y; }), sel = S.ry && yrs.indexOf(+S.ry) > -1 ? +S.ry : 0;
+    var h = '<div class="dhd"><h2>Restricted Free Agency</h2><span class="mono">' + RF.all.length + ' RFAS SINCE ' + RF.j.since + ' · <a href="' + D.href('rfa') + '">THIS YEAR’S RFA →</a></span></div>' +
+      '<div class="ryyrs mono"><a href="#rfa" class="' + (!sel ? 'on' : '') + '">ALL-TIME</a>' + yrs.map(function(y){ return '<a href="#rfa/' + y + '" class="' + (y === sel ? 'on' : '') + '">' + y + '</a>'; }).join('') + '</div>';
+    $('hb').innerHTML = h + (sel ? rfYear(sel) : rfAll()) + '<div style="height:44px"></div>';
+  }
+  function rfYear(y){
+    var L = RF.all.filter(function(x){ return x.y === y; }).sort(function(a, b){ return (a.o || 99) - (b.o || 99); });
+    var paid = L.filter(function(x){ return x.price != null; }), sum = paid.reduce(function(a, x){ return a + x.price; }, 0), nb = L.reduce(function(a, x){ return a + x.b.length; }, 0);
+    var top = paid.slice().sort(function(a, b){ return b.price - a.price; })[0], kept = L.filter(function(x){ return x.m; }).length;
+    var h = '<div class="ryst">' + [[L.length, 'RFAS'], [nb, 'BIDS'], [kept + ' / ' + L.length, 'MATCHED'], ['$' + (paid.length ? Math.round(sum / paid.length) : 0), 'AVG PRICE'], [top ? '$' + top.price : '–', top ? 'TOP · ' + esc(top.p.toUpperCase()) : 'TOP PRICE']].map(function(s){ return '<div><b>' + s[0] + '</b><span class="mono">' + s[1] + '</span></div>'; }).join('') + '</div>';
+    if(L.some(function(x){ return x.live; })) h += '<div class="rylive mono">' + y + ' RESULTS FROM THE RFA PORTAL' + (RF.Y.filter(function(z){ return z.y === y; })[0].live ? ' · STILL IN PROGRESS' : '') + '</div>';
+    if(y === 2018) h += '<div class="rylive mono">THE 2018 TRACKER DIDN’T KEEP THE DRAW ORDER.</div>';
+    return h + '<article class="card ryyear"><div class="bar mono"><span>' + y + ' RFA CLASS</span><span>IN DRAW ORDER</span></div>' + L.map(function(x, i){
+      return '<details class="ryrow"><summary><span class="ryd mono">' + (x.d ? esc(x.d.toUpperCase()) : 'NO. ' + (i + 1)) + '</span><span class="ryp">' + rfPl(x) + '<span class="ryfrom mono">FROM</span>' + rfTeam(x.f, y) + '</span>' + rfRes(x) + '<span class="ryn mono">' + x.b.length + ' BID' + (x.b.length === 1 ? '' : 'S') + '</span></summary>' +
+        (x.b.length ? '<table class="rybt"><thead><tr><th>BIDDER</th><th>BID</th><th>SHOTS</th></tr></thead><tbody>' + x.b.map(function(b, k){ var w = !x.tie && (x.m ? k === 0 : b[0] === x.w), t = (x.tie && x.tie.indexOf(b[0]) > -1) || (x.flip && !x.m && x.flip.indexOf(b[0]) > -1 && b[0] !== x.w); return '<tr class="' + (w ? 'rywin' : t ? 'rytie' : '') + '"><td>' + rfTeam(b[0], y) + '</td><td class="mono">$' + b[1] + '</td><td class="mono">' + b[2] + '</td></tr>'; }).join('') + '</tbody></table>' +
+          (x.m ? '<p class="rynote">' + esc(x.f) + ' matched the top bid and kept him.</p>' : '') + (x.tie ? '<p class="rynote">Two bids tied on dollars and shots. The tracker marks both, so the winner isn’t on record.</p>' : '') + (x.flip && !x.m ? '<p class="rynote">' + esc(x.flip.join(' and ')) + ' tied on dollars and shots. ' + esc(x.w) + ' won the three-cup flip-cup relay at the draft.</p>' : '') : '<p class="rynote">Nobody bid.</p>') + '</details>';
+    }).join('') + '</article>';
+  }
+  function rfAll(){
+    var A = RF.all, paid = A.filter(function(x){ return x.price != null; }), bids = A.reduce(function(a, x){ return a + x.b.length; }, 0);
+    var kept = A.filter(function(x){ return x.m; }).length, avg = Math.round(paid.reduce(function(a, x){ return a + x.price; }, 0) / Math.max(1, paid.length));
+    var big = paid.slice().sort(function(a, b){ return b.price - a.price || b.y - a.y; });
+    var h = '<div class="ryst">' + [[A.length, 'RFAS'], [bids.toLocaleString('en-US'), 'BIDS PLACED'], [Math.round(kept / A.length * 100) + '%', 'MATCHED'], ['$' + avg, 'AVG PRICE'], ['$' + big[0].price, 'RECORD · ' + esc(big[0].p.toUpperCase()) + ' ' + big[0].y]].map(function(s){ return '<div><b>' + s[0] + '</b><span class="mono">' + s[1] + '</span></div>'; }).join('') + '</div>';
+    // by team
+    var TM = Object.keys(RF.tm).map(function(k){ return RF.tm[k]; }).sort(function(a, b){ return (b.fid ? 1 : 0) - (a.fid ? 1 : 0) || b.won - a.won || b.spend - a.spend; });
+    h += '<article class="card ryteams"><div class="bar mono"><span>BY TEAM</span><span>WON = TAKEN FROM SOMEONE ELSE · KEPT = MATCHED OR NO BIDS</span></div><div class="ryscr"><table><thead><tr><th>TEAM</th><th>PUT IN</th><th>KEPT</th><th>LOST</th><th>WON</th><th>BIDS</th><th>BID ON</th><th>AVG BID</th><th>RFA $</th><th>SHOTS OWED</th><th>BIGGEST</th></tr></thead><tbody>' +
+      TM.map(function(t){ var cur = t.fid ? D.NAME[t.fid] || t.name : t.name;
+        return '<tr' + (t.fid ? '' : ' class="rydef"') + '><td>' + (t.fid ? '<span class="ryt"><img src="' + D.helm(t.fid) + '" alt="">' + esc(cur) + '</span>' : rfTeam(t.name, t.y) + ' <i class="mono">DEFUNCT</i>') + '</td><td class="mono">' + t.nom + '</td><td class="mono">' + t.kept + '</td><td class="mono">' + t.lost + (t.tie ? '<small>+' + t.tie + ' TIE</small>' : '') + '</td><td class="mono"><b>' + t.won + '</b></td><td class="mono">' + t.bids + '</td><td class="mono">' + (t.opps ? Math.round(t.bids / t.opps * 100) + '%' : '–') + '</td><td class="mono">$' + (t.bids ? Math.round(t.sum / t.bids) : 0) + '</td><td class="mono">$' + t.spend + '</td><td class="mono">' + t.shots + '</td><td>' + (t.best ? esc(t.best.p) + ' <i class="mono">$' + t.best.price + ' · ' + t.best.y + '</i>' : '–') + '</td></tr>'; }).join('') + '</tbody></table></div></article>';
+    // records
+    function list(t, L, f){ return '<article class="card ryrec"><div class="bar mono"><span>' + t + '</span></div><ol>' + L.map(function(x, i){ return '<li><b class="mono">' + (i + 1) + '</b><span class="ryp">' + rfPl(x) + '<i class="mono">' + x.y + ' · ' + (x.m ? 'KEPT BY ' + esc(x.f.toUpperCase()) : 'TO ' + esc(String(x.w).toUpperCase())) + '</i></span><em class="mono">' + f(x) + '</em></li>'; }).join('') + '</ol></article>'; }
+    var over = paid.filter(function(x){ return x.second; }).sort(function(a, b){ return (b.price - b.second[1]) - (a.price - a.second[1]) || b.price - a.price; }).slice(0, 10);
+    var hot = A.slice().sort(function(a, b){ return b.b.length - a.b.length || (b.price || 0) - (a.price || 0); }).slice(0, 10);
+    var shot = paid.filter(function(x){ return x.shots; }).sort(function(a, b){ return b.shots - a.shots || b.price - a.price; }).slice(0, 10);
+    var close = paid.filter(function(x){ return x.second; }).sort(function(a, b){ return (a.price - a.second[1]) - (b.price - b.second[1]) || (b.second[2] - a.second[2]) || b.price - a.price; }).slice(0, 10);
+    h += '<div class="ryrecs">' + list('BIGGEST PRICES', big.slice(0, 10), function(x){ return '$' + x.price + ' + ' + x.shots; }) + list('BIGGEST OVERPAYS', over, function(x){ return '+$' + (x.price - x.second[1]) + ' OVER 2ND'; }) +
+      list('MOST WANTED', hot.filter(function(x){ return !x.none; }), function(x){ return x.b.length + ' BIDS'; }) + list('MOST SHOTS ON A WINNING BID', shot, function(x){ return x.shots + ' SHOTS'; }) +
+      list('PHOTO FINISHES', close, function(x){ return x.flip && !x.m ? 'FLIP CUP DECIDED IT' : x.price === x.second[1] ? 'SHOTS DECIDED IT' : 'WON BY $' + (x.price - x.second[1]); }) + '</div>';
+    // repeat RFAs
+    var by = {}; A.forEach(function(x){ var k = x.id || x.p; (by[k] = by[k] || []).push(x); });
+    var rep = Object.keys(by).map(function(k){ return by[k]; }).filter(function(L){ return L.length > 1; }).sort(function(a, b){ return b.length - a.length || a[0].p.localeCompare(b[0].p); });
+    h += '<article class="card ryrep"><div class="bar mono"><span>FREQUENT FLYERS</span><span>BACK-TO-BACK RFAS ENDED IN ' + RF.j.backToBack + '</span></div><div class="ryrepg">' + rep.map(function(L){ L = L.slice().sort(function(a, b){ return a.y - b.y; });
+      return '<div class="ryrp"><div class="ryp">' + rfPl(L[0]) + '<b class="mono">' + L.length + '×</b></div><ul>' + L.map(function(x){ return '<li><span class="mono">' + x.y + '</span>' + esc(x.f) + ' → ' + (x.none ? 'stayed' : x.tie ? 'tied' : x.m ? 'kept' : esc(x.w)) + (x.price != null ? ' <i class="mono">$' + x.price + '</i>' : '') + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div></article>';
+    // positions + years
+    var P = {}; A.forEach(function(x){ var p = P[x.pos] = P[x.pos] || { n:0, s:0, c:0 }; p.n++; if(x.price != null){ p.s += x.price; p.c++; } });
+    h += '<div class="ryrecs"><article class="card ryrec"><div class="bar mono"><span>BY POSITION</span></div><ol>' + Object.keys(P).sort(function(a, b){ return P[b].n - P[a].n; }).map(function(k){ var p = P[k]; return '<li><b class="mono">' + esc(k) + '</b><span class="ryp">' + p.n + ' RFAs</span><em class="mono">AVG $' + (p.c ? Math.round(p.s / p.c) : 0) + '</em></li>'; }).join('') + '</ol></article>' +
+      '<article class="card ryrec ryyrt"><div class="bar mono"><span>YEAR BY YEAR</span></div><ol>' + RF.Y.map(function(yr){ var L = A.filter(function(x){ return x.y === yr.y; }), pd = L.filter(function(x){ return x.price != null; }), tp = pd.slice().sort(function(a, b){ return b.price - a.price; })[0];
+        return '<li><a class="mono" href="#rfa/' + yr.y + '">' + yr.y + '</a><span class="ryp">' + (tp ? 'Top: ' + esc(tp.p) + ' $' + tp.price : '') + '<i class="mono">' + L.filter(function(x){ return x.m; }).length + ' MATCHED · ' + L.reduce(function(a, x){ return a + x.b.length; }, 0) + ' BIDS</i></span><em class="mono">AVG $' + (pd.length ? Math.round(pd.reduce(function(a, x){ return a + x.price; }, 0) / pd.length) : 0) + '</em></li>'; }).join('') + '</ol></article></div>';
+    return h;
   }
 
   /* ---------- drafts: every auction board on file (data/drafts.json, built from the league's draft trackers) ---------- */

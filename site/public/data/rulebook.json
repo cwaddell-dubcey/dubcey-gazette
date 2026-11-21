@@ -197,13 +197,18 @@
       "rules": [
         {
           "h": "When.",
-          "t": "Restricted free agency opens the new fantasy year, usually in mid-August, before the rookie draft and the auction.",
+          "t": "Restricted free agency opens the new fantasy year, usually in mid-August, before the rookie draft and the auction. The league has held RFAs every year since 2018; the full history is on the History page.",
           "v": "Mid-August"
         },
         {
           "h": "The pool.",
           "t": "Every team must put one player from its roster into the RFA pool by RDPC's deadline. If a team doesn't, RDPC picks one for it.",
           "v": "1 per team"
+        },
+        {
+          "h": "No back-to-backs.",
+          "t": "A player who was an RFA the previous season can't be put in the pool. This rule has been in place since 2022.",
+          "v": "Since 2022"
         },
         {
           "h": "The draws.",
@@ -222,8 +227,8 @@
         },
         {
           "h": "Winning bid.",
-          "t": "The highest bid wins. If bids are tied, the one with more penalty shots wins.",
-          "v": "Shots break ties"
+          "t": "The highest bid wins. If bids are tied, the one with more penalty shots wins. If two bids are tied on dollars and shots, and the original team doesn't match, the tied teams settle it with a three-cup flip-cup relay at the draft. The winner gets the player.",
+          "v": "Shots, then flip cup"
         },
         {
           "h": "Matching.",

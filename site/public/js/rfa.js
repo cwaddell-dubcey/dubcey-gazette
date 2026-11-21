@@ -69,7 +69,7 @@
     if(pick) h += player(pick.pid, null) + (pick.by === 'rdpc' ? '<div class="rfhint mono">RDPC PUT HIM IN FOR YOU.</div>' : '');
     if(v.phase === 'pool' && (!v.deadline || Date.now() < v.deadline)){
       var R = (S.roster[me] || []).slice().sort(function(a, b){ return (S.sal[b] || 0) - (S.sal[a] || 0); });
-      h += '<label class="rfsel"><span class="mono">' + (pick ? 'CHANGE YOUR PLAYER' : 'PICK YOUR RFA PLAYER') + '</span><select data-submit><option value="">Choose a player…</option>' + R.map(function(id){ var p = P(id); return '<option value="' + id + '"' + (pick && pick.pid === id ? ' selected' : '') + '>' + esc(p.name + ' · ' + p.pos + ' · $' + (S.sal[id] || 0)) + '</option>'; }).join('') + '</select></label>';
+      h += '<label class="rfsel"><span class="mono">' + (pick ? 'CHANGE YOUR PLAYER' : 'PICK YOUR RFA PLAYER') + '</span><select data-submit><option value="">Choose a player…</option>' + R.map(function(id){ var p = P(id), no = (v.blocked || []).indexOf(id) > -1; return '<option value="' + id + '"' + (pick && pick.pid === id ? ' selected' : '') + (no ? ' disabled' : '') + '>' + esc(p.name + ' · ' + p.pos + ' · $' + (S.sal[id] || 0) + (no ? ' · RFA LAST YEAR' : '')) + '</option>'; }).join('') + '</select></label>';
     } else if(!pick) h += '<p class="rfhint mono">' + (v.phase === 'off' ? 'NOTHING TO DO YET.' : 'NO PLAYER IN THE POOL.') + '</p>';
     if(cap != null) h += '<div class="rfbud"><span class="mono">' + YR + ' AUCTION BUDGET</span><b>' + money(cap) + '</b>' + (num(v.wonSalary) ? '<i class="mono">AFTER ' + money(v.wonSalary) + ' IN RFA WINS</i>' : '') + '</div>';
     return h + '</div></article>';
@@ -77,8 +77,8 @@
   function rules(){ return '<article class="card rfrules"><div class="bar mono"><span>HOW RFA WORKS</span></div><ol>' +
     '<li>Every team puts one player from its roster into the RFA pool.</li><li>For 12 days, RDPC draws one player a day at random.</li>' +
     '<li>The other 11 teams submit a blind bid in whole dollars, plus penalty shots, or pass. A bid is the player’s salary for the auction.</li>' +
-    '<li>Highest bid wins. A tie goes to the most shots.</li><li>The original team can match the top bid, keeping him at that salary and taking the shots, or let him go to the top bidder, who takes the shots.</li>' +
-    '<li>Bids can’t exceed your ' + YR + ' auction budget, and RFA salaries come out of it.</li></ol></article>'; }
+    '<li>Highest bid wins. A tie goes to the most shots. Still tied? A three-cup flip-cup relay at the draft decides it.</li><li>The original team can match the top bid, keeping him at that salary and taking the shots, or let him go to the top bidder, who takes the shots.</li>' +
+    '<li>Bids can’t exceed your ' + YR + ' auction budget, and RFA salaries come out of it.</li><li>A player who was an RFA last year can’t go back in the pool.</li></ol><a class="rfhist mono" href="' + D.href('history') + '#rfa">EVERY RFA SINCE 2018 →</a></article>'; }
   function pool(){
     var v = S.v, ids = Object.keys(v.pool || {}); if(!ids.length || (v.phase !== 'running' && v.phase !== 'done' && !v.admin)) return '';
     var res = {}; arr(v.results).forEach(function(x){ res[x.fid] = x; });
@@ -89,8 +89,11 @@
     var L = arr(S.v.results).slice().reverse(); if(!L.length) return '';
     return '<h2 class="rfh2">The results</h2>' + L.map(function(x){
       var bids = Object.keys(x.bids || {}).map(function(f){ return Object.assign({ fid:f }, x.bids[f]); }).sort(function(a, b){ return (b.pass ? -1 : b.amt) - (a.pass ? -1 : a.amt) || (num(b.shots) - num(a.shots)) || a.ts - b.ts; });
-      var out = x.decision === 'match' ? nm(x.fid) + ' matched. He stays at ' + money(x.salary) + ' and ' + nm(x.fid) + ' takes ' + shots(x.shots) + '.' : x.decision === 'nobids' ? 'No bids. He stays with ' + nm(x.fid) + '.' : nm(x.winner) + ' gets him at ' + money(x.salary) + ' and takes ' + shots(x.shots) + '.';
-      return '<article class="card rfres"><div class="bar mono"><span>DAY ' + x.day + '</span><span>' + (x.decision === 'match' ? 'MATCHED' : x.decision === 'nobids' ? 'NO BIDS' : 'LET GO') + '</span></div><div class="rfpad"><div class="rfrh">' + player(x.pid, x.fid) + '<p>' + out + '</p></div>' + (x.note ? '<p class="rfrn">' + esc(x.note) + '</p>' : '') +
+      var out = x.decision === 'match' ? nm(x.fid) + ' matched. He stays at ' + money(x.salary) + ' and ' + nm(x.fid) + ' takes ' + shots(x.shots) + '.' : x.decision === 'nobids' ? 'No bids. He stays with ' + nm(x.fid) + '.' :
+        x.flip && !x.winner ? x.flip.map(nm).join(' and ') + ' tied at ' + money(x.salary) + ' + ' + shots(x.shots) + '. It goes to a three-cup flip-cup relay at the draft.' :
+        nm(x.winner) + ' gets him at ' + money(x.salary) + ' and takes ' + shots(x.shots) + '.' + (x.flip ? ' (Won the flip-cup relay.)' : '');
+      var flipBtns = S.v.admin && x.flip && !x.winner ? '<div class="rfbtns">' + x.flip.map(function(f){ return '<button class="btn ghost2" type="button" data-flip="' + x.day + ':' + f + '">' + esc((D.SHORT[f] || f).toUpperCase()) + ' WON THE FLIP CUP</button>'; }).join('') + '</div>' : '';
+      return '<article class="card rfres"><div class="bar mono"><span>DAY ' + x.day + '</span><span>' + (x.decision === 'match' ? 'MATCHED' : x.decision === 'nobids' ? 'NO BIDS' : 'LET GO') + '</span></div><div class="rfpad"><div class="rfrh">' + player(x.pid, x.fid) + '<p>' + out + '</p></div>' + (x.note ? '<p class="rfrn">' + esc(x.note) + '</p>' : '') + flipBtns +
         '<table class="rfbt"><thead><tr><th>TEAM</th><th>BID</th><th>SHOTS</th></tr></thead><tbody>' + bids.map(function(b){ var top = x.top && b.fid === x.top.fid; return '<tr class="' + (top ? 'rftop' : '') + '"><td>' + helm(b.fid, 'rfhs') + nm(b.fid) + '</td><td class="mono">' + (b.pass ? 'PASS' : money(b.amt)) + '</td><td class="mono">' + (b.pass ? '–' : num(b.shots)) + '</td></tr>'; }).join('') +
         (11 - bids.length > 0 ? '<tr class="rfnb"><td colspan="3" class="mono">' + (11 - bids.length) + ' TEAM' + (11 - bids.length > 1 ? 'S' : '') + ' DIDN’T BID</td></tr>' : '') + '</tbody></table></div></article>';
     }).join('');
@@ -102,7 +105,7 @@
     if(v.phase === 'pool') h += '<div class="rfrow"><label><span class="mono">POOL DEADLINE (ET)</span><input type="datetime-local" data-dl value="' + (v.deadline ? new Date(v.deadline - new Date(v.deadline).getTimezoneOffset() * 6e4).toISOString().slice(0, 16) : '') + '"></label><button class="btn ghost2" type="button" data-a="deadline">SAVE DEADLINE</button><button class="btn" type="button" data-a="start"' + (v.nPool < 12 ? ' title="Not every team is in yet"' : '') + '>LOCK THE POOL · START THE DRAWS</button></div>';
     if(v.phase === 'pool' || v.phase === 'off'){
       h += '<table class="rfbt rfcp"><thead><tr><th>TEAM</th><th>RFA PLAYER</th><th>SET FOR THEM</th></tr></thead><tbody>' + D.IDS.map(function(f){ var p = v.pool[f];
-        return '<tr><td>' + helm(f, 'rfhs') + nm(f) + '</td><td>' + (p ? esc(P(p.pid).name) + (p.by === 'rdpc' ? ' <i class="mono">(YOU)</i>' : '') : '<i class="mono rfmiss">NOT IN YET</i>') + '</td><td><select data-assign="' + f + '"><option value="">—</option>' + (S.roster[f] || []).map(function(id){ return '<option value="' + id + '">' + esc(P(id).name + ' · $' + (S.sal[id] || 0)) + '</option>'; }).join('') + '</select></td></tr>'; }).join('') + '</tbody></table>';
+        return '<tr><td>' + helm(f, 'rfhs') + nm(f) + '</td><td>' + (p ? esc(P(p.pid).name) + (p.by === 'rdpc' ? ' <i class="mono">(YOU)</i>' : '') : '<i class="mono rfmiss">NOT IN YET</i>') + '</td><td><select data-assign="' + f + '"><option value="">—</option>' + (S.roster[f] || []).map(function(id){ var no = (v.blocked || []).indexOf(id) > -1; return '<option value="' + id + '"' + (no ? ' disabled' : '') + '>' + esc(P(id).name + ' · $' + (S.sal[id] || 0) + (no ? ' · RFA LAST YEAR' : '')) + '</option>'; }).join('') + '</select></td></tr>'; }).join('') + '</tbody></table>';
     }
     if(v.phase === 'running'){
       if(!c || c.stage === 'done') h += '<div class="rfrow"><button class="btn" type="button" data-a="draw">DRAW DAY ' + ((v.results || []).length + 1) + '’S PLAYER</button><span class="mono rfhint">' + ((v.nPool || 0) - (v.results || []).length) + ' LEFT IN THE HAT</span></div>';
@@ -135,6 +138,7 @@
     if(b.hasAttribute('data-pass')) return act({ action:'bid', pass:true }, 'You passed.');
     if((v = b.getAttribute('data-match'))){ if(b.getAttribute('data-arm') !== '1'){ b.setAttribute('data-arm', '1'); b.textContent = 'TAP AGAIN TO CONFIRM'; return; } return act({ action:'match', decision:v }, v === 'match' ? 'Matched. He stays.' : 'You let him go.'); }
     if((v = b.getAttribute('data-dec'))) return act({ action:'decide', decision:v }, 'Recorded.');
+    if((v = b.getAttribute('data-flip'))){ var q = v.split(':'); return act({ action:'flip', day:+q[0], fid:q[1] }, 'Flip-cup winner recorded.'); }
     var dl = document.querySelector('[data-dl]'), dlv = dl && dl.value ? Date.parse(dl.value) : 0;
     if(a === 'open') return act({ action:'open', deadline:dlv }, 'The RFA pool is open.');
     if(a === 'deadline') return act({ action:'deadline', deadline:dlv }, 'Deadline saved.');
