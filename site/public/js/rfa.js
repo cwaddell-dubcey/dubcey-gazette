@@ -78,7 +78,7 @@
     '<li>Every team puts one player from its roster into the RFA pool.</li><li>For 12 days, RDPC draws one player a day at random.</li>' +
     '<li>The other 11 teams submit a blind bid in whole dollars, plus penalty shots, or pass. A bid is the player’s salary for the auction.</li>' +
     '<li>Highest bid wins. A tie goes to the most shots. Still tied? A three-cup flip-cup relay at the draft decides it.</li><li>The original team can match the top bid, keeping him at that salary and taking the shots, or let him go to the top bidder, who takes the shots.</li>' +
-    '<li>Bids can’t exceed your ' + YR + ' auction budget, and RFA salaries come out of it.</li><li>A player who was an RFA last year can’t go back in the pool.</li></ol><a class="rfhist mono" href="' + D.href('history') + '#rfa">EVERY RFA SINCE 2018 →</a></article>'; }
+    '<li>Bids can’t exceed your ' + YR + ' auction budget, and RFA salaries come out of it.</li><li>A player who was an RFA last year can’t go back in the pool.</li></ol><a class="rfhist mono" href="' + D.href('rfa-history') + '">EVERY RFA SINCE 2018 →</a></article>'; }
   function pool(){
     var v = S.v, ids = Object.keys(v.pool || {}); if(!ids.length || (v.phase !== 'running' && v.phase !== 'done' && !v.admin)) return '';
     var res = {}; arr(v.results).forEach(function(x){ res[x.fid] = x; });

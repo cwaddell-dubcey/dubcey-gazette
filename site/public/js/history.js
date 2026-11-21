@@ -1,12 +1,13 @@
 (function(){
   var D = DC, $ = D.$, esc = D.esc;
-  var H = null, ME = '';
+  var H = null, ME = '', PG = document.body.getAttribute('data-hp') || '';
+  function ryH(y){ return PG ? '#' + (y || 'all') : '#rfa' + (y ? '/' + y : ''); }
   var S = { tab:'champions', team:'', a:'', b:'', rc:'game', yr:'' };
   var CATS = [['game', 'SINGLE GAME'], ['season', 'SEASON'], ['career', 'CAREER'], ['playoffs', 'POSTSEASON'], ['player', 'PLAYERS'], ['blunders', 'BENCH BLUNDERS'], ['milestone', 'MILESTONES']];
-  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(S.tab === 'rfa') S.ry = p[1] || ''; if(S.tab === 'drafts'){ S.dv = p[1] === 'team' ? 'team' : p[1] === 'top' ? 'top' : 'board'; if(S.dv === 'board' && /^\d{4}$/.test(p[1] || '')) S.dy = p[1]; if(S.dv === 'team' && p[2]) S.df = p[2]; } if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
+  function hash(){ var p = (location.hash || '#champions').slice(1).split('/'); if(PG === 'rfa'){ S.tab = 'rfa'; S.ry = /^\d{4}$/.test(p[0]) ? p[0] : ''; return; } if(p[0] === 'rfa'){ location.replace(D.href('rfa-history') + (p[1] ? '#' + p[1] : '')); return; } S.tab = p[0] || 'champions'; if(S.tab === 'rosters') S.rf = p[1] || ''; if(S.tab === 'rfa') S.ry = p[1] || ''; if(S.tab === 'drafts'){ S.dv = p[1] === 'team' ? 'team' : p[1] === 'top' ? 'top' : 'board'; if(S.dv === 'board' && /^\d{4}$/.test(p[1] || '')) S.dy = p[1]; if(S.dv === 'team' && p[2]) S.df = p[2]; } if(p[1]){ if(S.tab === 'teams') S.team = p[1]; if(S.tab === 'records') S.rc = p[1]; if(S.tab === 'standings') S.yr = p[1]; if(S.tab === 'h2h'){ S.a = p[1]; S.b = p[2] || S.b; } } }
   hash();
 
-  D.shell('history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
+  D.shell(PG ? 'rfa-history' : 'history').then(function(me){ ME = me.franchise || ''; if(!S.team) S.team = ME; if(!S.a) S.a = ME; if(H) draw(); });
   fetch('data/history.json?v=20261015a').then(function(r){ return r.json(); }).then(function(j){ H = j; draw(); live(); }).catch(function(){ $('hb').innerHTML = '<div class="ld mono">COULDN\u2019T OPEN THE TROPHY ROOM.<br><button type="button" class="btn ghost2 rtry" data-reload>TRY AGAIN</button></div>'; });
 
   // lineup-based extras (bench blunders, Mount Rushmore, every-era player records), built from data/cards
@@ -171,8 +172,8 @@
   function rfa(){
     if(!RF){ rfLoad(); $('hb').innerHTML = '<div class="ld mono">PULLING THE RFA FILES…</div>'; return; }
     var yrs = RF.Y.map(function(y){ return y.y; }), sel = S.ry && yrs.indexOf(+S.ry) > -1 ? +S.ry : 0;
-    var h = '<div class="dhd"><h2>Restricted Free Agency</h2><span class="mono">' + RF.all.length + ' RFAS SINCE ' + RF.j.since + ' · <a href="' + D.href('rfa') + '">THIS YEAR’S RFA →</a></span></div>' +
-      '<div class="ryyrs mono"><a href="#rfa" class="' + (!sel ? 'on' : '') + '">ALL-TIME</a>' + yrs.map(function(y){ return '<a href="#rfa/' + y + '" class="' + (y === sel ? 'on' : '') + '">' + y + '</a>'; }).join('') + '</div>';
+    var h = '<div class="dhd">' + (PG ? '' : '<h2>Restricted Free Agency</h2>') + '<span class="mono">' + RF.all.length + ' RFAS SINCE ' + RF.j.since + ' · <a href="' + D.href('rfa') + '">THIS YEAR’S RFA →</a></span></div>' +
+      '<div class="ryyrs mono"><a href="' + ryH() + '" class="' + (!sel ? 'on' : '') + '">ALL-TIME</a>' + yrs.map(function(y){ return '<a href="' + ryH(y) + '" class="' + (y === sel ? 'on' : '') + '">' + y + '</a>'; }).join('') + '</div>';
     $('hb').innerHTML = h + (sel ? rfYear(sel) : rfAll()) + '<div style="height:44px"></div>';
   }
   function rfYear(y){
@@ -216,7 +217,7 @@
     var P = {}; A.forEach(function(x){ var p = P[x.pos] = P[x.pos] || { n:0, s:0, c:0 }; p.n++; if(x.price != null){ p.s += x.price; p.c++; } });
     h += '<div class="ryrecs"><article class="card ryrec"><div class="bar mono"><span>BY POSITION</span></div><ol>' + Object.keys(P).sort(function(a, b){ return P[b].n - P[a].n; }).map(function(k){ var p = P[k]; return '<li><b class="mono">' + esc(k) + '</b><span class="ryp">' + p.n + ' RFAs</span><em class="mono">AVG $' + (p.c ? Math.round(p.s / p.c) : 0) + '</em></li>'; }).join('') + '</ol></article>' +
       '<article class="card ryrec ryyrt"><div class="bar mono"><span>YEAR BY YEAR</span></div><ol>' + RF.Y.map(function(yr){ var L = A.filter(function(x){ return x.y === yr.y; }), pd = L.filter(function(x){ return x.price != null; }), tp = pd.slice().sort(function(a, b){ return b.price - a.price; })[0];
-        return '<li><a class="mono" href="#rfa/' + yr.y + '">' + yr.y + '</a><span class="ryp">' + (tp ? 'Top: ' + esc(tp.p) + ' $' + tp.price : '') + '<i class="mono">' + L.filter(function(x){ return x.m; }).length + ' MATCHED · ' + L.reduce(function(a, x){ return a + x.b.length; }, 0) + ' BIDS</i></span><em class="mono">AVG $' + (pd.length ? Math.round(pd.reduce(function(a, x){ return a + x.price; }, 0) / pd.length) : 0) + '</em></li>'; }).join('') + '</ol></article></div>';
+        return '<li><a class="mono" href="' + ryH(yr.y) + '">' + yr.y + '</a><span class="ryp">' + (tp ? 'Top: ' + esc(tp.p) + ' $' + tp.price : '') + '<i class="mono">' + L.filter(function(x){ return x.m; }).length + ' MATCHED · ' + L.reduce(function(a, x){ return a + x.b.length; }, 0) + ' BIDS</i></span><em class="mono">AVG $' + (pd.length ? Math.round(pd.reduce(function(a, x){ return a + x.price; }, 0) / pd.length) : 0) + '</em></li>'; }).join('') + '</ol></article></div>';
     return h;
   }
 

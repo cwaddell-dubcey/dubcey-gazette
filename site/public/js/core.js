@@ -626,7 +626,7 @@
     { t:'LEAGUE', p:['standings', 'schedule', 'teams'], items:[['standings', 'STANDINGS'], ['standings#power', 'POWER RANKINGS'], ['standings#odds', 'PLAYOFF ODDS'], ['schedule', 'SCHEDULE'], ['teams', 'TEAMS'], ['teams#all', 'ALL ROSTERS']] },
     { t:'PLAYERS', p:['players', 'wire'], items:[['players', 'ALL PLAYERS'], ['players#top', 'TOP SCORERS'], ['players#news', 'NEWS & INJURIES'], ['wire', 'THE WIRE']] },
     { t:'DISPATCH', p:['dispatch'], href:'dispatch' },
-    { t:'HISTORY', p:['history','vault'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#drafts', 'DRAFTS'], ['history#defunct', 'DEFUNCT'], ['vault', 'THE VAULT']] },
+    { t:'HISTORY', p:['history','rfa-history','vault'], items:[['history#champions', 'CHAMPIONS'], ['history#teams', 'TROPHY CASE'], ['history#h2h', 'HEAD-TO-HEAD'], ['history#records', 'RECORDS'], ['history#standings', 'PAST STANDINGS'], ['history#rosters', 'ROSTERS'], ['history#drafts', 'DRAFTS'], ['rfa-history', 'RFA HISTORY'], ['history#defunct', 'DEFUNCT'], ['vault', 'THE VAULT']] },
     { t:'CLUBHOUSE', p:['clubhouse', 'finances', 'rules', 'clerk', 'rfa', 'lottery', 'probowl', 'helmets', 'ideas'], items:[['clubhouse', 'CLUBHOUSE HOME'], ['finances', 'FINANCES'], ['rules', 'BYLAWS'], ['clerk', 'CLERK\u2019S OFFICE'], ['lottery', 'ROOKIE LOTTERY'], ['rfa', 'RFA'], ['probowl', 'PRO BOWL'], ['helmets', 'HELMET LAB'], ['ideas', 'SUGGESTION BOX']] },
     { t:'MY TEAM', p:['myteam'], href:'myteam', cls:'ngmt' }
   ];
